@@ -9,13 +9,15 @@ import * as path from 'path';
 import { workspace, Disposable, ExtensionContext, commands } from 'vscode';
 import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions, TransportKind } from 'vscode-languageclient';
 
+import Crane from "./crane";
 import QualityOfLife from "./features/qualityOfLife";
 
 export function activate(context: ExtensionContext)
 {
     let qol: QualityOfLife = new QualityOfLife();
+    let crane: Crane = new Crane();
 
-    console.log("Crane Initialised...");
+    crane.doInit();
 
     let serverModule = context.asAbsolutePath(path.join('server', 'server.js'));
     let debugOptions = { execArgv: ["--nolazy", "--debug=6004"] };

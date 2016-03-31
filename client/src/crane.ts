@@ -5,19 +5,24 @@ import { ThrottledDelayer } from './utils/async';
 
 import { TreeBuilder, FileNode } from "./hvy/treeBuilder";
 
+import { LanguageClient, RequestType } from 'vscode-languageclient';
+
 export default class Crane
 {
     public objectTree: FileNode[] = [];
-    
+
     public treeBuilder: TreeBuilder = new TreeBuilder();
+    public langClient: LanguageClient;
 
     private disposable: vscode.Disposable;
     private delayers: { [key: string]: ThrottledDelayer<void> };
 
-    constructor()
+    constructor(languageClient: LanguageClient)
     {
+        this.langClient = languageClient;
+
         this.delayers = Object.create(null);
-        
+
         let subscriptions: vscode.Disposable[] = [];
 
         vscode.workspace.onDidChangeTextDocument((e) => this.onChangeTextHandler(e.document), null, subscriptions);
@@ -31,7 +36,29 @@ export default class Crane
     public doInit()
     {
         console.log("Crane Initialised...");
-        // TODO -- Build object tree for every file in workspace or every file within the workspace folder
+
+        // Send request to server to build object tree for all workspace files
+        var requestType: RequestType<any, any, any> = { method: "buildObjectTreeForWorkspace" };
+
+        // TODO -- Display message in status bar indicating loading
+
+        this.langClient.sendRequest(requestType).then((success) =>
+        {
+            if (success)
+            {
+                // Remove loading indicator
+            }
+            else
+            {
+                // Remove loading indicator
+                // Show error
+            }
+        });
+    }
+
+    public suggestFixes()
+    {
+        // TODO -- Suggest fixes for any error under the caret
     }
 
     private onChangeTextHandler(textDocument: vscode.TextDocument)
@@ -58,7 +85,7 @@ export default class Crane
             })
         });
     }
-    
+
     private buildObjectTreeForDocument(document: vscode.TextDocument): Promise<void>
     {
         return new Promise<void>((resolve, reject) =>
@@ -74,10 +101,11 @@ export default class Crane
                 })
                 .catch((error) =>
                 {
-                    reject(error);
+                    console.log(error);
+                    resolve();
                 });
             }
-            else 
+            else
             {
                 //resolve();
             }
@@ -86,6 +114,16 @@ export default class Crane
 
     private onChangeEditorHandler(editor: vscode.TextEditor)
     {
+        // Analyse file to find undefined variables, functions, classes, etc
+        var path = editor.document.fileName;
+        var requestType: RequestType<any, any, any> = { method: "getFileProblems" };
+
+        this.langClient.sendRequest(requestType, path).then((data) =>
+        {
+            var t = "test";
+            // TODO -- Show decorations
+            // TODO -- Update list of errors in current document + their types
+        });
     }
 
     private onSaveHandler()

@@ -15,9 +15,6 @@ import QualityOfLife from "./features/qualityOfLife";
 export function activate(context: ExtensionContext)
 {
     let qol: QualityOfLife = new QualityOfLife();
-    let crane: Crane = new Crane();
-
-    crane.doInit();
 
     let serverModule = context.asAbsolutePath(path.join('server', 'server.js'));
     let debugOptions = { execArgv: ["--nolazy", "--debug=6004"] };
@@ -36,7 +33,7 @@ export function activate(context: ExtensionContext)
     }
 
     // Create the language client and start the client.
-    var langClient = new LanguageClient('Language Server Example', serverOptions, clientOptions);
+    var langClient: LanguageClient = new LanguageClient('Language Server Example', serverOptions, clientOptions);
 
     // Use this to handle a request sent from the server
     // https://github.com/Microsoft/vscode/blob/80bd73b5132268f68f624a86a7c3e56d2bbac662/extensions/json/client/src/jsonMain.ts
@@ -45,8 +42,12 @@ export function activate(context: ExtensionContext)
 
     let disposable = langClient.start();
 
+    let crane: Crane = new Crane(langClient);
+    crane.doInit();
+
     // Register commands for QoL improvements
-    let duplicateLineCommand = commands.registerCommand('crane.duplicateLine', () => qol.duplicateLineOrSelection());
+    let duplicateLineCommand = commands.registerCommand('crane.duplicateLine', qol.duplicateLineOrSelection);
+    let suggestFixCommand = commands.registerCommand("crane.suggestFixes", crane.suggestFixes);
 
     context.subscriptions.push(disposable);
     context.subscriptions.push(duplicateLineCommand);

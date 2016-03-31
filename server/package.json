@@ -8,7 +8,9 @@
 		"node": "*"
 	},
 	"dependencies": {
-		"vscode-languageserver": "^1.1.0"
+		"vscode-languageserver": "^1.1.0",
+        "php-parser": "0.0.9",
+        "glob": "7.0.3"
 	},
 	"devDependencies": {
 		"typescript": "^1.6.2"

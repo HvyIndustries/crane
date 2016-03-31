@@ -9,13 +9,20 @@ import {
     createConnection, IConnection, TextDocumentSyncKind,
     TextDocuments, ITextDocument, Diagnostic, DiagnosticSeverity,
     InitializeParams, InitializeResult, TextDocumentIdentifier,
-    CompletionItem, CompletionItemKind
+    CompletionItem, CompletionItemKind, RequestType
 } from 'vscode-languageserver';
+
+import { TreeBuilder, FileNode } from "./hvy/treeBuilder";
+
+var glob = require("glob")
 
 let connection: IConnection = createConnection(new IPCMessageReader(process), new IPCMessageWriter(process));
 
 let documents: TextDocuments = new TextDocuments();
 documents.listen(connection);
+
+let treeBuilder: TreeBuilder = new TreeBuilder();
+let workspaceTree: FileNode[] = [];
 
 let workspaceRoot: string;
 connection.onInitialize((params): InitializeResult =>
@@ -133,6 +140,56 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem =>
     }
     return item;
 });
+
+var requestType: RequestType<any, any, any> = { method: "getFileProblems" };
+connection.onRequest(requestType, (data) =>
+{
+    var filePath = data;
+    // TODO -- Browse constructed object tree and find any problems in the selected file
+    // TODO -- Return the problems as an object array => [{ line: 0, start: 0, end: 0, type: enum }]
+    return "test";
+});
+
+var requestType: RequestType<any, any, any> = { method: "buildObjectTreeForWorkspace" };
+connection.onRequest(requestType, (data) =>
+{
+    // Load all files in workspace
+    glob("/**/*.php", { cwd: workspaceRoot, root: workspaceRoot }, function (err, fileNames)
+    {
+        var docsToDo = fileNames;
+        var docsDoneCount = 0;
+
+        docsToDo.forEach(docPath =>
+        {
+            // TODO -- use nodejs file reader to get contents of each file
+            //var contents = doc.getText();
+
+            // this.treeBuilder.Parse(contents, path)
+            //     .then(data => {
+            //         addToWorkspaceTree(data.tree);
+
+                    docsDoneCount++;
+
+                    if (docsToDo.length == docsDoneCount)
+                    {
+                        return true;
+                    }
+            //     })
+            //     .catch(error => {
+            //         console.log(error);
+            //         return false;
+            //     });
+        });
+    });
+});
+
+function addToWorkspaceTree(tree:FileNode)
+{
+    // TODO -- Loop through existing filenodes and replace if exists, otherwise add
+    workspaceTree.push(tree);
+
+    console.log("Parsed file: " + tree.path);
+}
 
 /*
 connection.onDidOpenTextDocument((params) => {

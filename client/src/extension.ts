@@ -28,7 +28,7 @@ export function activate(context: ExtensionContext)
     }
 
     let clientOptions: LanguageClientOptions = {
-        documentSelector: ['.php'],
+        documentSelector: ['php'],
         synchronize: {
             configurationSection: 'languageServerExample',
             fileEvents: workspace.createFileSystemWatcher('**/.clientrc')
@@ -36,7 +36,14 @@ export function activate(context: ExtensionContext)
     }
 
     // Create the language client and start the client.
-    let disposable = new LanguageClient('Language Server Example', serverOptions, clientOptions).start();
+    var langClient = new LanguageClient('Language Server Example', serverOptions, clientOptions);
+
+    // Use this to handle a request sent from the server
+    // https://github.com/Microsoft/vscode/blob/80bd73b5132268f68f624a86a7c3e56d2bbac662/extensions/json/client/src/jsonMain.ts
+    // https://github.com/Microsoft/vscode/blob/580d19ab2e1fd6488c3e515e27fe03dceaefb819/extensions/json/server/src/server.ts
+    //langClient.onRequest()
+
+    let disposable = langClient.start();
 
     // Register commands for QoL improvements
     let duplicateLineCommand = commands.registerCommand('crane.duplicateLine', () => qol.duplicateLineOrSelection());

@@ -142,9 +142,8 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem =>
 });
 
 var requestType: RequestType<any, any, any> = { method: "getFileProblems" };
-connection.onRequest(requestType, (data) =>
+connection.onRequest(requestType, (fileUri) =>
 {
-    var filePath = data;
     // TODO -- Browse constructed object tree and find any problems in the selected file
     // TODO -- Return the problems as an object array => [{ line: 0, start: 0, end: 0, type: enum }]
     return "test";

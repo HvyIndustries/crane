@@ -105,7 +105,7 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
                 // Only load these if they're in the same file
                 if (item.path == filePath) {
                     item.topLevelVariables.forEach((node) => {
-                        toReturn.push({ label: node.name, kind: CompletionItemKind.Variable });
+                        toReturn.push({ label: node.name, kind: CompletionItemKind.Variable, detail: "global variable" });
                     });
                 }
             } else if (lastChar == ":") {
@@ -134,10 +134,10 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
             item.functions.forEach((func) => {
                 if (func.startPos.line <= line && func.endPos.line >= line) {
                     func.params.forEach((param) => {
-                        toReturn.push({ label: param.name, kind: CompletionItemKind.Property, detail: "(parameter)" });
+                        toReturn.push({ label: param.name, kind: CompletionItemKind.Property, detail: "parameter" });
                     });
                     func.globalVariables.forEach((globalVar) => {
-                        toReturn.push({ label: globalVar, kind: CompletionItemKind.Variable, detail: "(global)" });
+                        toReturn.push({ label: globalVar, kind: CompletionItemKind.Variable, detail: "global variable" });
                     });
                 }
             });
@@ -146,21 +146,21 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
                     classNode.methods.forEach((method) => {
                         if (method.startPos.line <= line && method.endPos.line >= line) {
                             method.params.forEach((param) => {
-                                toReturn.push({ label: param.name, kind: CompletionItemKind.Property, detail: "(parameter)" });
+                                toReturn.push({ label: param.name, kind: CompletionItemKind.Property, detail: "parameter" });
                             });
                             
                             method.globalVariables.forEach((globalVar) => {
-                                toReturn.push({ label: globalVar, kind: CompletionItemKind.Variable, detail: "(global)" });
+                                toReturn.push({ label: globalVar, kind: CompletionItemKind.Variable, detail: "global variable" });
                             });
                         }
                     });
 
                     if (classNode.construct.startPos.line <= line && classNode.construct.endPos.line >= line) {
                         classNode.construct.params.forEach((param) => {
-                            toReturn.push({ label: param.name, kind: CompletionItemKind.Property, detail: "(parameter)" });
+                            toReturn.push({ label: param.name, kind: CompletionItemKind.Property, detail: "parameter" });
                         });
                         classNode.construct.globalVariables.forEach((globalVar) => {
-                            toReturn.push({ label: globalVar, kind: CompletionItemKind.Variable, detail: "(global)" });
+                            toReturn.push({ label: globalVar, kind: CompletionItemKind.Variable, detail: "global variable" });
                         });
                     }
                 }
@@ -210,7 +210,7 @@ function addStaticClassMembers(toReturn: CompletionItem[], item:ClassNode)
             var insertText = subNode.name.substr(1, subNode.name.length - 1);
 
             if (!found) {
-                toReturn.push({ label: subNode.name, kind: CompletionItemKind.Property, detail: "(static)", insertText: insertText });
+                toReturn.push({ label: subNode.name, kind: CompletionItemKind.Property, detail: "property (static)", insertText: insertText });
             }
         }
     });
@@ -224,7 +224,7 @@ function addStaticClassMembers(toReturn: CompletionItem[], item:ClassNode)
             });
 
             if (!found) {
-                toReturn.push({ label: subNode.name, kind: CompletionItemKind.Method, detail: "(static)", insertText: subNode.name + "()" });
+                toReturn.push({ label: subNode.name, kind: CompletionItemKind.Method, detail: "method (static)", insertText: subNode.name + "()" });
             }
         }
     });
@@ -263,37 +263,37 @@ function recurseMethodCalls(toReturn: CompletionItem[], item:FileNode, currentLi
 function addClassTraitInterfaceNames(toReturn: CompletionItem[], item:FileNode)
 {
     item.classes.forEach((node) => {
-        toReturn.push({ label: node.name, kind: CompletionItemKind.Class });
+        toReturn.push({ label: node.name, kind: CompletionItemKind.Class, detail: "class" });
     });
 
     item.traits.forEach((node) => {
-        toReturn.push({ label: node.name, kind: CompletionItemKind.Module });
+        toReturn.push({ label: node.name, kind: CompletionItemKind.Module, detail: "trait" });
     });
 
     item.interfaces.forEach((node) => {
-        toReturn.push({ label: node.name, kind: CompletionItemKind.Interface });
+        toReturn.push({ label: node.name, kind: CompletionItemKind.Interface, detail: "interface" });
     });
 }
 
 function addFileLevelFuncsAndConsts(toReturn: CompletionItem[], item:FileNode)
 {
     item.constants.forEach((node) => {
-        toReturn.push({ label: node.name, kind: CompletionItemKind.Value });
+        toReturn.push({ label: node.name, kind: CompletionItemKind.Value, detail: "constant" });
     });
 
     item.functions.forEach((node) => {
-        toReturn.push({ label: node.name, kind: CompletionItemKind.Function, insertText: node.name + "()" });
+        toReturn.push({ label: node.name, kind: CompletionItemKind.Function,  detail: "function", insertText: node.name + "()" });
     });
 }
 
 function addClassPropertiesMethodsParentClassesAndTraits(toReturn: CompletionItem[], classNode: ClassNode, isParentClass)
 {
     classNode.constants.forEach((subNode) => {
-        toReturn.push({ label: subNode.name, kind: CompletionItemKind.Value });
+        toReturn.push({ label: subNode.name, kind: CompletionItemKind.Value, detail: "constant" });
     });
 
     classNode.methods.forEach((subNode) => {
-        var accessModifier = buildAccessModifier(subNode.accessModifier);
+        var accessModifier = "method " + buildAccessModifier(subNode.accessModifier);
         var insertText = subNode.name + "()";
 
         if (!isParentClass || (isParentClass && subNode.accessModifier != 1)) {
@@ -302,7 +302,7 @@ function addClassPropertiesMethodsParentClassesAndTraits(toReturn: CompletionIte
     });
 
     classNode.properties.forEach((subNode) => {
-        var accessModifier = buildAccessModifier(subNode.accessModifier);
+        var accessModifier = "property " + buildAccessModifier(subNode.accessModifier);
         // Strip the leading $
         var insertText = subNode.name.substr(1, subNode.name.length - 1);
 

@@ -123,32 +123,48 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
                 }
             } else {
                 addClassTraitInterfaceNames(toReturn, item);
+            }
 
-                // Only load these if they're in the same file
-                if (item.path == filePath) {
-                    addFileLevelFuncsAndConsts(toReturn, item);
+            // Only load these if they're in the same file
+            if (item.path == filePath) {
+                addFileLevelFuncsAndConsts(toReturn, item);
+            }
+
+            // Add parameters for functions and class methods
+            item.functions.forEach((func) => {
+                if (func.startPos.line <= line && func.endPos.line >= line) {
+                    func.params.forEach((param) => {
+                        toReturn.push({ label: param.name, kind: CompletionItemKind.Property, detail: "(parameter)" });
+                    });
+                    func.globalVariables.forEach((globalVar) => {
+                        toReturn.push({ label: globalVar, kind: CompletionItemKind.Variable, detail: "(global)" });
+                    });
                 }
+            });
+            item.classes.forEach((classNode) => {
+                if (classNode.startPos.line <= line && classNode.endPos.line >= line) {
+                    classNode.methods.forEach((method) => {
+                        if (method.startPos.line <= line && method.endPos.line >= line) {
+                            method.params.forEach((param) => {
+                                toReturn.push({ label: param.name, kind: CompletionItemKind.Property, detail: "(parameter)" });
+                            });
+                            
+                            method.globalVariables.forEach((globalVar) => {
+                                toReturn.push({ label: globalVar, kind: CompletionItemKind.Variable, detail: "(global)" });
+                            });
+                        }
+                    });
 
-                // Add parameters for functions and class methods
-                item.functions.forEach((func) => {
-                    if (func.startPos.line <= line && func.endPos.line >= line) {
-                        func.params.forEach((param) => {
+                    if (classNode.construct.startPos.line <= line && classNode.construct.endPos.line >= line) {
+                        classNode.construct.params.forEach((param) => {
                             toReturn.push({ label: param.name, kind: CompletionItemKind.Property, detail: "(parameter)" });
                         });
-                    }
-                });
-                item.classes.forEach((classNode) => {
-                    if (classNode.startPos.line <= line && classNode.endPos.line >= line) {
-                        classNode.methods.forEach((method) => {
-                            if (method.startPos.line <= line && method.endPos.line >= line) {
-                                method.params.forEach((param) => {
-                                    toReturn.push({ label: param.name, kind: CompletionItemKind.Property, detail: "(parameter)" });
-                                });
-                            }
+                        classNode.construct.globalVariables.forEach((globalVar) => {
+                            toReturn.push({ label: globalVar, kind: CompletionItemKind.Variable, detail: "(global)" });
                         });
                     }
-                });
-            }
+                }
+            });
         } else {
            recurseMethodCalls(toReturn, item, currentLine, line, lines, filePath);
         }

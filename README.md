@@ -16,7 +16,8 @@ Make sure you have the PHP linter enabled, and set to run `onType` instead of `o
 
 ## Demo
 
-todo - screenshots + gifs
+![](images/suggestions.png)
+![](images/using-crane.gif)
 
 ## Upcoming features
 

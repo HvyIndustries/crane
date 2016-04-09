@@ -1,22 +1,22 @@
 {
-	"name": "langauge-server-example",
-	"description": "Example implementation of a language server in node.",
-	"version": "0.0.1",
-	"author": "Microsoft Corporation",
-	"license": "MIT",
-	"engines": {
-		"node": "*"
-	},
-	"dependencies": {
-		"vscode-languageserver": "^1.1.0",
-        "php-parser": "0.0.9",
+    "name": "crane-lang-server",
+    "description": "The language server for Crane",
+    "version": "1.0.0",
+    "author": "HVY Industries",
+    "license": "MIT",
+    "engines": {
+        "node": "*"
+    },
+    "dependencies": {
+        "vscode-languageserver": "^1.1.0",
+        "php-parser": "glayzzle/php-parser#3666b80",
         "glob": "7.0.3"
-	},
-	"devDependencies": {
-		"typescript": "^1.6.2"
-	},
-	"scripts": {
-		"compile": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc -p .",
-		"watch": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc --watch -p ."
-	}
+    },
+    "devDependencies": {
+        "typescript": "^1.6.2"
+    },
+    "scripts": {
+        "compile": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc -p .",
+        "watch": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc --watch -p ."
+    }
 }

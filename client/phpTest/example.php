@@ -3,13 +3,12 @@
 require "file.php";
 include "file2.php";
 
-// regular comment with todo inline
+// regular comment with todo text inline
 // TODO -- example
 //todo example
 // todo example
 
 // Non-class code
-
 const MYCONST = "myConst";
 
 $topLevelVariable = "toplevel";
@@ -60,7 +59,7 @@ class ExampleClass extends ExistingClass implements myInterface // todo inline
     public function __construct()
     {
         $constructorVar = "test";
-        echo $this->testFunc($this->mymethod()); 
+        echo $this->testFunc($this->mymethod());
     }
 
     public function DoWork()
@@ -78,6 +77,8 @@ class ExampleClass extends ExistingClass implements myInterface // todo inline
     private static function OtherFunc($optional = "opt") 
     {
         global $parentVar, $secondVar;
+        
+        $this->
 
         $localVar = 5;
         return $localVar;

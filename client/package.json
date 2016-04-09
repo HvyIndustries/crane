@@ -1,60 +1,70 @@
 {
-	"name": "language-client-example",
-	"description": "VSCode part of a language server",
-	"author": "Microsoft Corporation",
-	"license": "MIT",
-	"version": "0.0.1",
-	"publisher": "vscode",
-	"engines": {
-		"vscode": "0.10.x"
-	},
-	"categories": [
-		"Other"
-	],
-	"activationEvents": [
-		"onLanguage:php"
-	],
-	"main": "./out/src/extension",
-	"contributes": {
-		"configuration": {
-			"type": "object",
-			"title": "Example configuration",
-			"properties": {
-				"languageServerExample.maxNumberOfProblems": {
-					"type": "number",
-					"default": 100,
-					"description": "Controls the maximum number of problems produced by the server."
-				}
-			}
-		},
-        "commands":[
-            {
-                "command": "crane.suggestFixes",
-                "title": "Suggest code fixes"
+    "name": "crane",
+    "displayName": "Crane - PHP Intellisense",
+    "description": "PHP Intellisense/code-completion",
+    "author": {
+        "name": "Hvy Industries",
+        "url": "https://hvy.io",
+        "email": "joe@hvy.io"
+    },
+    "icon": "images/icon.png",
+    "license": "MIT",
+    "version": "0.1.2",
+    "publisher": "HvyIndustries",
+    "engines": {
+        "vscode": "0.10.x"
+    },
+    "bugs": {
+        "url": "https://github.com/HvyIndustries/crane/issues"
+    },
+    "categories": [
+        "Languages",
+        "Other"
+    ],
+    "galleryBanner": {
+        "theme": "dark"
+    },
+    "private": true,
+    "homepage": "https://hvy.io/crane",
+    "activationEvents": [
+        "onLanguage:php"
+    ],
+    "main": "./out/src/extension",
+    "contributes": {
+        "configuration": {
+            "type": "object",
+            "title": "Example configuration",
+            "properties": {
+                "languageServerExample.maxNumberOfProblems": {
+                    "type": "number",
+                    "default": 100,
+                    "description": "Controls the maximum number of problems produced by the server."
+                }
             }
-        ] ,
+        },
         "keybindings": [
             {
                 "key": "ctrl+d",
                 "command": "crane.duplicateLine",
                 "when": "editorTextFocus"
-            },
+            }
+        ],
+        "commands": [
             {
-                "key": "alt+enter",
-                "command": "crane.suggestFixes",
-                "when": "editorTextFocus"
+                "command": "crane.reportBug",
+                "title": "Crane - Report PHP Intellisense Bug"
             }
         ]
-	},
-	"scripts": {
-		"vscode:prepublish": "node ./node_modules/vscode/bin/compile",
-		"compile": "node ./node_modules/vscode/bin/compile -watch -p ./"
-	},
-	"devDependencies": {
-		"typescript": "^1.6.2",
-		"vscode": "0.10.x"
-	},
-	"dependencies": {
-		"vscode-languageclient": "^1.1.0"
-	}
+    },
+    "scripts": {
+        "vscode:prepublish": "node ./node_modules/vscode/bin/compile",
+        "compile": "node ./node_modules/vscode/bin/compile -watch -p ./"
+    },
+    "devDependencies": {
+        "typescript": "^1.6.2",
+        "vscode": "0.10.x"
+    },
+    "dependencies": {
+        "vscode-languageclient": "^1.1.0"
+    }
 }

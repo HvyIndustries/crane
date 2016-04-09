@@ -1,13 +1,34 @@
 # README
-## This is the README for your extension "vscode" 
-You can author your README using Visual Studio Code.  Here are some useful editor keyboard shortcuts:
 
-* Split the editor (`Cmd+\` on OSX or `Ctrl+\` on Windows and Linux)
-* Toggle preview (`Shift+CMD+V` on OSX or `Shift+Ctrl+V` on Windows and Linux)
-* Press `Ctrl+Space` (Windows, Linux) or `Cmd+Space` (OSX) to see a list of Markdown snippets
+## Crane - PHP Intellisense/code-completion for VS Code
 
-### For more information
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
+Please go to https://github.com/HvyIndustries/crane for source code, bug tracking and feature requests.
 
-** Enjoy!**
+## Functionality
+
+This extension provides semi-intelligent Intellisense and code-completion suggestions for VS Code.
+
+Make sure you have the PHP linter enabled, and set to run `onType` instead of `onSave`!
+
+## Demo
+
+todo - screenshots + gifs
+
+## Upcoming features
+
+* F12 Go to definition
+* Find references
+* List symbols
+
+## Known Issues
+
+* Syntax errors in a file prevent completion suggestions being generated
+* Currently the extension does not provide suggetions for class instance variables (eg. `$instance = new class()`)
+
+### More Info
+
+* [Repository](https://github.com/HvyIndustries/crane)
+* [VS Code Marketplace](https://todo)
+
+
+**Please report any bugs you find!**

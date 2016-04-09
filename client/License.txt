@@ -1,6 +1,6 @@
-Copyright (c) Microsoft Corporation
+Copyright (c) HVY Industries
 
-All rights reserved. 
+All rights reserved.
 
 MIT License
 

@@ -4,6 +4,8 @@ var phpParser = require("php-parser");
 
 export class TreeBuilder
 {
+    // v1.1
+
     // TODO -- Handle PHP written inside an HTML file (strip everything except php code)
 
     // Parse PHP code to generate an object tree for intellisense suggestions
@@ -26,7 +28,7 @@ export class TreeBuilder
                 };
 
                 // DEBUG
-                console.log("Built tree for file: " + filePath);
+                //console.log("Built tree for file: " + filePath);
 
                 resolve(returnObj);
             });

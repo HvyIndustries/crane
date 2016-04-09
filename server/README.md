@@ -1,3 +1,3 @@
-#README
+# Crane Language Server
 
-This is a language server sample implementation in node
+This is the language server that powers the core of Crane.

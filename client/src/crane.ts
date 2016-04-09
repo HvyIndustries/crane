@@ -1,21 +1,19 @@
 "use strict";
 
-import * as vscode from 'vscode';
+import { Disposable, workspace, window, TextDocument, TextEditor, StatusBarAlignment, StatusBarItem } from 'vscode';
+import { LanguageClient, RequestType } from 'vscode-languageclient';
 import { ThrottledDelayer } from './utils/async';
 
-import { TreeBuilder, FileNode } from "./hvy/treeBuilder";
-
-import { LanguageClient, RequestType } from 'vscode-languageclient';
+const exec = require('child_process').exec;
 
 export default class Crane
 {
-    public objectTree: FileNode[] = [];
-
-    public treeBuilder: TreeBuilder = new TreeBuilder();
     public langClient: LanguageClient;
 
-    private disposable: vscode.Disposable;
+    private disposable: Disposable;
     private delayers: { [key: string]: ThrottledDelayer<void> };
+
+    public statusBarItem: StatusBarItem;
 
     constructor(languageClient: LanguageClient)
     {
@@ -23,115 +21,90 @@ export default class Crane
 
         this.delayers = Object.create(null);
 
-        let subscriptions: vscode.Disposable[] = [];
+        let subscriptions: Disposable[] = [];
 
-        vscode.workspace.onDidChangeTextDocument((e) => this.onChangeTextHandler(e.document), null, subscriptions);
-        vscode.workspace.onDidSaveTextDocument(this.onSaveHandler, this, subscriptions);
-        vscode.window.onDidChangeActiveTextEditor(editor => { this.onChangeEditorHandler(editor) }, null, subscriptions);
-        vscode.workspace.onDidCloseTextDocument((textDocument)=> { delete this.delayers[textDocument.uri.toString()]; }, null, subscriptions);
+        workspace.onDidChangeTextDocument((e) => this.onChangeTextHandler(e.document), null, subscriptions);
+        workspace.onDidCloseTextDocument((textDocument)=> { delete this.delayers[textDocument.uri.toString()]; }, null, subscriptions);
 
-        this.disposable = vscode.Disposable.from(...subscriptions);
+        this.disposable = Disposable.from(...subscriptions);
+
+        if (!this.statusBarItem) {
+            this.statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left);
+            this.statusBarItem.hide();
+        }
+
+        this.doInit();
     }
 
     public doInit()
     {
         console.log("Crane Initialised...");
 
+        this.statusBarItem.text = "$(zap) Processing source files...";
+        this.statusBarItem.tooltip = "Crane is processing the PHP source files in your workspace to build code completion suggestions";
+        this.statusBarItem.show();
+
         // Send request to server to build object tree for all workspace files
+        this.processAllFilesInWorkspace();
+    }
+
+    public reportBug()
+    {
+        let openCommand: string;
+
+        switch (process.platform) {
+            case 'darwin':
+                openCommand = 'open ';
+                break;
+            case 'win32':
+                openCommand = 'start ';
+                break;
+            default:
+                return;
+        }
+
+        exec(openCommand + "https://github.com/HvyIndustries/crane/issues");
+    }
+
+    private processAllFilesInWorkspace()
+    {
+        if (workspace.rootPath == undefined) return;
+
         var requestType: RequestType<any, any, any> = { method: "buildObjectTreeForWorkspace" };
-
-        // TODO -- Display message in status bar indicating loading
-
-        this.langClient.sendRequest(requestType).then((success) =>
-        {
-            if (success)
-            {
-                // Remove loading indicator
-            }
-            else
-            {
-                // Remove loading indicator
-                // Show error
-            }
-        });
+        this.langClient.sendRequest(requestType);
     }
 
-    public suggestFixes()
+    private onChangeTextHandler(textDocument: TextDocument)
     {
-        // TODO -- Suggest fixes for any error under the caret
-    }
+        // Only parse PHP files
+        if (textDocument.languageId != "php") return;
 
-    private onChangeTextHandler(textDocument: vscode.TextDocument)
-    {
-        // TODO -- Do this on server instead?
+        // TODO -- Parse immediately if I just typed a semicolon
 
         let key = textDocument.uri.toString();
         let delayer = this.delayers[key];
 
-        if (!delayer)
-        {
+        if (!delayer) {
             delayer = new ThrottledDelayer<void>(250);
             this.delayers[key] = delayer;
         }
 
-        delayer.trigger(() =>
-        {
-            return new Promise<void>((resolve, reject) =>
-            {
-                this.buildObjectTreeForDocument(textDocument).then(() =>
-                {
-                    resolve();
-                });
-            })
-        });
+        delayer.trigger(() => this.buildObjectTreeForDocument(textDocument));
     }
 
-    private buildObjectTreeForDocument(document: vscode.TextDocument): Promise<void>
+    private buildObjectTreeForDocument(document: TextDocument): Promise<void>
     {
-        return new Promise<void>((resolve, reject) =>
-        {
-            // Only run parser if there are no linter errors
-            // TODO
-            if (true)
-            {
-                this.treeBuilder.Parse(document.getText(), document.fileName).then((data) => 
-                {
-                    var t = data.tree;
-                    resolve();
-                })
-                .catch((error) =>
-                {
-                    console.log(error);
-                    resolve();
-                });
-            }
-            else
-            {
-                //resolve();
-            }
+        return new Promise<void>((resolve, reject) => {
+            var path = document.fileName;
+
+            var requestType: RequestType<any, any, any> = { method: "buildObjectTreeForDocument" };
+            this.langClient.sendRequest(requestType, path).then(() => resolve() );
         });
-    }
-
-    private onChangeEditorHandler(editor: vscode.TextEditor)
-    {
-        // Analyse file to find undefined variables, functions, classes, etc
-        var path = editor.document.fileName;
-        var requestType: RequestType<any, any, any> = { method: "getFileProblems" };
-
-        this.langClient.sendRequest(requestType, path).then((data) =>
-        {
-            var t = "test";
-            // TODO -- Show decorations
-            // TODO -- Update list of errors in current document + their types
-        });
-    }
-
-    private onSaveHandler()
-    {
     }
 
     dispose()
     {
         this.disposable.dispose();
+        this.statusBarItem.dispose();
     }
 }

@@ -137,6 +137,10 @@ export class TreeBuilder
                         propNode.accessModifier = AccessModifierNode.private;
                     }
 
+                    if (propLevel[4][1] == 1) {
+                        propNode.isStatic = true;
+                    }
+
                     propLevel = propLevel[3][0];
                     propNode.name = propLevel[3][0];
 
@@ -494,6 +498,10 @@ export class TreeBuilder
                             propNode.accessModifier = AccessModifierNode.private;
                         }
 
+                        if (propLevel[4][1] == 1) {
+                            propNode.isStatic = true;
+                        }
+
                         propLevel = propLevel[3][0];
                         propNode.name = propLevel[3][0];
 
@@ -795,6 +803,7 @@ export class PropertyNode extends BaseNode
 {
     public type: string;
     public accessModifier: AccessModifierNode;
+    public isStatic: boolean = false;
 }
 
 export class ConstantNode extends BaseNode

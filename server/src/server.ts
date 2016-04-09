@@ -111,7 +111,9 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
             } else if (lastChar == ":") {
                 // Get static methods, properties, consts declared in scope
                 if (currentLine.substr(char - 6, char - 1) === "self::") {
-                    item.classes.forEach((node) => addStaticClassMembers(toReturn, node));
+                    if (item.path == filePath) {
+                        item.classes.forEach((node) => addStaticClassMembers(toReturn, node));
+                    }
                     addStaticGlobalVariables(toReturn, item);
                 } else {
                     if (currentLine.substr(char - 6, char - 1) !== " self:") {
@@ -180,9 +182,21 @@ function addStaticClassMembers(toReturn: CompletionItem[], item:ClassNode)
         // }
     });
     item.properties.forEach((subNode) => {
-        // if (subNode.isStatic) {
-            
-        // }
+        if (subNode.isStatic) {
+            var found = false;
+            toReturn.forEach((returnItem) => {
+                if (returnItem.label == subNode.name) {
+                    found = true;
+                }
+            });
+
+            // Strip the leading $
+            var insertText = subNode.name.substr(1, subNode.name.length - 1);
+
+            if (!found) {
+                toReturn.push({ label: subNode.name, kind: CompletionItemKind.Property, detail: "(static)", insertText: insertText });
+            }
+        }
     });
     item.methods.forEach((subNode) => {
         if (subNode.isStatic) {
@@ -191,7 +205,7 @@ function addStaticClassMembers(toReturn: CompletionItem[], item:ClassNode)
                 if (returnItem.label == subNode.name) {
                     found = true;
                 }
-            })
+            });
 
             if (!found) {
                 toReturn.push({ label: subNode.name, kind: CompletionItemKind.Method, detail: "(static)", insertText: subNode.name + "()" });
@@ -273,6 +287,7 @@ function addClassPropertiesMethodsParentClassesAndTraits(toReturn: CompletionIte
 
     classNode.properties.forEach((subNode) => {
         var accessModifier = buildAccessModifier(subNode.accessModifier);
+        // Strip the leading $
         var insertText = subNode.name.substr(1, subNode.name.length - 1);
 
         if (!isParentClass || (isParentClass && subNode.accessModifier != 1)) {

@@ -1,5 +1,8 @@
 # README
 
+
+*Icon by http://icons8.com/*
+
 ## Crane - PHP Intellisense/code-completion for VS Code
 
 Please go to https://github.com/HvyIndustries/crane for source code, bug tracking and feature requests.

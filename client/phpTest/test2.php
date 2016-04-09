@@ -29,7 +29,7 @@ class secondClass extends firstClass {
 }
 
 class thirdClass extends secondClass {
-
+    static function myStaticFunc() {}
     function __construct() {
         //$this-
     }
@@ -47,7 +47,8 @@ class otherClass {
 }
 
 class finalClass extends ExampleClass {
-    function __construct(){
-        //$this->
+    function __construct() {
+        
+        thirdClass::myStaticFunc();
     }
 }

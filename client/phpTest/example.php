@@ -77,8 +77,8 @@ class ExampleClass extends ExistingClass implements myInterface // todo inline
     private static function OtherFunc($optional = "opt") 
     {
         global $parentVar, $secondVar;
-        
-        $this->
+
+        $this->MYCONST;
 
         $localVar = 5;
         return $localVar;

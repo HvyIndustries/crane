@@ -42,10 +42,21 @@ export function activate(context: ExtensionContext)
 
     var requestType: RequestType<any, any, any> = { method: "workDone" };
     langClient.onRequest(requestType, () => {
-        crane.statusBarItem.text = "$(bug) Report PHP Intellisense Bug";
-        crane.statusBarItem.tooltip = "Found a problem with the PHP Intellisense provided by Crane? Click here to file a bug report on Github";
-        crane.statusBarItem.command = "crane.reportBug";
-        crane.statusBarItem.show();
+        // Load settings
+        let craneSettings = workspace.getConfiguration("crane");
+        if (craneSettings) {
+            var showStatusBarItem = craneSettings.get<boolean>("showStatusBarBugReportLink", true);
+            if (showStatusBarItem) {
+                crane.statusBarItem.text = "$(bug) Report PHP Intellisense Bug";
+                crane.statusBarItem.tooltip = "Found a problem with the PHP Intellisense provided by Crane? Click here to file a bug report on Github";
+                crane.statusBarItem.command = "crane.reportBug";
+                crane.statusBarItem.show();
+            } else {
+                crane.statusBarItem.hide();
+            }
+        } else {
+            crane.statusBarItem.hide();
+        }
     });
 
     // Register commands for QoL improvements

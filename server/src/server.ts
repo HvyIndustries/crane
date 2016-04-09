@@ -402,7 +402,7 @@ connection.onRequest(requestType, (data) =>
     glob("/**/*.php", { cwd: workspaceRoot, root: workspaceRoot }, function (err, fileNames)
     {
         var docsToDo = fileNames;
-        var docsDoneCount = 0;
+        var docsDoneCount = 1;
  
         docsToDo.forEach(docPath =>
         {
@@ -414,13 +414,11 @@ connection.onRequest(requestType, (data) =>
 
                     if (docsToDo.length == docsDoneCount) {
                         notifyClientOfWorkComplete();
-                        return true;
                     }
                 })
                 .catch(error => {
-                    console.log(error);
+                    connection.console.log(error);
                     notifyClientOfWorkComplete();
-                    return false;
                 });
             });
         });

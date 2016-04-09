@@ -38,12 +38,12 @@
     "contributes": {
         "configuration": {
             "type": "object",
-            "title": "Example configuration",
+            "title": "Crane Configuration",
             "properties": {
-                "languageServerExample.maxNumberOfProblems": {
-                    "type": "number",
-                    "default": 100,
-                    "description": "Controls the maximum number of problems produced by the server."
+                "crane.showStatusBarBugReportLink": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show or hide the status bar item asking you to report any PHP Intellisense bugs"
                 }
             }
         },

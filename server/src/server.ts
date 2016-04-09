@@ -108,36 +108,45 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
                         toReturn.push({ label: node.name, kind: CompletionItemKind.Variable });
                     });
                 }
-            } else if (lastChar == ":"){
-                // TODO -- Get static functions declared in scope
+            } else if (lastChar == ":") {
+                // Get static methods, properties, consts declared in scope
+                if (currentLine.substr(char - 6, char - 1) === "self::") {
+                    item.classes.forEach((node) => addStaticClassMembers(toReturn, node));
+                    addStaticGlobalVariables(toReturn, item);
+                } else {
+                    if (currentLine.substr(char - 6, char - 1) !== " self:") {
+                        // We're calling via ClassName::
+                        lookupClassAndAddStaticMembers(toReturn, currentLine);
+                    }
+                }
             } else {
                 addClassTraitInterfaceNames(toReturn, item);
-            }
 
-            // Only load these if they're in the same file
-            if (item.path == filePath) {
-                addFileLevelFuncsAndConsts(toReturn, item);
-            }
+                // Only load these if they're in the same file
+                if (item.path == filePath) {
+                    addFileLevelFuncsAndConsts(toReturn, item);
+                }
 
-            // Add parameters for functions and class methods
-            item.functions.forEach((func) => {
-                if (func.startPos.line <= line && func.endPos.line >= line) {
-                    func.params.forEach((param) => {
-                        toReturn.push({ label: param.name, kind: CompletionItemKind.Property, detail: "(parameter)" });
-                    });
-                }
-            });
-            item.classes.forEach((classNode) => {
-                if (classNode.startPos.line <= line && classNode.endPos.line >= line) {
-                    classNode.methods.forEach((method) => {
-                        if (method.startPos.line <= line && method.endPos.line >= line) {
-                            method.params.forEach((param) => {
-                                toReturn.push({ label: param.name, kind: CompletionItemKind.Property, detail: "(parameter)" });
-                            });
-                        }
-                    });
-                }
-            });
+                // Add parameters for functions and class methods
+                item.functions.forEach((func) => {
+                    if (func.startPos.line <= line && func.endPos.line >= line) {
+                        func.params.forEach((param) => {
+                            toReturn.push({ label: param.name, kind: CompletionItemKind.Property, detail: "(parameter)" });
+                        });
+                    }
+                });
+                item.classes.forEach((classNode) => {
+                    if (classNode.startPos.line <= line && classNode.endPos.line >= line) {
+                        classNode.methods.forEach((method) => {
+                            if (method.startPos.line <= line && method.endPos.line >= line) {
+                                method.params.forEach((param) => {
+                                    toReturn.push({ label: param.name, kind: CompletionItemKind.Property, detail: "(parameter)" });
+                                });
+                            }
+                        });
+                    }
+                });
+            }
         } else {
            recurseMethodCalls(toReturn, item, currentLine, line, lines, filePath);
         }
@@ -146,13 +155,63 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
     return toReturn;
 });
 
+function lookupClassAndAddStaticMembers(toReturn: CompletionItem[], currentLine:string)
+{
+    // Get the class name to lookup
+    var words = currentLine.split("::");
+
+    // Break out if we're not in a valid call
+    if (words.length == 1 && words[0].indexOf("::") === -1) return;
+
+    var name = words[words.length - 2];
+    var className = name.trim();
+
+    var classNode = getClassNodeFromTree(className);
+    if (classNode != null) {
+        addStaticClassMembers(toReturn, classNode);
+    }
+}
+
+function addStaticClassMembers(toReturn: CompletionItem[], item:ClassNode)
+{
+    item.constants.forEach((subNode) => {
+        // if (subNode.isStatic) {
+            
+        // }
+    });
+    item.properties.forEach((subNode) => {
+        // if (subNode.isStatic) {
+            
+        // }
+    });
+    item.methods.forEach((subNode) => {
+        if (subNode.isStatic) {
+            var found = false;
+            toReturn.forEach((returnItem) => {
+                if (returnItem.label == subNode.name) {
+                    found = true;
+                }
+            })
+
+            if (!found) {
+                toReturn.push({ label: subNode.name, kind: CompletionItemKind.Method, detail: "(static)", insertText: subNode.name + "()" });
+            }
+        }
+    });
+}
+
+function addStaticGlobalVariables(toReturn: CompletionItem[], item:FileNode)
+{
+}
+
 function recurseMethodCalls(toReturn: CompletionItem[], item:FileNode, currentLine:string, line:number, lines:string[], filePath:string)
 {
     var words = currentLine.split(" ");
     var expression = words[words.length - 1];
-    if (expression.lastIndexOf("$this", 0) === 0 || expression.lastIndexOf("($this", 0) === 0 || expression.lastIndexOf("if($this", 0) === 0 || expression.lastIndexOf("elseif($this", 0) === 0) {
+    if (expression.lastIndexOf("$this", 0) === 0 || expression.lastIndexOf("($this", 0) === 0 || expression.lastIndexOf("if($this", 0) === 0 || expression.lastIndexOf("elseif($this", 0) === 0 || expression.lastIndexOf("!$this", 0) === 0) {
         // We're referencing the current class
         item.classes.forEach((classNode) => {
+            // NOTE -- This path checking works for $this, but won't for class instance variables
             if (item.path == filePath && classNode.startPos.line <= line && classNode.endPos.line >= line) {
                 addClassPropertiesMethodsParentClassesAndTraits(toReturn, classNode, false);
             }
@@ -193,7 +252,7 @@ function addFileLevelFuncsAndConsts(toReturn: CompletionItem[], item:FileNode)
     });
 
     item.functions.forEach((node) => {
-        toReturn.push({ label: node.name, kind: CompletionItemKind.Function });
+        toReturn.push({ label: node.name, kind: CompletionItemKind.Function, insertText: node.name + "()" });
     });
 }
 

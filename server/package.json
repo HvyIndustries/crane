@@ -1,7 +1,7 @@
 {
     "name": "crane-lang-server",
     "description": "The language server for Crane",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "author": "HVY Industries",
     "license": "MIT",
     "engines": {

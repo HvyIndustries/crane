@@ -120,16 +120,16 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
 
             // Add parameters for functions and class methods
             item.functions.forEach((func) => {
-                if (func.startPos.line < line && func.endPos.line > line) {
+                if (func.startPos.line <= line && func.endPos.line >= line) {
                     func.params.forEach((param) => {
                         toReturn.push({ label: param.name, kind: CompletionItemKind.Property, detail: "(parameter)" });
                     });
                 }
             });
             item.classes.forEach((classNode) => {
-                if (classNode.startPos.line < line && classNode.endPos.line > line) {
+                if (classNode.startPos.line <= line && classNode.endPos.line >= line) {
                     classNode.methods.forEach((method) => {
-                        if (method.startPos.line < line && method.endPos.line > line) {
+                        if (method.startPos.line <= line && method.endPos.line >= line) {
                             method.params.forEach((param) => {
                                 toReturn.push({ label: param.name, kind: CompletionItemKind.Property, detail: "(parameter)" });
                             });
@@ -144,7 +144,7 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
             if (expression.lastIndexOf("$this", 0) === 0) {
                 // We're referencing the current class
                 item.classes.forEach((classNode) => {
-                    if (item.path == filePath && classNode.startPos.line < line && classNode.endPos.line > line) {
+                    if (item.path == filePath && classNode.startPos.line <= line && classNode.endPos.line >= line) {
                         addClassPropertiesMethodsParentClassesAndTraits(toReturn, classNode, false);
                     }
                 });

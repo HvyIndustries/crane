@@ -139,22 +139,37 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
                 }
             });
         } else {
-            // TODO -- Handle method calls on new lines
-            var words = currentLine.split(" ");
-            var expression = words[words.length - 1];
-            if (expression.lastIndexOf("$this", 0) === 0) {
-                // We're referencing the current class
-                item.classes.forEach((classNode) => {
-                    if (item.path == filePath && classNode.startPos.line <= line && classNode.endPos.line >= line) {
-                        addClassPropertiesMethodsParentClassesAndTraits(toReturn, classNode, false);
-                    }
-                });
-            }
+           recurseMethodCalls(toReturn, item, currentLine, line, lines, filePath);
         }
     });
 
     return toReturn;
 });
+
+function recurseMethodCalls(toReturn: CompletionItem[], item:FileNode, currentLine:string, line:number, lines:string[], filePath:string)
+{
+    var words = currentLine.split(" ");
+    var expression = words[words.length - 1];
+    if (expression.lastIndexOf("$this", 0) === 0 || expression.lastIndexOf("($this", 0) === 0 || expression.lastIndexOf("if($this", 0) === 0 || expression.lastIndexOf("elseif($this", 0) === 0) {
+        // We're referencing the current class
+        item.classes.forEach((classNode) => {
+            if (item.path == filePath && classNode.startPos.line <= line && classNode.endPos.line >= line) {
+                addClassPropertiesMethodsParentClassesAndTraits(toReturn, classNode, false);
+            }
+        });
+    } else {
+        if (expression.indexOf("->") === 0) {
+            // Track back and check we're accessing $this
+            var prevLine = lines[line - 1];
+
+            var prevWords = prevLine.split(" ");
+            var prevexpression = prevWords[prevWords.length - 1];
+
+            // Recurse
+            recurseMethodCalls(toReturn, item, prevLine, line - 1, lines, filePath);
+        }
+    }
+}
 
 function addClassTraitInterfaceNames(toReturn: CompletionItem[], item:FileNode)
 {

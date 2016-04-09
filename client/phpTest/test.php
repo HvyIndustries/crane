@@ -1,11 +1,9 @@
 <?php
 
-$rest = "";
+use mynamespace\test2 as myspace;
 
-class myClass {
-    public $prop;
+namespace MyNamespace\test;
 
-    function __construct() {
-        $this->prop;
-    }
+class thisClass {
+     
 }

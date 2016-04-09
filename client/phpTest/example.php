@@ -27,7 +27,7 @@ function secondFunc($param1, $param2 = "test")
 
 interface myInterface extends otherInterface
 {
-    const MYCONST = "const"; 
+    const MYCONST = "const";
 
     function methodOne();
 

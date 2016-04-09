@@ -1,5 +1,6 @@
 # README
 
+![Icon](../images/icon.png)
 
 *Icon by http://icons8.com/*
 

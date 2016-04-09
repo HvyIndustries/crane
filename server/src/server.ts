@@ -88,7 +88,8 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
     // Lookup what the last char typed was
     var doc = documents.get(textDocumentPosition.uri);
     var text = doc.getText();
-    var lines = text.replace(/\r/g, "").split(/\n/);
+    //var lines = text.replace(/\r/g, "").split(/\n/);
+    var lines = text.split(/\r\n|\r|\n/gm);
 
     var currentLine = lines[line];
     var lastChar = currentLine[char - 1];
@@ -243,7 +244,17 @@ function buildDocumentPath(uri:string): string
     var path = uri;
     path = path.replace("file:///", "");
     path = path.replace("%3A", ":");
-    path = path.replace(/\//g, "\\");
+
+    // Handle Windows and Unix paths
+    switch (process.platform) {
+        case 'darwin':
+            path = "/" + path;
+            break;
+        case 'win32':
+            path = path.replace(/\//g, "\\");
+            break;
+    }
+
     return path;
 }
 

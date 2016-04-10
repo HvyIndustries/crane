@@ -23,6 +23,7 @@
     },
     "categories": [
         "Languages",
+        "Snippets",
         "Other"
     ],
     "galleryBanner": {
@@ -52,12 +53,33 @@
                 "key": "ctrl+d",
                 "command": "crane.duplicateLine",
                 "when": "editorTextFocus"
+            },
+            {
+                "key": ";",
+                "command": "crane.handleSemiColonPress",
+                "when": "editorTextFocus && editorLangId == 'php'"
+            },
+            {
+                "key": "}",
+                "command": "crane.handleClosingCurlyBracePress",
+                "when": "editorTextFocus && editorLangId == 'php'"
+            },
+            {
+                "key": ")",
+                "command": "crane.handleClosingBracketPress",
+                "when": "editorTextFocus && editorLangId == 'php'"
             }
         ],
         "commands": [
             {
                 "command": "crane.reportBug",
                 "title": "Crane - Report PHP Intellisense Bug"
+            }
+        ],
+        "snippets": [
+            {
+                "language": "php",
+                "path": "./snippets/php.json"
             }
         ]
     },
@@ -70,6 +92,7 @@
         "vscode": "0.10.x"
     },
     "dependencies": {
-        "vscode-languageclient": "^1.1.0"
+        "vscode-languageclient": "^1.1.0",
+        "php-parser": "glayzzle/php-parser#3666b80"
     }
 }

@@ -1,0 +1,13 @@
+{
+    ".source.php": {
+        "construct": {
+            "prefix": "ctor",
+            "body": [
+                "function __construct()",
+                "{",
+                "\t$0",
+                "}"
+            ]
+        }
+    }
+}

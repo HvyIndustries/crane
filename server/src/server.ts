@@ -106,6 +106,8 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
             if (lastChar == "$") {
                 // Only load these if they're in the same file
                 if (item.path == filePath) {
+                    // TODO -- Only show these if we're either not in a function/class
+                    //         or if we're calling "global" to import them
                     item.topLevelVariables.forEach((node) => {
                         toReturn.push({ label: node.name, kind: CompletionItemKind.Variable, detail: "global variable" });
                     });
@@ -157,13 +159,15 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
                         }
                     });
 
-                    if (classNode.construct.startPos.line <= line && classNode.construct.endPos.line >= line) {
-                        classNode.construct.params.forEach((param) => {
-                            toReturn.push({ label: param.name, kind: CompletionItemKind.Property, detail: "parameter" });
-                        });
-                        classNode.construct.globalVariables.forEach((globalVar) => {
-                            toReturn.push({ label: globalVar, kind: CompletionItemKind.Variable, detail: "global variable" });
-                        });
+                    if (classNode.construct != null) {
+                        if (classNode.construct.startPos.line <= line && classNode.construct.endPos.line >= line) {
+                            classNode.construct.params.forEach((param) => {
+                                toReturn.push({ label: param.name, kind: CompletionItemKind.Property, detail: "parameter" });
+                            });
+                            classNode.construct.globalVariables.forEach((globalVar) => {
+                                toReturn.push({ label: globalVar, kind: CompletionItemKind.Variable, detail: "global variable" });
+                            });
+                        }
                     }
                 }
             });
@@ -404,7 +408,7 @@ connection.onRequest(requestType, (data) =>
     glob("/**/*.php", { cwd: workspaceRoot, root: workspaceRoot }, function (err, fileNames)
     {
         var docsToDo = fileNames;
-        var docsDoneCount = 1;
+        var docsDoneCount = 0;
  
         docsToDo.forEach(docPath =>
         {

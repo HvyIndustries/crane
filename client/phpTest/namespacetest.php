@@ -1,16 +1,16 @@
 <?php
 
-namespace myNamespace {
+// namespace myNamespace {
 
-    class myNamespaceClass {
+//     class myNamespaceClass {
         
-    }
+//     }
 
-    class otherNamespaceClass extends myNamespaceClass {
+//     class otherNamespaceClass extends myNamespaceClass {
         
-    }
-}
+//     }
+// }
 
-namespace otherNamespace {
+// namespace otherNamespace {
      
-}
+// }

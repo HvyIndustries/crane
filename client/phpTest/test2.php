@@ -31,7 +31,7 @@ class secondClass extends firstClass {
 class thirdClass extends secondClass {
     static function myStaticFunc() {}
     function __construct() {
-        //$this-
+        //$this->
     }
 }
 

@@ -1,9 +1,21 @@
 <?php
 
-class simpleClass {
-    static $myStaticProp2;
+$localVar = "";
 
-    function __construct($param) {
-        global $globalVar;
+function myFunc($param1) {
+    $param1;
+}
+
+myFunc();
+
+class secretClass extends otherClass {
+    function __construct()
+    {
+        $this->classInstance = "test";
+        $this->myFunction();
+        
+        if ($this->myFunction() == $this->classInstance) {
+            
+        }
     }
 }

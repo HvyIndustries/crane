@@ -37,3 +37,6 @@ Make sure you have the PHP linter enabled, and set to run `onType` instead of `o
 
 
 **Please report any bugs you find!**
+
+
+*"HVY", "HVY Industries" and "Hvy Industries" are trading names of JCKD (UK) Ltd*

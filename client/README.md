@@ -8,6 +8,8 @@
 
 Please go to https://github.com/HvyIndustries/crane for source code, bug tracking and feature requests.
 
+Follow [@HvyIndustries](https://twitter.com/HvyIndustries) on Twitter for updates!
+
 ## Functionality
 
 This extension provides semi-intelligent Intellisense and code-completion suggestions for VS Code.

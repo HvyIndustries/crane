@@ -10,6 +10,7 @@ var phpParser = require("php-parser");
 
 export class TreeBuilder
 {
+    // v1.2 - added option to suppress errors
     // v1.1
 
     // TODO -- Handle PHP written inside an HTML file (strip everything except php code)
@@ -21,6 +22,7 @@ export class TreeBuilder
         {
             phpParser.parser.locations = true;
             phpParser.parser.docBlocks = true;
+            phpParser.parser.suppressErrors = true;
             var ast = phpParser.parseCode(text);
 
             this.BuildObjectTree(ast, filePath).then((tree) =>

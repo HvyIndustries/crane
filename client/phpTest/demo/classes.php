@@ -1,21 +1,24 @@
 <?php
 
-$localVar = "";
+class builderClass {
+    public $calcDone;
+    protected $needsRebuild;
 
-function myFunc($param1) {
-    $param1;
+    public function doCalc() {
+    }
+
+    public function processResult($result) {
+    }
 }
 
-myFunc();
-
-class secretClass extends otherClass {
+class calculatorClass extends builderClass {
     function __construct()
     {
-        $this->classInstance = "test";
-        $this->myFunction();
-        
-        if ($this->myFunction() == $this->classInstance) {
-            
+        $baseResult = 5.25;
+        $myProp = "";
+
+        if ($this->calculateBase() == $baseResult) {
+            $this->calcDone = true;
         }
     }
 }

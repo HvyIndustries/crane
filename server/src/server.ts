@@ -386,19 +386,20 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem =>
 });
 
 var requestType: RequestType<any, any, any> = { method: "buildObjectTreeForDocument" };
-connection.onRequest(requestType, (fileUri) =>
+connection.onRequest(requestType, (requestObj) =>
 {
-    fs.readFile(fileUri, { encoding: "utf8" }, (err, data) => {
-        treeBuilder.Parse(data, fileUri).then(result => {
-            addToWorkspaceTree(result.tree);
-            notifyClientOfWorkComplete();
-            return true;
-        })
-        .catch(error => {
-            console.log(error);
-            notifyClientOfWorkComplete();
-            return false;
-        });
+    var fileUri = requestObj.path;
+    var text = requestObj.text;
+
+    treeBuilder.Parse(text, fileUri).then(result => {
+        addToWorkspaceTree(result.tree);
+        notifyClientOfWorkComplete();
+        return true;
+    })
+    .catch(error => {
+        console.log(error);
+        notifyClientOfWorkComplete();
+        return false;
     });
 });
 

@@ -22,7 +22,7 @@ export default class QualityOfLife
         this.disposable = vscode.Disposable.from(...subscriptions);
 
         this.todoCommentDecoration = vscode.window.createTextEditorDecorationType({
-            overviewRulerLane: vscode.OverviewRulerLane.Full,
+            overviewRulerLane: vscode.OverviewRulerLane.Right,
             color: "rgba(91, 199, 235, 1)",
             overviewRulerColor: 'rgba(144, 195, 212, 0.7)' // Light Blue
         });

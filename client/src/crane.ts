@@ -80,17 +80,17 @@ export default class Crane
 
         var document = editor.document;
 
-        if (character != null)
-        {
-            // Insert typed char
-            editor.edit((edit) => {
-                edit.insert(editor.selection.start, character);
-            }).then(() => {
-                this.buildObjectTreeForDocument(document);
-            });
-        } else {
+        // if (character != null)
+        // {
+        //     // Insert typed char
+        //     editor.edit((edit) => {
+        //         edit.insert(editor.selection.start, character);
+        //     }).then(() => {
+        //         this.buildObjectTreeForDocument(document);
+        //     });
+        // } else {
             this.buildObjectTreeForDocument(document);
-        }
+        // }
     }
 
     private processAllFilesInWorkspace()
@@ -105,8 +105,6 @@ export default class Crane
     {
         // Only parse PHP files
         if (textDocument.languageId != "php") return;
-
-        // TODO -- Parse immediately if I just typed a semicolon
 
         let key = textDocument.uri.toString();
         let delayer = this.delayers[key];
@@ -123,9 +121,10 @@ export default class Crane
     {
         return new Promise<void>((resolve, reject) => {
             var path = document.fileName;
+            var text = document.getText();
 
             var requestType: RequestType<any, any, any> = { method: "buildObjectTreeForDocument" };
-            this.langClient.sendRequest(requestType, path).then(() => resolve() );
+            this.langClient.sendRequest(requestType, { path, text }).then(() => resolve() );
         });
     }
 

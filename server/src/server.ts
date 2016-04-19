@@ -16,7 +16,7 @@ import {
 
 import { TreeBuilder, FileNode, ClassNode } from "./hvy/treeBuilder";
 
-const glob = require("glob")
+const glob = require("glob");
 const fs = require("fs");
 
 let connection: IConnection = createConnection(new IPCMessageReader(process), new IPCMessageWriter(process));
@@ -90,7 +90,6 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
     // Lookup what the last char typed was
     var doc = documents.get(textDocumentPosition.uri);
     var text = doc.getText();
-    //var lines = text.replace(/\r/g, "").split(/\n/);
     var lines = text.split(/\r\n|\r|\n/gm);
 
     var currentLine = lines[line];
@@ -108,7 +107,7 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
                 // Only load these if they're in the same file
                 if (item.path == filePath) {
                     // TODO -- Only show these if we're either not in a function/class
-                    //         or if we're calling "global" to import them
+                    //         or if we're calling "global" to import them (or they've already been imported)
                     item.topLevelVariables.forEach((node) => {
                         toReturn.push({ label: node.name, kind: CompletionItemKind.Variable, detail: "global variable" });
                     });
@@ -245,17 +244,23 @@ function recurseMethodCalls(toReturn: CompletionItem[], item:FileNode, currentLi
 {
     var words = currentLine.split(" ");
     var expression = words[words.length - 1];
-    if (expression.lastIndexOf("$this", 0) === 0 || expression.lastIndexOf("($this", 0) === 0 || expression.lastIndexOf("if($this", 0) === 0 || expression.lastIndexOf("elseif($this", 0) === 0 || expression.lastIndexOf("!$this", 0) === 0) {
+    if (expression.lastIndexOf("$this", 0) === 0 ||
+        expression.lastIndexOf("($this", 0) === 0 ||
+        expression.lastIndexOf("if($this", 0) === 0 ||
+        expression.lastIndexOf("elseif($this", 0) === 0 ||
+        expression.lastIndexOf("!$this", 0) === 0)
+    {
         // We're referencing the current class
         item.classes.forEach((classNode) => {
-            // NOTE -- This path checking works for $this, but won't for class instance variables
+            // NOTE -- This filepath checking works for $this, but won't for class instance variables
             if (item.path == filePath && classNode.startPos.line <= line && classNode.endPos.line >= line) {
                 addClassPropertiesMethodsParentClassesAndTraits(toReturn, classNode, false);
             }
         });
     } else {
+        // TODO -- Handle class instance variables and properties
         if (expression.indexOf("->") === 0) {
-            // Track back and check we're accessing $this
+            // Track back and check we're accessing $this at some point
             var prevLine = lines[line - 1];
 
             var prevWords = prevLine.split(" ");
@@ -318,8 +323,7 @@ function addClassPropertiesMethodsParentClassesAndTraits(toReturn: CompletionIte
         }
     });
 
-    classNode.traits.forEach((traitName) =>
-    {
+    classNode.traits.forEach((traitName) => {
         // Look up the trait node in the tree
         var traitNode = getTraitNodeFromTree(traitName);
         if (traitNode != null) {
@@ -449,6 +453,7 @@ function addToWorkspaceTree(tree:FileNode)
         workspaceTree.push(tree);
     }
 
+    // Debug
     connection.console.log("Parsed file: " + tree.path);
 }
 

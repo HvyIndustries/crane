@@ -9,7 +9,7 @@
     },
     "dependencies": {
         "vscode-languageserver": "^1.1.0",
-        "php-parser": "glayzzle/php-parser#3666b80",
+        "php-parser": "glayzzle/php-parser#6131b11",
         "glob": "7.0.3"
     },
     "devDependencies": {

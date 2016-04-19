@@ -195,9 +195,9 @@ export class TreeBuilder
 
                         constructorNode.params = this.BuildFunctionParams(methodLevel[3][2]);
 
-                        if (methodLevel[3][5] != null)
+                        if (methodLevel[3][6] != null)
                         {
-                            methodLevel[3][5].forEach(codeLevel =>
+                            methodLevel[3][6].forEach(codeLevel =>
                             {
                                 // Build local scope variable setters
                                 var scopeVar = this.BuildFunctionScopeVariables(codeLevel);
@@ -260,9 +260,9 @@ export class TreeBuilder
 
                         methodNode.params = this.BuildFunctionParams(methodLevel[3][2]);
 
-                        if (methodLevel[3][5] != null)
+                        if (methodLevel[3][6] != null)
                         {
-                            methodLevel[3][5].forEach(codeLevel =>
+                            methodLevel[3][6].forEach(codeLevel =>
                             {
                                 // Build local scope variable setters
                                 var scopeVar = this.BuildFunctionScopeVariables(codeLevel);
@@ -371,7 +371,7 @@ export class TreeBuilder
 
                     methodNode.params = this.BuildFunctionParams(element[3][2]);
 
-                    element[3][5].forEach(codeLevel =>
+                    element[3][6].forEach(codeLevel =>
                     {
                         // Build local scope variable setters
                         var scopeVar = this.BuildFunctionScopeVariables(codeLevel);

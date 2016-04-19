@@ -1,24 +1,40 @@
 <?php
+ini_set('display_errors',1);
+error_reporting(E_ALL);
 
-class builderClass {
-    public $calcDone;
-    protected $needsRebuild;
+class ConnectionDB
+{
 
-    public function doCalc() {
-    }
+    private $dbhost = "localhost";
+    private $dbuser = "user";
+    private $dbpass = "pass";
+    private $dbname = "dbname";
+    /** @var PDO */
+    public $conn;
 
-    public function processResult($result) {
-    }
-}
-
-class calculatorClass extends builderClass {
-    function __construct()
+    public function openDbConnection()
     {
-        $baseResult = 5.25;
-        $myProp = "";
+        try
+        {
+            $this->dbhost;
+            $this->conn = new PDO("mysql:host=$this->dbhost;dbname=$this->dbname;", $this->dbuser, $this->dbpass, array(PDO::MYSQL_ATTR_INIT_COMMAND =>  "SET NAMES 'UTF8'"));
+            $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        }
+        catch(PDOException $e)
+        {
+            echo $e->getMessage();
+        }
+    }
 
-        if ($this->calculateBase() == $baseResult) {
-            $this->calcDone = true;
+    public function closeDbConnection()
+    {
+        try
+        {
+            $this->conn = NULL;
+        }
+        catch(PDOException $e)
+        {
+            echo $e->getMessage();
         }
     }
 }

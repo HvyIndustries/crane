@@ -1,16 +1,29 @@
 <?php
 
-// namespace myNamespace {
+use thisNamespace\subnamespace;
+use namespec as MyNamespace;
 
-//     class myNamespaceClass {
+namespace myNamespace\otherNamespace
+{
+    class myNamespaceClass
+    {
         
-//     }
+    }
 
-//     class otherNamespaceClass extends myNamespaceClass {
-        
-//     }
-// }
+    class otherNamespaceClass extends myNamespaceClass
+    {
+        use MyTrait;
 
-// namespace otherNamespace {
-     
-// }
+        function __construct()
+        {
+            execFunc();
+            Foo\execFunc();
+            $this->testprop = callFunc();
+        } 
+    }
+
+    interface myInterface { }
+    trait myTrait { 
+        public $testprop = "";
+    }
+}

@@ -103,6 +103,7 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
     {
         // Only add these top level when last char != ">"
         if (lastChar != ">") {
+            // TODO -- Find last occurance of "->" and load suggestions (this will match cases of half entered props and methods)
             if (lastChar == "$") {
                 // Only load these if they're in the same file
                 if (item.path == filePath) {

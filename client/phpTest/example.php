@@ -2,6 +2,7 @@
 
 require "file.php";
 include "file2.php";
+require_once $folder . "/file.php"; 
 
 // regular comment with todo text inline
 // TODO -- example
@@ -10,8 +11,13 @@ include "file2.php";
 
 // Non-class code
 const MYCONST = "myConst";
+const MYOTHERCONST = "myOtherConst";
 
 $topLevelVariable = "toplevel";
+$numVar = 2.4;
+
+Foo\globalFunction($numVar);
+$result = myFunc();
 
 function globalFunction()
 {
@@ -45,12 +51,12 @@ trait myTrait
     }
 }
 
-
 class ExampleClass extends ExistingClass implements myInterface // todo inline
 {
     public $publicProp = "test";
     private $privateProp;
     protected $protectedProp;
+    private $myfinalprop;
 
     const MYCONST = "myConst";
 
@@ -60,6 +66,17 @@ class ExampleClass extends ExistingClass implements myInterface // todo inline
     {
         $constructorVar = "test";
         echo $this->testFunc($this->mymethod());
+        $this->DoSomething();
+
+        $this->publicProp = "test2";
+    }
+
+    public function DoSomething()
+    {
+    }
+
+    public function DoSomethingElse()
+    {
     }
 
     public function DoWork()
@@ -72,6 +89,7 @@ class ExampleClass extends ExistingClass implements myInterface // todo inline
         $parentVar = "";
         OtherFunc($param1);
         $this->DoWork($this->publicProp);
+        $local = $this->DoWork();
     }
 
     private static function OtherFunc($optional = "opt") 

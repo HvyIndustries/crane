@@ -31,7 +31,7 @@ export default class Crane
 
         workspace.onDidChangeTextDocument((e) => this.onChangeTextHandler(e.document), null, subscriptions);
         workspace.onDidCloseTextDocument((textDocument)=> { delete this.delayers[textDocument.uri.toString()]; }, null, subscriptions);
-        workspace.onDidSaveTextDocument((document) => this.handleKeypress());
+        workspace.onDidSaveTextDocument((document) => this.handleFileSave());
 
         this.disposable = Disposable.from(...subscriptions);
 
@@ -73,24 +73,14 @@ export default class Crane
         exec(openCommand + "https://github.com/HvyIndustries/crane/issues");
     }
 
-    public handleKeypress(character:string = null)
+    public handleFileSave()
     {
         var editor = window.activeTextEditor;
         if (editor == null) return;
 
         var document = editor.document;
 
-        // if (character != null)
-        // {
-        //     // Insert typed char
-        //     editor.edit((edit) => {
-        //         edit.insert(editor.selection.start, character);
-        //     }).then(() => {
-        //         this.buildObjectTreeForDocument(document);
-        //     });
-        // } else {
-            this.buildObjectTreeForDocument(document);
-        // }
+        this.buildObjectTreeForDocument(document);
     }
 
     private processAllFilesInWorkspace()

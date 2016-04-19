@@ -68,13 +68,7 @@ export function activate(context: ExtensionContext)
     // Register commands for QoL improvements
     let duplicateLineCommand = commands.registerCommand("crane.duplicateLine", qol.duplicateLineOrSelection);
     let reportBugCommand = commands.registerCommand("crane.reportBug", crane.reportBug);
-    // let semiColonCommand = commands.registerCommand("crane.handleSemiColonPress", () => crane.handleKeypress(";"));
-    // let curlyBraceCommand = commands.registerCommand("crane.handleClosingCurlyBracePress", () => crane.handleKeypress("}"));
-    // let bracketCommand = commands.registerCommand("crane.handleClosingBracketPress", () => crane.handleKeypress(")"));
 
     context.subscriptions.push(disposable);
     context.subscriptions.push(duplicateLineCommand);
-    // context.subscriptions.push(semiColonCommand);
-    // context.subscriptions.push(curlyBraceCommand);
-    // context.subscriptions.push(bracketCommand);
 }

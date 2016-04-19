@@ -12,7 +12,7 @@
     "version": "0.1.6",
     "publisher": "HvyIndustries",
     "engines": {
-        "vscode": "0.10.x"
+        "vscode": "^0.11.10"
     },
     "bugs": {
         "url": "https://github.com/HvyIndustries/crane/issues"

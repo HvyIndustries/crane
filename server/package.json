@@ -10,7 +10,8 @@
     "dependencies": {
         "vscode-languageserver": "^1.1.0",
         "php-parser": "glayzzle/php-parser#6131b11",
-        "glob": "7.0.3"
+        "glob": "7.0.3",
+        "file-url": "~1.1.0"
     },
     "devDependencies": {
         "typescript": "^1.6.2"

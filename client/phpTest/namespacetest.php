@@ -19,11 +19,12 @@ namespace myNamespace\otherNamespace
             execFunc();
             Foo\execFunc();
             $this->testprop = callFunc();
-        } 
+        }
     }
 
     interface myInterface { }
-    trait myTrait { 
+    trait myTrait
+    {
         public $testprop = "";
     }
 }

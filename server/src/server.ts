@@ -11,10 +11,12 @@ import {
     createConnection, IConnection, TextDocumentSyncKind,
     TextDocuments, ITextDocument, Diagnostic, DiagnosticSeverity,
     InitializeParams, InitializeResult, TextDocumentIdentifier, TextDocumentPosition,
-    CompletionItem, CompletionItemKind, RequestType
+    CompletionItem, CompletionItemKind, RequestType, Hover, SignatureHelp, Definition
 } from 'vscode-languageserver';
 
-import { TreeBuilder, FileNode, ClassNode } from "./hvy/treeBuilder";
+import { TreeBuilder, FileNode, ClassNode, SymbolCache } from "./hvy/treeBuilder";
+import { PhpHover } from "./phpHover";
+import { PhpDeclaration } from "./phpDeclaration";
 
 const glob = require("glob");
 const fs = require("fs");
@@ -26,6 +28,10 @@ documents.listen(connection);
 
 let treeBuilder: TreeBuilder = new TreeBuilder();
 let workspaceTree: FileNode[] = [];
+let workspaceSymbolCache: SymbolCache[] = [];
+
+let phpHover:PhpHover = new PhpHover();
+let phpDeclaration:PhpDeclaration = new PhpDeclaration();
 
 let workspaceRoot: string;
 connection.onInitialize((params): InitializeResult =>
@@ -40,7 +46,10 @@ connection.onInitialize((params): InitializeResult =>
             {
                 resolveProvider: true,
                 triggerCharacters: ['.', ':', '$', '>']
-            }
+            },
+            hoverProvider: true,
+            definitionProvider: true,
+            signatureHelpProvider: true
         }
     }
 });
@@ -78,6 +87,20 @@ connection.onDidChangeWatchedFiles((change) =>
     // Monitored files have change in VSCode
     connection.console.log('We recevied an file change event');
 });
+
+connection.onHover((textDocumentPosition: TextDocumentPosition): Hover => {
+    let document = documents.get(textDocumentPosition.uri);
+    return phpHover.doHover(document, textDocumentPosition, workspaceTree);
+});
+
+connection.onDefinition((textDocumentPosition: TextDocumentPosition): Definition => {
+    let document = documents.get(textDocumentPosition.uri);
+    return phpDeclaration.findDefinition(document, textDocumentPosition, workspaceTree, workspaceSymbolCache);
+});
+
+// connection.onSignatureHelp((textDocumentPosition: TextDocumentPosition): Thenable<SignatureHelp> => {
+//     return null;
+// });
 
 // This handler provides the initial list of the completion items.
 connection.onCompletion((textDocumentPosition: TextDocumentPosition): CompletionItem[] =>
@@ -242,7 +265,8 @@ function addStaticGlobalVariables(toReturn: CompletionItem[], item:FileNode)
 
 function recurseMethodCalls(toReturn: CompletionItem[], item:FileNode, currentLine:string, line:number, lines:string[], filePath:string)
 {
-    var words = currentLine.split(" ");
+    var wordsWithoutTabs = currentLine.replace(/\t/gm, " ");
+    var words = wordsWithoutTabs.split(" ");
     var expression = words[words.length - 1];
     if (expression.lastIndexOf("$this", 0) === 0 ||
         expression.lastIndexOf("($this", 0) === 0 ||
@@ -397,6 +421,7 @@ connection.onRequest(requestType, (requestObj) =>
 
     treeBuilder.Parse(text, fileUri).then(result => {
         addToWorkspaceTree(result.tree);
+        addToWorkspaceCache(result.symbolCache)
         notifyClientOfWorkComplete();
         return true;
     })
@@ -421,6 +446,7 @@ connection.onRequest(requestType, (data) =>
             fs.readFile(docPath, { encoding: "utf8" }, (err, data) => {
                 treeBuilder.Parse(data, docPath).then(result => {
                     addToWorkspaceTree(result.tree);
+                    addToWorkspaceCache(result.symbolCache)
 
                     docsDoneCount++;
 
@@ -455,6 +481,29 @@ function addToWorkspaceTree(tree:FileNode)
 
     // Debug
     connection.console.log("Parsed file: " + tree.path);
+}
+
+function addToWorkspaceCache(symbolCache:SymbolCache[])
+{
+    // Loop through items in newly created cache
+    symbolCache.forEach(item =>
+    {
+        var cache = workspaceSymbolCache.filter((symbolCacheItem) => {
+            return symbolCacheItem.file == item.file && symbolCacheItem.name == item.name && symbolCacheItem.type == item.type;
+        })[0];
+
+        var index = workspaceSymbolCache.indexOf(cache);
+
+        // Replace existing items, otherwise add
+        if (index !== -1) {
+            workspaceSymbolCache[index] = item;
+        } else {
+            workspaceSymbolCache.push(item);
+        }
+
+        // NOTE: Potential memory leak here!
+        // If removing symbols from the code, they will not be removed from the cache
+    });
 }
 
 function getClassNodeFromTree(className:string): ClassNode

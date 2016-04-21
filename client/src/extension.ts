@@ -8,11 +8,12 @@
 
 import * as path from "path";
 
-import { workspace, Disposable, ExtensionContext, commands } from "vscode";
+import { workspace, Disposable, ExtensionContext, commands, languages } from "vscode";
 import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions, TransportKind, RequestType } from "vscode-languageclient";
 
 import Crane from "./crane";
 import QualityOfLife from "./features/qualityOfLife";
+import PhpSignatureHelpProvider from "./features/phpSignatureHelpProvider";
 
 export function activate(context: ExtensionContext)
 {
@@ -45,6 +46,7 @@ export function activate(context: ExtensionContext)
     let disposable = langClient.start();
 
     let crane: Crane = new Crane(langClient);
+    let phpSignatureHelpProvider:PhpSignatureHelpProvider = new PhpSignatureHelpProvider(langClient);
 
     var requestType: RequestType<any, any, any> = { method: "workDone" };
     langClient.onRequest(requestType, () => {
@@ -66,9 +68,9 @@ export function activate(context: ExtensionContext)
     });
 
     // Register commands for QoL improvements
-    let duplicateLineCommand = commands.registerCommand("crane.duplicateLine", qol.duplicateLineOrSelection);
-    let reportBugCommand = commands.registerCommand("crane.reportBug", crane.reportBug);
+    context.subscriptions.push(commands.registerCommand("crane.duplicateLine", qol.duplicateLineOrSelection));
+    context.subscriptions.push(commands.registerCommand("crane.reportBug", crane.reportBug));
+    context.subscriptions.push(languages.registerSignatureHelpProvider({ language: "php", scheme: "file"}, phpSignatureHelpProvider, "(", ","));
 
     context.subscriptions.push(disposable);
-    context.subscriptions.push(duplicateLineCommand);
 }

@@ -144,6 +144,11 @@ export class TreeBuilder
                             }
                             tree.topLevelVariables.push(variableNode);
 
+                            var symbolCache = new FileSymbolCache();
+                            symbolCache.name = variableNode.name;
+                            symbolCache.type = SymbolType.TopLevelVariable;
+                            tree.symbolCache.push(symbolCache);
+
                             // if (branch[2][0] == "call") {
                             //     let calls = this.BuildFunctionCallsToOtherFunctions(branch[2]);
                             // }
@@ -194,6 +199,11 @@ export class TreeBuilder
                                     });
                                 }
                             });
+
+                            var symbolCache = new FileSymbolCache();
+                            symbolCache.name = methodNode.name;
+                            symbolCache.type = SymbolType.TopLevelFunction;
+                            tree.symbolCache.push(symbolCache);
 
                             tree.functions.push(methodNode);
                             break;
@@ -248,6 +258,11 @@ export class TreeBuilder
                                 interfaceNode.methods.push(methodNode);
                             });
 
+                            var symbolCache = new FileSymbolCache();
+                            symbolCache.name = interfaceNode.name;
+                            symbolCache.type = SymbolType.Interface;
+                            tree.symbolCache.push(symbolCache);
+
                             tree.interfaces.push(interfaceNode);
                             break;
 
@@ -292,6 +307,12 @@ export class TreeBuilder
                                     propNode.type = propLevel[3][1][0];
                                 }
 
+                                var symbolCache = new FileSymbolCache();
+                                symbolCache.name = propNode.name;
+                                symbolCache.type = SymbolType.Property;
+                                symbolCache.parentName = traitNode.name;
+                                tree.symbolCache.push(symbolCache);
+
                                 traitNode.properties.push(propNode);
                             });
 
@@ -304,6 +325,12 @@ export class TreeBuilder
 
                                 constantNode.startPos = this.BuildStartLocation(constant[3][0][1]);
                                 constantNode.endPos = this.BuildEndLocation(constant[3][0][2]);
+
+                                var symbolCache = new FileSymbolCache();
+                                symbolCache.name = constantNode.name;
+                                symbolCache.type = SymbolType.Constant;
+                                symbolCache.parentName = traitNode.name;
+                                tree.symbolCache.push(symbolCache);
 
                                 traitNode.constants.push(constantNode);
                             });
@@ -321,6 +348,12 @@ export class TreeBuilder
 
                                 methodNode.isAbstract = false;
 
+                                var symbolCache = new FileSymbolCache();
+                                symbolCache.name = methodNode.name;
+                                symbolCache.type = SymbolType.Method;
+                                symbolCache.parentName = traitNode.name;
+                                tree.symbolCache.push(symbolCache);
+
                                 traitNode.methods.push(methodNode);
                             });
 
@@ -328,6 +361,11 @@ export class TreeBuilder
                             {
                                 traitNode.traits.push(traitLevel[0]);
                             });
+
+                            var symbolCache = new FileSymbolCache();
+                            symbolCache.name = traitNode.name;
+                            symbolCache.type = SymbolType.Trait;
+                            tree.symbolCache.push(symbolCache);
 
                             tree.traits.push(traitNode);
                             break;
@@ -339,6 +377,7 @@ export class TreeBuilder
                             classNode.endPos = this.BuildEndLocation(branch[2]);
 
                             classNode.name = branch[3][1];
+
                             if (branch[3][3] != false) {
                                 classNode.extends = branch[3][3][0];
                             }
@@ -399,6 +438,12 @@ export class TreeBuilder
                                     propNode.type = propLevel[3][1][0];
                                 }
 
+                                var symbolCache = new FileSymbolCache();
+                                symbolCache.name = propNode.name;
+                                symbolCache.type = SymbolType.Property;
+                                symbolCache.parentName = classNode.name;
+                                tree.symbolCache.push(symbolCache);
+
                                 classNode.properties.push(propNode);
                             });
 
@@ -415,6 +460,12 @@ export class TreeBuilder
                                 if (constLevel[3][0][3][1] != null) {
                                     constNode.type = constLevel[3][0][3][1][0];
                                 }
+
+                                var symbolCache = new FileSymbolCache();
+                                symbolCache.name = constNode.name;
+                                symbolCache.type = SymbolType.Constant;
+                                symbolCache.parentName = classNode.name;
+                                tree.symbolCache.push(symbolCache);
 
                                 classNode.constants.push(constNode);
                             });
@@ -534,6 +585,12 @@ export class TreeBuilder
                                         });
                                     }
 
+                                    var symbolCache = new FileSymbolCache();
+                                    symbolCache.name = methodNode.name;
+                                    symbolCache.type = SymbolType.Method;
+                                    symbolCache.parentName = classNode.name;
+                                    tree.symbolCache.push(symbolCache);
+
                                     classNode.methods.push(methodNode);
                                 }
                             });
@@ -543,6 +600,11 @@ export class TreeBuilder
                             {
                                 classNode.traits.push(traitLevel[0]);
                             });
+
+                            var symbolCache = new FileSymbolCache();
+                            symbolCache.name = classNode.name;
+                            symbolCache.type = SymbolType.Class;
+                            tree.symbolCache.push(symbolCache);
 
                             tree.classes.push(classNode);
                             break;
@@ -611,7 +673,7 @@ export class TreeBuilder
                 let variableNode: VariableNode = new VariableNode();
                 variableNode.name = codeLevel[1][1];
                 variableNode.type = codeLevel[2][0];
-                if (variableNode.type == "string" || variableNode.type == "number") {
+                if (variableNode.type == "string" || variableNode.type == "number" || variableNode.type == "mixed") {
                     variableNode.value = codeLevel[2][1];
                 }
 
@@ -761,6 +823,28 @@ export class FileNode
 
     // Any files that we're referencing with include(), require(), include_once() or require_once()
     public fileReferences: string[] = [];
+
+    public symbolCache: FileSymbolCache[] = [];
+}
+
+export class FileSymbolCache
+{
+    public name: string;
+    public type: SymbolType;
+    public parentName: string;
+}
+
+enum SymbolType
+{
+    Unknown,
+    Class,
+    Interface,
+    Trait,
+    Property,
+    Method,
+    Constant,
+    TopLevelVariable,
+    TopLevelFunction
 }
 
 export class NamespaceUsingNode extends BaseNode

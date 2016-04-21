@@ -11,10 +11,11 @@ import {
     createConnection, IConnection, TextDocumentSyncKind,
     TextDocuments, ITextDocument, Diagnostic, DiagnosticSeverity,
     InitializeParams, InitializeResult, TextDocumentIdentifier, TextDocumentPosition,
-    CompletionItem, CompletionItemKind, RequestType
+    CompletionItem, CompletionItemKind, RequestType, 
+    SignatureHelp, SignatureInformation, ParameterInformation
 } from 'vscode-languageserver';
 
-import { TreeBuilder, FileNode, ClassNode } from "./hvy/treeBuilder";
+import { TreeBuilder, FileNode, FileSymbolCache, SymbolType, ClassNode } from "./hvy/treeBuilder";
 
 const glob = require("glob");
 const fs = require("fs");
@@ -436,6 +437,36 @@ connection.onRequest(requestType, (data) =>
             });
         });
     });
+});
+
+var requestType: RequestType<any, any, any> = { method: "findSymbolInTree" };
+connection.onRequest(requestType, (word:string) =>
+{
+    word = word.replace("(", "");
+    word = word.replace(")", "");
+    word = word.toLowerCase();
+
+    let nodeMatches: FileNode[] = [];
+    let types: number[] = [];
+
+    // Search symbol cache
+    workspaceTree.forEach(fileNode =>
+    {
+        let matches = fileNode.symbolCache.filter(item => {
+            return item.name.toLowerCase() == word;
+        });
+
+        if (matches.length > 0) {
+            nodeMatches.push(fileNode);
+
+            matches.forEach(match => {
+                types.push(match.type);
+            });
+        }
+    });
+
+    // Return filenodes with matches
+    return { matches: nodeMatches, types: types };
 });
 
 function addToWorkspaceTree(tree:FileNode)

@@ -90,6 +90,8 @@ class ExampleClass extends ExistingClass implements myInterface // todo inline
         OtherFunc($param1);
         $this->DoWork($this->publicProp);
         $local = $this->DoWork();
+
+        $this->DoWork();
     }
 
     private static function OtherFunc($optional = "opt") 

@@ -242,7 +242,8 @@ function addStaticGlobalVariables(toReturn: CompletionItem[], item:FileNode)
 
 function recurseMethodCalls(toReturn: CompletionItem[], item:FileNode, currentLine:string, line:number, lines:string[], filePath:string)
 {
-    var words = currentLine.split(" ");
+    var wordsWithoutTabs = currentLine.replace(/\t/gm, " ");
+    var words = wordsWithoutTabs.split(" ");
     var expression = words[words.length - 1];
     if (expression.lastIndexOf("$this", 0) === 0 ||
         expression.lastIndexOf("($this", 0) === 0 ||

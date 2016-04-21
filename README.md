@@ -29,7 +29,6 @@ Make sure you have the PHP linter enabled, and set to run `onType` instead of `o
 
 ## Known Issues
 
-* Syntax errors in a file prevent completion suggestions being generated
 * Currently the extension does not provide suggetions for class instance variables (eg. `$instance = new class()`)
 
 ### More Info

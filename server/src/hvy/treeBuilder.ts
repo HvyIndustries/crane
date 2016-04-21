@@ -558,30 +558,10 @@ export class TreeBuilder
     private BuildSymbolCache(tree:FileNode, filePath:string) : Promise<SymbolCache[]>
     {
         return new Promise<SymbolCache[]>((resolve, reject) => {
-            let symbolCache: SymbolCache[] = [];
-
-            tree.classes.forEach(item => this.AddToCache(symbolCache, item, "class", tree.path) );
-            tree.interfaces.forEach(item => this.AddToCache(symbolCache, item, "interface", tree.path) );
-            tree.traits.forEach(item => this.AddToCache(symbolCache, item, "trait", tree.path) );
-            tree.constants.forEach(item => this.AddToCache(symbolCache, item, "const", tree.path) );
-            tree.functions.forEach(item => this.AddToCache(symbolCache, item, "function", tree.path) );
-            tree.topLevelVariables.forEach(item => this.AddToCache(symbolCache, item, "global variable", tree.path) );
-
-            resolve(symbolCache);
+            let cache: SymbolCache[] = [];
+            // TODO
+            resolve(cache);
         });
-    }
-
-    private AddToCache(symbolCache: SymbolCache[], item, type: string, path: string)
-    {
-        let cache = new SymbolCache();
-        cache.name = item.name;
-        cache.file = path;
-        if (item.startPos != null) {
-            cache.line = item.startPos.line;
-            cache.char = item.startPos.col;
-        }
-        cache.type = type;
-        symbolCache.push(cache);
     }
 
     private BuildStartLocation(start): PositionInfo
@@ -894,8 +874,6 @@ export class SymbolLookupCache
 export class SymbolCache
 {
     public name: string;
-    public type: string;
     public file: string;
     public line: number;
-    public char: number;
 }

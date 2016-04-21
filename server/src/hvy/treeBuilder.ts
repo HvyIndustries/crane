@@ -834,7 +834,7 @@ export class FileSymbolCache
     public parentName: string;
 }
 
-enum SymbolType
+export enum SymbolType
 {
     Unknown,
     Class,

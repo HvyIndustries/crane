@@ -45,10 +45,10 @@ export default class PhpSignatureHelpProvider implements SignatureHelpProvider
         let text = document.getText();
         let lines = text.split(/\r\n|\r|\n/gm);
 
-        let caller = lines[wordPos.start.line].substr(wordPos.start.character, wordPos.end.character);
+        let callerName = lines[wordPos.start.line].substr(wordPos.start.character, wordPos.end.character);
 
         let requestType: RequestType<any, any, any> = { method: "findSymbolInTree" };
-        this.langClient.sendRequest(requestType, caller).then(response =>
+        this.langClient.sendRequest(requestType, callerName).then(response =>
         {
             let matches = response.matches;
             let types = response.types;

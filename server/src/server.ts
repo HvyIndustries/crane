@@ -11,11 +11,11 @@ import {
     createConnection, IConnection, TextDocumentSyncKind,
     TextDocuments, ITextDocument, Diagnostic, DiagnosticSeverity,
     InitializeParams, InitializeResult, TextDocumentIdentifier, TextDocumentPosition,
-    CompletionItem, CompletionItemKind, RequestType, 
+    CompletionItem, CompletionItemKind, RequestType, Position,
     SignatureHelp, SignatureInformation, ParameterInformation
 } from 'vscode-languageserver';
 
-import { TreeBuilder, FileNode, FileSymbolCache, SymbolType, ClassNode } from "./hvy/treeBuilder";
+import { TreeBuilder, FileNode, FileSymbolCache, SymbolType, AccessModifierNode, ClassNode } from "./hvy/treeBuilder";
 
 const glob = require("glob");
 const fs = require("fs");
@@ -173,7 +173,7 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
                 }
             });
         } else {
-           recurseMethodCalls(toReturn, item, currentLine, line, lines, filePath);
+           recurseMethodCalls(toReturn, item, currentLine, line, lines, filePath, char);
         }
     });
 
@@ -231,7 +231,7 @@ function addStaticClassMembers(toReturn: CompletionItem[], item:ClassNode)
             });
 
             if (!found) {
-                toReturn.push({ label: subNode.name, kind: CompletionItemKind.Method, detail: "method (static)", insertText: subNode.name + "()" });
+                toReturn.push({ label: subNode.name, kind: CompletionItemKind.Method, detail: "method (static)", insertText: subNode.name + "();" });
             }
         }
     });
@@ -241,35 +241,68 @@ function addStaticGlobalVariables(toReturn: CompletionItem[], item:FileNode)
 {
 }
 
-function recurseMethodCalls(toReturn: CompletionItem[], item:FileNode, currentLine:string, line:number, lines:string[], filePath:string)
+function recurseMethodCalls(toReturn: CompletionItem[], item:FileNode, currentLine:string, line:number, lines:string[], filePath:string, char:number)
 {
-    var wordsWithoutTabs = currentLine.replace(/\t/gm, " ");
-    var words = wordsWithoutTabs.split(" ");
-    var expression = words[words.length - 1];
-    if (expression.lastIndexOf("$this", 0) === 0 ||
-        expression.lastIndexOf("($this", 0) === 0 ||
-        expression.lastIndexOf("if($this", 0) === 0 ||
-        expression.lastIndexOf("elseif($this", 0) === 0 ||
-        expression.lastIndexOf("!$this", 0) === 0)
+    currentLine = currentLine.replace(/\t/gm, " ");
+    var parts = currentLine.trim().split("->");
+    parts = parts.filter(item => {
+        return item != "";
+    });
+
+    // TODO -- Handle properties set to class instances (ie. intellisense for $this->prop->)
+    if (parts[0] == "$this")
     {
-        // We're referencing the current class
+        // We're referencing the current class, show everything
         item.classes.forEach((classNode) => {
-            // NOTE -- This filepath checking works for $this, but won't for class instance variables
             if (item.path == filePath && classNode.startPos.line <= line && classNode.endPos.line >= line) {
-                addClassPropertiesMethodsParentClassesAndTraits(toReturn, classNode, false);
+                addClassPropertiesMethodsParentClassesAndTraits(toReturn, classNode, true, true);
             }
         });
-    } else {
-        // TODO -- Handle class instance variables and properties
-        if (expression.indexOf("->") === 0) {
-            // Track back and check we're accessing $this at some point
-            var prevLine = lines[line - 1];
+    }
+    else
+    {
+        // We're probably calling from a instantiated variable
+        // Lookup the name in the tree to find what class it's set to at this point
+        var matches = item.lineCache.filter(subItem => {
 
-            var prevWords = prevLine.split(" ");
-            var prevexpression = prevWords[prevWords.length - 1];
+            var found = parts.filter(part => {
+                var splitParts = part.split(" ");
+                if (splitParts.length > 1) {
+                    var matched = splitParts.filter(splitPart => {
+                        return splitPart == subItem.name;
+                    });
+                    return matched.length > 0;
+                } else {
+                    return part == subItem.name;
+                }
+            })
 
-            // Recurse
-            recurseMethodCalls(toReturn, item, prevLine, line - 1, lines, filePath);
+            return found.length > 0;
+        });
+
+        if (matches.length > 0) {
+            if (parts[0].search(matches[0].name) != 1) {
+                let className = matches[0].value;
+                var nodeMatches = [];
+                // Lookup classname in tree
+                workspaceTree.forEach(item => {
+                    let found = item.symbolCache.filter(cache => {
+                        return cache.name == className;
+                    });
+
+                    if (found.length != 0) {
+                        nodeMatches.push(item);
+                    }
+                });
+
+                if (nodeMatches.length != 0) {
+                    nodeMatches[0].classes.forEach(classNode => {
+                        if (classNode.name == className) {
+                            addClassPropertiesMethodsParentClassesAndTraits(toReturn, classNode, false, false);
+                        }
+                    });
+                }
+            }
         }
     }
 }
@@ -300,7 +333,7 @@ function addFileLevelFuncsAndConsts(toReturn: CompletionItem[], item:FileNode)
     });
 }
 
-function addClassPropertiesMethodsParentClassesAndTraits(toReturn: CompletionItem[], classNode: ClassNode, isParentClass)
+function addClassPropertiesMethodsParentClassesAndTraits(toReturn: CompletionItem[], classNode: ClassNode, includeProtected:boolean, includePrivate:boolean = true)
 {
     classNode.constants.forEach((subNode) => {
         toReturn.push({ label: subNode.name, kind: CompletionItemKind.Value, detail: "constant" });
@@ -308,9 +341,19 @@ function addClassPropertiesMethodsParentClassesAndTraits(toReturn: CompletionIte
 
     classNode.methods.forEach((subNode) => {
         var accessModifier = "method " + buildAccessModifier(subNode.accessModifier);
-        var insertText = subNode.name + "()";
+        var insertText = subNode.name + "();";
 
-        if (!isParentClass || (isParentClass && subNode.accessModifier != 1)) {
+        if (subNode.isStatic) {
+            accessModifier = "static " + accessModifier;
+        }
+
+        if (includeProtected && subNode.accessModifier == AccessModifierNode.protected) {
+            toReturn.push({ label: subNode.name, kind: CompletionItemKind.Method, detail: accessModifier, insertText: insertText });
+        }
+        if (includePrivate && subNode.accessModifier == AccessModifierNode.private) {
+            toReturn.push({ label: subNode.name, kind: CompletionItemKind.Method, detail: accessModifier, insertText: insertText });
+        }
+        if (subNode.accessModifier == AccessModifierNode.public) {
             toReturn.push({ label: subNode.name, kind: CompletionItemKind.Method, detail: accessModifier, insertText: insertText });
         }
     });
@@ -320,7 +363,13 @@ function addClassPropertiesMethodsParentClassesAndTraits(toReturn: CompletionIte
         // Strip the leading $
         var insertText = subNode.name.substr(1, subNode.name.length - 1);
 
-        if (!isParentClass || (isParentClass && subNode.accessModifier != 1)) {
+        if (includeProtected && subNode.accessModifier == AccessModifierNode.protected) {
+            toReturn.push({ label: subNode.name, kind: CompletionItemKind.Property, detail: accessModifier, insertText: insertText });
+        }
+        if (includePrivate && subNode.accessModifier == AccessModifierNode.private) {
+            toReturn.push({ label: subNode.name, kind: CompletionItemKind.Property, detail: accessModifier, insertText: insertText });
+        }
+        if (subNode.accessModifier == AccessModifierNode.public) {
             toReturn.push({ label: subNode.name, kind: CompletionItemKind.Property, detail: accessModifier, insertText: insertText });
         }
     });
@@ -329,7 +378,7 @@ function addClassPropertiesMethodsParentClassesAndTraits(toReturn: CompletionIte
         // Look up the trait node in the tree
         var traitNode = getTraitNodeFromTree(traitName);
         if (traitNode != null) {
-            addClassPropertiesMethodsParentClassesAndTraits(toReturn, traitNode, false);
+            addClassPropertiesMethodsParentClassesAndTraits(toReturn, traitNode, true, true);
         }
     })
 
@@ -338,7 +387,7 @@ function addClassPropertiesMethodsParentClassesAndTraits(toReturn: CompletionIte
         // Look up the class node in the tree
         var extendedClassNode = getClassNodeFromTree(classNode.extends);
         if (extendedClassNode != null) {
-            addClassPropertiesMethodsParentClassesAndTraits(toReturn, extendedClassNode, true);
+            addClassPropertiesMethodsParentClassesAndTraits(toReturn, extendedClassNode, true, false);
         }
     }
 }
@@ -440,14 +489,19 @@ connection.onRequest(requestType, (data) =>
 });
 
 var requestType: RequestType<any, any, any> = { method: "findSymbolInTree" };
-connection.onRequest(requestType, (word:string) =>
+connection.onRequest(requestType, (request) =>
 {
-    word = word.replace("(", "");
-    word = word.replace(")", "");
+    // If request.word starts with $ then variable
+    // If request.word starts with $this-> then class property
+    // If request.word contains ( then function or class instantiation
+    // If request.word starts with $this-> and ( then class method
+
+    let word = request.word;
+    let position = request.position;
+
     word = word.toLowerCase();
 
-    let nodeMatches: FileNode[] = [];
-    let types: number[] = [];
+    let node = null;
 
     // Search symbol cache
     workspaceTree.forEach(fileNode =>
@@ -456,17 +510,11 @@ connection.onRequest(requestType, (word:string) =>
             return item.name.toLowerCase() == word;
         });
 
-        if (matches.length > 0) {
-            nodeMatches.push(fileNode);
-
-            matches.forEach(match => {
-                types.push(match.type);
-            });
-        }
+        let t = "";
     });
 
     // Return filenodes with matches
-    return { matches: nodeMatches, types: types };
+    return { node: node };
 });
 
 function addToWorkspaceTree(tree:FileNode)

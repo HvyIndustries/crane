@@ -14,6 +14,7 @@ import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions, T
 import Crane from "./crane";
 import QualityOfLife from "./features/qualityOfLife";
 import PhpSignatureHelpProvider from "./features/phpSignatureHelpProvider";
+import PhpDefinitionProvider from "./features/phpDefinitionProvider";
 
 export function activate(context: ExtensionContext)
 {
@@ -46,7 +47,8 @@ export function activate(context: ExtensionContext)
     let disposable = langClient.start();
 
     let crane: Crane = new Crane(langClient);
-    let phpSignatureHelpProvider:PhpSignatureHelpProvider = new PhpSignatureHelpProvider(langClient);
+    //let phpSignatureHelpProvider: PhpSignatureHelpProvider = new PhpSignatureHelpProvider(langClient);
+    //let phpDefinitionProvider: PhpDefinitionProvider = new PhpDefinitionProvider(langClient);
 
     var requestType: RequestType<any, any, any> = { method: "workDone" };
     langClient.onRequest(requestType, () => {
@@ -70,7 +72,8 @@ export function activate(context: ExtensionContext)
     // Register commands for QoL improvements
     context.subscriptions.push(commands.registerCommand("crane.duplicateLine", qol.duplicateLineOrSelection));
     context.subscriptions.push(commands.registerCommand("crane.reportBug", crane.reportBug));
-    context.subscriptions.push(languages.registerSignatureHelpProvider({ language: "php", scheme: "file"}, phpSignatureHelpProvider, "(", ","));
+    //context.subscriptions.push(languages.registerSignatureHelpProvider({ language: "php", scheme: "file"}, phpSignatureHelpProvider, "(", ","));
+    //context.subscriptions.push(languages.registerDefinitionProvider({ language: "php", scheme: "file"}, phpDefinitionProvider));
 
     context.subscriptions.push(disposable);
 }

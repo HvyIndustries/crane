@@ -10,6 +10,7 @@ var phpParser = require("php-parser");
 
 export class TreeBuilder
 {
+    // v1.4 - added lineCache
     // v1.3 - support for namespaces + use recursion
     // v1.2 - added option to suppress errors
     // v1.1
@@ -133,27 +134,16 @@ export class TreeBuilder
                     break;
 
                 case "set":
-                    switch (branch[1][0]) {
-                        case "var":
-                            let variableNode: VariableNode = new VariableNode();
-
-                            variableNode.name = branch[1][1];
-                            variableNode.type = branch[2][0];
-                            if (variableNode.type == "string" || variableNode.type == "number") {
-                                variableNode.value = branch[2][1];
-                            }
-                            tree.topLevelVariables.push(variableNode);
-
-                            var symbolCache = new FileSymbolCache();
-                            symbolCache.name = variableNode.name;
-                            symbolCache.type = SymbolType.TopLevelVariable;
-                            tree.symbolCache.push(symbolCache);
-
-                            // if (branch[2][0] == "call") {
-                            //     let calls = this.BuildFunctionCallsToOtherFunctions(branch[2]);
-                            // }
-                            break;
+                    let variable = this.BuildVariableOrProp(branch);
+                    tree.topLevelVariables.push(variable.variableNode);
+                    if (variable.lineCache != null) {
+                        tree.lineCache.push(variable.lineCache);
                     }
+
+                    var symbolCache = new FileSymbolCache();
+                    symbolCache.name = variable.name;
+                    symbolCache.type = SymbolType.TopLevelVariable;
+                    tree.symbolCache.push(symbolCache);
                     break;
 
                 case "position":
@@ -175,10 +165,12 @@ export class TreeBuilder
                             branch[3][6].forEach(codeLevel =>
                             {
                                 // Build local scope variable setters
-                                let scopeVar = this.BuildFunctionScopeVariables(codeLevel);
-                                if (scopeVar != null)
-                                {
-                                    methodNode.scopeVariables.push(scopeVar);
+                                let scopeVar = this.BuildVariableOrProp(codeLevel);
+                                if (scopeVar != null) {
+                                    methodNode.scopeVariables.push(scopeVar.variableNode);
+                                    if (scopeVar.lineCache != null) {
+                                        tree.lineCache.push(scopeVar.lineCache);
+                                    }
                                 }
 
                                 // Build function calls
@@ -267,7 +259,7 @@ export class TreeBuilder
                             break;
 
                         case "trait":
-                            let traitNode: TraitNode = new TraitNode();
+                            var traitNode: TraitNode = new TraitNode();
 
                             traitNode.name = branch[3][1];
 
@@ -494,10 +486,12 @@ export class TreeBuilder
                                         methodLevel[3][6].forEach(codeLevel =>
                                         {
                                             // Build local scope variable setters
-                                            let scopeVar = this.BuildFunctionScopeVariables(codeLevel);
-                                            if (scopeVar != null)
-                                            {
-                                                constructorNode.scopeVariables.push(scopeVar);
+                                            let scopeVar = this.BuildVariableOrProp(codeLevel);
+                                            if (scopeVar != null) {
+                                                constructorNode.scopeVariables.push(scopeVar.variableNode);
+                                                if (scopeVar.lineCache != null) {
+                                                    tree.lineCache.push(scopeVar.lineCache);
+                                                }
                                             }
 
                                             // Build function calls
@@ -559,10 +553,12 @@ export class TreeBuilder
                                         methodLevel[3][6].forEach(codeLevel =>
                                         {
                                             // Build local scope variable setters
-                                            let scopeVar = this.BuildFunctionScopeVariables(codeLevel);
-                                            if (scopeVar != null)
-                                            {
-                                                methodNode.scopeVariables.push(scopeVar);
+                                            let scopeVar = this.BuildVariableOrProp(codeLevel);
+                                            if (scopeVar != null) {
+                                                methodNode.scopeVariables.push(scopeVar.variableNode);
+                                                if (scopeVar.lineCache != null) {
+                                                    tree.lineCache.push(scopeVar.lineCache);
+                                                }
                                             }
 
                                             // Build function calls
@@ -664,24 +660,68 @@ export class TreeBuilder
     }
 
     // codeLevel == codeLevel
-    private BuildFunctionScopeVariables(codeLevel): VariableNode
+    private BuildVariableOrProp(codeLevel): any
     {
         if (codeLevel[0] == "set")
         {
             if (codeLevel[1][0] == "var")
             {
                 let variableNode: VariableNode = new VariableNode();
+                let lineCache: LineCache = null;
+
                 variableNode.name = codeLevel[1][1];
-                variableNode.type = codeLevel[2][0];
-                if (variableNode.type == "string" || variableNode.type == "number" || variableNode.type == "mixed") {
+
+                let type = codeLevel[2][0];
+                if (type == "string" || type == "number") {
+                    variableNode.type = type;
                     variableNode.value = codeLevel[2][1];
+                } else if (type == "position") {
+                    if (codeLevel[2][3] != null && Array.isArray(codeLevel[2][3]) && codeLevel[2][3][0] == "new") {
+                        variableNode.type = "class";
+                        variableNode.value = codeLevel[2][3][1][0];
+
+                        variableNode.startPos = this.BuildStartLocation(codeLevel[2][1]);
+                        variableNode.endPos = this.BuildEndLocation(codeLevel[2][2]);
+
+                        lineCache = new LineCache();
+                        lineCache.line = variableNode.startPos.line;
+                        lineCache.name = variableNode.name;
+                        lineCache.value = variableNode.value;
+                    }
                 }
 
-                if (codeLevel[2][0] == "call") {
-                    let calls = this.BuildFunctionCallsToOtherFunctions(codeLevel[2]);
+                return { variableNode: variableNode, lineCache: lineCache };
+            }
+            else if (codeLevel[1][0] == "prop")
+            {
+                let propSetNode: VariableNode = new VariableNode();
+                let lineCache: LineCache = null;
+
+                if (codeLevel[1][1][1] == "$this") {
+                    propSetNode.name = codeLevel[1][2][1];
+
+                    let type = codeLevel[2][0];
+                    if (type == "string" || type == "number") {
+                        propSetNode.type = type;
+                        propSetNode.value = codeLevel[2][1];
+                    } else if (type == "position") {
+                        if (codeLevel[2][3] != null && Array.isArray(codeLevel[2][3]) && codeLevel[2][3][0] == "new") {
+                            propSetNode.type = "class";
+                            propSetNode.value = codeLevel[2][3][1][0];
+                            propSetNode.variableType = "property";
+
+                            propSetNode.startPos = this.BuildStartLocation(codeLevel[2][1]);
+                            propSetNode.endPos = this.BuildEndLocation(codeLevel[2][2]);
+
+                            lineCache = new LineCache();
+                            lineCache.line = propSetNode.startPos.line;
+                            lineCache.name = propSetNode.name;
+                            lineCache.value = propSetNode.value;
+                        }
+                    }
                 }
 
-                return variableNode;
+                return { variableNode: propSetNode, lineCache: lineCache };
             }
         }
 
@@ -825,6 +865,7 @@ export class FileNode
     public fileReferences: string[] = [];
 
     public symbolCache: FileSymbolCache[] = [];
+    public lineCache: LineCache[] = [];
 }
 
 export class FileSymbolCache
@@ -832,6 +873,13 @@ export class FileSymbolCache
     public name: string;
     public type: SymbolType;
     public parentName: string;
+}
+
+export class LineCache
+{
+    public line: number;
+    public name: string;
+    public value: string;
 }
 
 export enum SymbolType
@@ -905,6 +953,7 @@ export class VariableNode extends BaseNode
 {
     public type: string;
     public value: string;
+    public variableType: string = "variable"; // "variable" or "property"
 }
 
 export class ParameterNode extends VariableNode

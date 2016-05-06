@@ -307,7 +307,6 @@ function addClassPropertiesMethodsParentClassesAndTraits(toReturn: CompletionIte
 
     classNode.methods.forEach((subNode) => {
         var accessModifier = "method " + buildAccessModifier(subNode.accessModifier);
-
         var insertText = subNode.name + "(" + stringifyMethodParams(subNode) +")";
 
         if (!isParentClass || (isParentClass && subNode.accessModifier != 1)) {
@@ -347,6 +346,7 @@ function stringifyMethodParams(subNode): string
 {
     var params = [];
     subNode.params.forEach(param => {
+        if(param.optional){return;}
         params.push(param.name);
     });
     return params.join(', ');

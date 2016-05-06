@@ -230,7 +230,7 @@ function addStaticClassMembers(toReturn: CompletionItem[], item:ClassNode)
             });
 
             if (!found) {
-                toReturn.push({ label: subNode.name, kind: CompletionItemKind.Method, detail: "method (static)", insertText: subNode.name + "()" });
+                toReturn.push({ label: subNode.name, kind: CompletionItemKind.Method, detail: "method (static)", insertText: subNode.name + "(" + stringifyMethodParams(subNode) +")" });
             }
         }
     });

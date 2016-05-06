@@ -152,7 +152,7 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
                             method.params.forEach((param) => {
                                 toReturn.push({ label: param.name, kind: CompletionItemKind.Property, detail: "parameter" });
                             });
-                            
+
                             method.globalVariables.forEach((globalVar) => {
                                 toReturn.push({ label: globalVar, kind: CompletionItemKind.Variable, detail: "global variable" });
                             });
@@ -200,7 +200,7 @@ function addStaticClassMembers(toReturn: CompletionItem[], item:ClassNode)
 {
     item.constants.forEach((subNode) => {
         // if (subNode.isStatic) {
-            
+
         // }
     });
     item.properties.forEach((subNode) => {
@@ -307,7 +307,8 @@ function addClassPropertiesMethodsParentClassesAndTraits(toReturn: CompletionIte
 
     classNode.methods.forEach((subNode) => {
         var accessModifier = "method " + buildAccessModifier(subNode.accessModifier);
-        var insertText = subNode.name + "()";
+
+        var insertText = subNode.name + "(" + stringifyMethodParams(subNode) +")";
 
         if (!isParentClass || (isParentClass && subNode.accessModifier != 1)) {
             toReturn.push({ label: subNode.name, kind: CompletionItemKind.Method, detail: accessModifier, insertText: insertText });
@@ -330,7 +331,7 @@ function addClassPropertiesMethodsParentClassesAndTraits(toReturn: CompletionIte
         if (traitNode != null) {
             addClassPropertiesMethodsParentClassesAndTraits(toReturn, traitNode, false);
         }
-    })
+    });
 
     if (classNode.extends != null && classNode.extends != "")
     {
@@ -340,6 +341,15 @@ function addClassPropertiesMethodsParentClassesAndTraits(toReturn: CompletionIte
             addClassPropertiesMethodsParentClassesAndTraits(toReturn, extendedClassNode, true);
         }
     }
+}
+
+function stringifyMethodParams(subNode): string
+{
+    var params = [];
+    subNode.params.forEach(param => {
+        params.push(param.name);
+    });
+    return params.join(', ');
 }
 
 function buildAccessModifier(modifier:number): string
@@ -416,7 +426,7 @@ connection.onRequest(requestType, (data) =>
     {
         var docsToDo = fileNames;
         var docsDoneCount = 0;
- 
+
         docsToDo.forEach(docPath =>
         {
             fs.readFile(docPath, { encoding: "utf8" }, (err, data) => {

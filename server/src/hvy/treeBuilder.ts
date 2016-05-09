@@ -23,7 +23,7 @@ export class TreeBuilder
         {
             phpParser.parser.locations = true;
             phpParser.parser.docBlocks = true;
-            phpParser.parser.suppressErrors = true;
+            phpParser.parser.suppressErrors = false;
             var ast = phpParser.parseCode(text);
 
             this.BuildObjectTree(ast, filePath).then((tree) =>
@@ -550,7 +550,6 @@ export class TreeBuilder
                     break;
             }
         }
-
         return tree;
     }
 
@@ -668,7 +667,7 @@ export class TreeBuilder
             codeLevel[2].forEach(funcCallLevel =>
             {
                 var paramNode: ParameterNode = new ParameterNode();
-                
+
                 if (funcCallLevel.length == 2)
                 {
                     paramNode.name = funcCallLevel[1];

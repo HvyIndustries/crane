@@ -53,28 +53,18 @@ export function activate(context: ExtensionContext)
         if (craneSettings) {
             var showStatusBarItem = craneSettings.get<boolean>("showStatusBarBugReportLink", true);
             if (showStatusBarItem) {
-                crane.statusBarItem.text = "$(bug) Report PHP Intellisense Bug";
-                crane.statusBarItem.tooltip = "Found a problem with the PHP Intellisense provided by Crane? Click here to file a bug report on Github";
-                crane.statusBarItem.command = "crane.reportBug";
-                crane.statusBarItem.show();
+                setTimeout(() => {
+                    crane.statusBarItem.text = "$(bug) Report PHP Intellisense Bug";
+                    crane.statusBarItem.tooltip = "Found a problem with the PHP Intellisense provided by Crane? Click here to file a bug report on Github";
+                    crane.statusBarItem.command = "crane.reportBug";
+                    crane.statusBarItem.show();
+                }, 5000);
             } else {
                 crane.statusBarItem.hide();
             }
         } else {
             crane.statusBarItem.hide();
         }
-    });
-
-    langClient.onReady().then(val => {
-        workspace.findFiles('**/*.php', '').then(files => {
-            console.log(`Files to parse: ${files.length}`);
-            var paths: string[] = [];
-            files.forEach(file => {
-                paths.push(file.fsPath);
-            });
-            var buildFromFiles: RequestType<any, any, any> = { method: "buildFromFiles" };
-            langClient.sendRequest(buildFromFiles, {files: paths});
-        });
     });
 
     // Register commands for QoL improvements

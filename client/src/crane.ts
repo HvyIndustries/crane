@@ -7,7 +7,7 @@
 "use strict";
 
 import { Disposable, workspace, window, TextDocument, TextEditor, StatusBarAlignment, StatusBarItem } from 'vscode';
-import { LanguageClient, RequestType } from 'vscode-languageclient';
+import { LanguageClient, RequestType, NotificationType } from 'vscode-languageclient';
 import { ThrottledDelayer } from './utils/async';
 
 const exec = require('child_process').exec;
@@ -52,7 +52,7 @@ export default class Crane
         this.statusBarItem.show();
 
         // Send request to server to build object tree for all workspace files
-        // this.processAllFilesInWorkspace();
+        this.processAllFilesInWorkspace();
     }
 
     public reportBug()
@@ -85,10 +85,25 @@ export default class Crane
 
     private processAllFilesInWorkspace()
     {
-        if (workspace.rootPath == undefined) return;
-
-        var requestType: RequestType<any, any, any> = { method: "buildObjectTreeForWorkspace" };
-        this.langClient.sendRequest(requestType);
+        var fileProcessCount = 0;
+        workspace.findFiles('**/*.php', '').then(files => {
+            console.log(`Files to parse: ${files.length}`);
+            fileProcessCount = files.length;
+            var paths: string[] = [];
+            var i = 0;
+            files.forEach(file => {
+                paths.push(file.fsPath);
+            });
+            this.langClient.sendRequest({ method: "buildFromFiles" }, {files: paths});
+        });
+        var fileProcessed: NotificationType<any> = { method: "fileProcessed" };
+        this.langClient.onNotification(fileProcessed, data => {
+            var percent:string = ((data.total / fileProcessCount) * 100).toFixed(2);
+            this.statusBarItem.text = `$(zap) Processing source files (${data.total} of ${fileProcessCount} / ${percent}%)`;
+            if(data.total == fileProcessCount){
+                this.statusBarItem.text = 'File Processing Complete';
+            }
+        });
     }
 
     private onChangeTextHandler(textDocument: TextDocument)

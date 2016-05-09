@@ -65,6 +65,18 @@ export function activate(context: ExtensionContext)
         }
     });
 
+    langClient.onReady().then(val => {
+        workspace.findFiles('**/*.php', '').then(files => {
+            console.log(`Files to parse: ${files.length}`);
+            var paths: string[] = [];
+            files.forEach(file => {
+                paths.push(file.fsPath);
+            });
+            var buildFromFiles: RequestType<any, any, any> = { method: "buildFromFiles" };
+            langClient.sendRequest(buildFromFiles, {files: paths});
+        });
+    });
+
     // Register commands for QoL improvements
     let duplicateLineCommand = commands.registerCommand("crane.duplicateLine", qol.duplicateLineOrSelection);
     let reportBugCommand = commands.registerCommand("crane.reportBug", crane.reportBug);

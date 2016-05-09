@@ -418,6 +418,28 @@ connection.onRequest(requestType, (requestObj) =>
     });
 });
 
+var buildFromFiles: RequestType<any, any, any> = { method: "buildFromFiles" };
+connection.onRequest(buildFromFiles, (data) => {
+    var docsToDo: string[] = data.files;
+    var docsDoneCount = 0;
+    connection.console.log('starting work!');
+    docsToDo.forEach(file => {
+        fs.readFile(file, { encoding: "utf8" }, (err, data) => {
+            treeBuilder.Parse(data, file).then(result => {
+                addToWorkspaceTree(result.tree);
+                docsDoneCount++;
+                connection.console.log(`(${docsDoneCount})Processing file: ${file}`);
+                if (docsToDo.length == docsDoneCount) {
+                    notifyClientOfWorkComplete();
+                    connection.console.log('work done!');
+                }
+            }).catch(error => {
+                connection.console.log(error);
+                notifyClientOfWorkComplete();
+            });
+        });
+    });
+});
 var requestType: RequestType<any, any, any> = { method: "buildObjectTreeForWorkspace" };
 connection.onRequest(requestType, (data) =>
 {
@@ -432,6 +454,7 @@ connection.onRequest(requestType, (data) =>
             fs.readFile(docPath, { encoding: "utf8" }, (err, data) => {
                 treeBuilder.Parse(data, docPath).then(result => {
                     addToWorkspaceTree(result.tree);
+                    connection.console.log(`(${docsDoneCount})Processing file: ${docPath}`);
 
                     docsDoneCount++;
 

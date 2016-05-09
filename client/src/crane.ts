@@ -52,7 +52,7 @@ export default class Crane
         this.statusBarItem.show();
 
         // Send request to server to build object tree for all workspace files
-        this.processAllFilesInWorkspace();
+        // this.processAllFilesInWorkspace();
     }
 
     public reportBug()

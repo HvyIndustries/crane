@@ -30,14 +30,19 @@ export class TreeBuilder
     {
         return new Promise((resolve, reject) =>
         {
-            connection.console.log(filePath);
-            var phpInstance = phpParser.create({
-                locations: true,
-                docBlocks: true,
-                suppressErrors: true
-            });
 
-            var ast = phpInstance.parseCode(text);
+            phpParser.parser.locations = true;
+            phpParser.parser.docBlocks = true;
+            phpParser.parser.suppressErrors = true;
+            var ast = phpParser.parseCode(text);
+            // connection.console.log(filePath);
+            // var phpInstance = phpParser.create({
+            //     locations: true,
+            //     docBlocks: true,
+            //     suppressErrors: true
+            // });
+
+            // var ast = phpInstance.parseCode(text);
 
             this.BuildObjectTree(ast, filePath).then((tree) =>
             {

@@ -423,7 +423,27 @@ connection.onRequest(requestType, (requestObj) =>
 
 let totalToDo = 0;
 let docsDoneCount = 0;
-function processFiles(files){
+
+var buildFromFiles: RequestType<any, any, any> = { method: "buildFromFiles" };
+connection.onRequest(buildFromFiles, (data) => {
+    var docsToDo: string[] = data.files;
+    totalToDo = docsToDo.length;
+    docsDoneCount = 0;
+    connection.console.log('starting work!');
+    glob('/../phpstubs/*.php', {cwd: __dirname, root: __dirname}, (err, fileNames) => {
+        connection.console.log(fileNames);
+        processFiles(fileNames);
+        processFiles(docsToDo, true);
+    });
+    // glob('/**/*.php', { cwd: workspaceRoot, root: workspaceRoot }, (err, fileNames) => {
+    //     totalToDo = fileNames.length;
+    //     connection.console.log(fileNames);
+    //     processFiles(fileNames);
+    //     // processFiles(docsToDo);
+    // });
+});
+
+function processFiles(files: string[], isWorkspaceFiles: boolean = false){
     files.forEach(file => {
         fq.readFile(file, {encoding: 'utf8'}, (err, data) => {
             if(err){
@@ -432,9 +452,13 @@ function processFiles(files){
             }
             treeBuilder.Parse(data, file).then(result => {
                 addToWorkspaceTree(result.tree);
-                docsDoneCount++;
-                connection.sendNotification({ method: "fileProcessed" }, { total: docsDoneCount });
-                connection.console.log(`(${docsDoneCount}:${totalToDo})Processed file: ${file}`);
+                var debugMsg = `Processed file: ${file}`;
+                if(isWorkspaceFiles){
+                    docsDoneCount++;
+                    connection.sendNotification({ method: "fileProcessed" }, { total: docsDoneCount });
+                    debugMsg = `(${docsDoneCount} of ${totalToDo}) File: ${file}`;
+                }
+                connection.console.log(debugMsg);
                 if (totalToDo == docsDoneCount) {
                     connection.console.log('work done!');
                     notifyClientOfWorkComplete();
@@ -443,25 +467,6 @@ function processFiles(files){
         });
     });
 }
-
-var buildFromFiles: RequestType<any, any, any> = { method: "buildFromFiles" };
-connection.onRequest(buildFromFiles, (data) => {
-    var docsToDo: string[] = data.files;
-    totalToDo = docsToDo.length;
-    docsDoneCount = 0;
-    connection.console.log('starting work!');
-    // glob('/../phpstubs/*.php', {cwd: __dirname, root: __dirname}, (err, fileNames) => {
-    //     connection.console.log(fileNames);
-    //     processFiles(fileNames);
-    //     // processFiles(docsToDo);
-    // });
-    glob('/**/*.php', { cwd: workspaceRoot, root: workspaceRoot }, (err, fileNames) => {
-        totalToDo = fileNames.length;
-        connection.console.log(fileNames);
-        processFiles(fileNames);
-        // processFiles(docsToDo);
-    });
-});
 
 function addToWorkspaceTree(tree:FileNode)
 {

@@ -419,34 +419,41 @@ connection.onRequest(requestType, (requestObj) =>
 });
 
 var requestType: RequestType<any, any, any> = { method: "buildObjectTreeForWorkspace" };
-connection.onRequest(requestType, (data) =>
-{
+connection.onRequest(requestType, (data) => {
+    connection.console.log(__dirname);
+    glob('/../phpstubs/*.php', {cwd: __dirname, root: __dirname}, (err, fileNames) => {
+        connection.console.log(fileNames);
+        processFiles(fileNames);
+    });
     // Load all PHP files in workspace
-    glob("/**/*.php", { cwd: workspaceRoot, root: workspaceRoot }, function (err, fileNames)
+    glob("/**/*.php", { cwd: workspaceRoot, root: workspaceRoot }, function (err, fileNames) {
+        processFiles(fileNames);
+    });
+});
+
+function processFiles(fileNames){
+    var docsToDo = fileNames;
+    var docsDoneCount = 0;
+
+    docsToDo.forEach(docPath =>
     {
-        var docsToDo = fileNames;
-        var docsDoneCount = 0;
+        fs.readFile(docPath, { encoding: "utf8" }, (err, data) => {
+            treeBuilder.Parse(data, docPath).then(result => {
+                addToWorkspaceTree(result.tree);
 
-        docsToDo.forEach(docPath =>
-        {
-            fs.readFile(docPath, { encoding: "utf8" }, (err, data) => {
-                treeBuilder.Parse(data, docPath).then(result => {
-                    addToWorkspaceTree(result.tree);
+                docsDoneCount++;
 
-                    docsDoneCount++;
-
-                    if (docsToDo.length == docsDoneCount) {
-                        notifyClientOfWorkComplete();
-                    }
-                })
-                .catch(error => {
-                    connection.console.log(error);
+                if (docsToDo.length == docsDoneCount) {
                     notifyClientOfWorkComplete();
-                });
+                }
+            })
+            .catch(error => {
+                connection.console.log(error);
+                notifyClientOfWorkComplete();
             });
         });
     });
-});
+}
 
 function addToWorkspaceTree(tree:FileNode)
 {

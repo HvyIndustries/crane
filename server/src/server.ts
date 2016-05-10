@@ -17,7 +17,9 @@ import {
 import { TreeBuilder, FileNode, ClassNode } from "./hvy/treeBuilder";
 
 const glob = require("glob");
-const fs = require("fs");
+// const fq = require("fs");
+const FileQueue = require('filequeue');
+const fq = new FileQueue(100);
 
 let connection: IConnection = createConnection(new IPCMessageReader(process), new IPCMessageWriter(process));
 
@@ -25,6 +27,7 @@ let documents: TextDocuments = new TextDocuments();
 documents.listen(connection);
 
 let treeBuilder: TreeBuilder = new TreeBuilder();
+treeBuilder.SetConnection(connection);
 let workspaceTree: FileNode[] = [];
 
 let workspaceRoot: string;
@@ -418,42 +421,47 @@ connection.onRequest(requestType, (requestObj) =>
     });
 });
 
-var requestType: RequestType<any, any, any> = { method: "buildObjectTreeForWorkspace" };
-connection.onRequest(requestType, (data) => {
-    connection.console.log(__dirname);
-    glob('/../phpstubs/*.php', {cwd: __dirname, root: __dirname}, (err, fileNames) => {
-        connection.console.log(fileNames);
-        processFiles(fileNames);
-    });
-    // Load all PHP files in workspace
-    glob("/**/*.php", { cwd: workspaceRoot, root: workspaceRoot }, function (err, fileNames) {
-        processFiles(fileNames);
-    });
-});
-
-function processFiles(fileNames){
-    var docsToDo = fileNames;
-    var docsDoneCount = 0;
-
-    docsToDo.forEach(docPath =>
-    {
-        fs.readFile(docPath, { encoding: "utf8" }, (err, data) => {
-            treeBuilder.Parse(data, docPath).then(result => {
+let totalToDo = 0;
+let docsDoneCount = 0;
+function processFiles(files){
+    files.forEach(file => {
+        fq.readFile(file, {encoding: 'utf8'}, (err, data) => {
+            if(err){
+                connection.console.log(err);
+                throw err;
+            }
+            treeBuilder.Parse(data, file).then(result => {
                 addToWorkspaceTree(result.tree);
-
                 docsDoneCount++;
-
-                if (docsToDo.length == docsDoneCount) {
+                connection.sendNotification({ method: "fileProcessed" }, { total: docsDoneCount });
+                connection.console.log(`(${docsDoneCount}:${totalToDo})Processed file: ${file}`);
+                if (totalToDo == docsDoneCount) {
+                    connection.console.log('work done!');
                     notifyClientOfWorkComplete();
                 }
-            })
-            .catch(error => {
-                connection.console.log(error);
-                notifyClientOfWorkComplete();
             });
         });
     });
 }
+
+var buildFromFiles: RequestType<any, any, any> = { method: "buildFromFiles" };
+connection.onRequest(buildFromFiles, (data) => {
+    var docsToDo: string[] = data.files;
+    totalToDo = docsToDo.length;
+    docsDoneCount = 0;
+    connection.console.log('starting work!');
+    // glob('/../phpstubs/*.php', {cwd: __dirname, root: __dirname}, (err, fileNames) => {
+    //     connection.console.log(fileNames);
+    //     processFiles(fileNames);
+    //     // processFiles(docsToDo);
+    // });
+    glob('/**/*.php', { cwd: workspaceRoot, root: workspaceRoot }, (err, fileNames) => {
+        totalToDo = fileNames.length;
+        connection.console.log(fileNames);
+        processFiles(fileNames);
+        // processFiles(docsToDo);
+    });
+});
 
 function addToWorkspaceTree(tree:FileNode)
 {
@@ -472,7 +480,7 @@ function addToWorkspaceTree(tree:FileNode)
     }
 
     // Debug
-    connection.console.log("Parsed file: " + tree.path);
+    // connection.console.log("Parsed file: " + tree.path);
 }
 
 function getClassNodeFromTree(className:string): ClassNode

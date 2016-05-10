@@ -53,10 +53,12 @@ export function activate(context: ExtensionContext)
         if (craneSettings) {
             var showStatusBarItem = craneSettings.get<boolean>("showStatusBarBugReportLink", true);
             if (showStatusBarItem) {
-                crane.statusBarItem.text = "$(bug) Report PHP Intellisense Bug";
-                crane.statusBarItem.tooltip = "Found a problem with the PHP Intellisense provided by Crane? Click here to file a bug report on Github";
-                crane.statusBarItem.command = "crane.reportBug";
-                crane.statusBarItem.show();
+                setTimeout(() => {
+                    crane.statusBarItem.text = "$(bug) Report PHP Intellisense Bug";
+                    crane.statusBarItem.tooltip = "Found a problem with the PHP Intellisense provided by Crane? Click here to file a bug report on Github";
+                    crane.statusBarItem.command = "crane.reportBug";
+                    crane.statusBarItem.show();
+                }, 5000);
             } else {
                 crane.statusBarItem.hide();
             }

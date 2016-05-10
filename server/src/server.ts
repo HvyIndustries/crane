@@ -27,6 +27,7 @@ let documents: TextDocuments = new TextDocuments();
 documents.listen(connection);
 
 let treeBuilder: TreeBuilder = new TreeBuilder();
+treeBuilder.SetConnection(connection);
 let workspaceTree: FileNode[] = [];
 
 let workspaceRoot: string;

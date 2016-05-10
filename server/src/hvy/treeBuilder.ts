@@ -6,7 +6,11 @@
 
 "use strict";
 
+import { IConnection } from 'vscode-languageserver';
+
 var phpParser = require("php-parser");
+
+let connection: IConnection;
 
 export class TreeBuilder
 {
@@ -16,15 +20,24 @@ export class TreeBuilder
 
     // TODO -- Handle PHP written inside an HTML file (strip everything except php code)
 
+
+    public SetConnection(conn: IConnection){
+        connection = conn;
+    }
+
     // Parse PHP code to generate an object tree for intellisense suggestions
     public Parse(text:string, filePath:string) : Promise<any>
     {
         return new Promise((resolve, reject) =>
         {
-            phpParser.parser.locations = true;
-            phpParser.parser.docBlocks = true;
-            phpParser.parser.suppressErrors = false;
-            var ast = phpParser.parseCode(text);
+            connection.console.log(filePath);
+            var phpInstance = phpParser.create({
+                locations: true,
+                docBlocks: true,
+                suppressErrors: true
+            });
+
+            var ast = phpInstance.parseCode(text);
 
             this.BuildObjectTree(ast, filePath).then((tree) =>
             {

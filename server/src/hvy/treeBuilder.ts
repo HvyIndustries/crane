@@ -6,7 +6,11 @@
 
 "use strict";
 
+import { IConnection } from 'vscode-languageserver';
+
 var phpParser = require("php-parser");
+
+let connection: IConnection;
 
 export class TreeBuilder
 {
@@ -16,27 +20,45 @@ export class TreeBuilder
 
     // TODO -- Handle PHP written inside an HTML file (strip everything except php code)
 
+
+    public SetConnection(conn: IConnection){
+        connection = conn;
+    }
+
     // Parse PHP code to generate an object tree for intellisense suggestions
     public Parse(text:string, filePath:string) : Promise<any>
     {
         return new Promise((resolve, reject) =>
         {
-            phpParser.parser.locations = true;
-            phpParser.parser.docBlocks = true;
-            phpParser.parser.suppressErrors = true;
-            var ast = phpParser.parseCode(text);
 
-            this.BuildObjectTree(ast, filePath).then((tree) =>
-            {
-                var symbolCache = this.BuildSymbolCache(tree, filePath).then(symbolCache =>
-                {
+            // phpParser.parser.locations = true;
+            // phpParser.parser.docBlocks = true;
+            // phpParser.parser.suppressErrors = true;
+            // var ast = phpParser.parseCode(text);
+            // connection.console.log(filePath);
+            var ast = phpParser.create({
+                parser: {
+                    locations: true,
+                    docBlocks: true,
+                    suppressErrors: true
+                }
+            }).parseCode(text);
+
+            // connection.console.log(ast);
+
+            this.BuildObjectTree(ast, filePath).then((tree) => {
+                var symbolCache = this.BuildSymbolCache(tree, filePath).then(symbolCache => {
                     var returnObj = {
                         tree: tree,
                         symbolCache: symbolCache
                     };
 
                     resolve(returnObj);
+                }).catch(data => {
+                    reject(data);
                 });
+            }).catch(data => {
+                reject(data);
             });
         });
     }
@@ -550,7 +572,6 @@ export class TreeBuilder
                     break;
             }
         }
-
         return tree;
     }
 
@@ -668,7 +689,7 @@ export class TreeBuilder
             codeLevel[2].forEach(funcCallLevel =>
             {
                 var paramNode: ParameterNode = new ParameterNode();
-                
+
                 if (funcCallLevel.length == 2)
                 {
                     paramNode.name = funcCallLevel[1];

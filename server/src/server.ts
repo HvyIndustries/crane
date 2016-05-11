@@ -17,7 +17,10 @@ import {
 import { TreeBuilder, FileNode, ClassNode } from "./hvy/treeBuilder";
 
 const glob = require("glob");
-const fs = require("fs");
+// const fq = require("fs");
+const FileQueue = require('filequeue');
+const fq = new FileQueue(200);
+const util = require('util');
 
 let connection: IConnection = createConnection(new IPCMessageReader(process), new IPCMessageWriter(process));
 
@@ -25,6 +28,7 @@ let documents: TextDocuments = new TextDocuments();
 documents.listen(connection);
 
 let treeBuilder: TreeBuilder = new TreeBuilder();
+treeBuilder.SetConnection(connection);
 let workspaceTree: FileNode[] = [];
 
 let workspaceRoot: string;
@@ -152,7 +156,7 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
                             method.params.forEach((param) => {
                                 toReturn.push({ label: param.name, kind: CompletionItemKind.Property, detail: "parameter" });
                             });
-                            
+
                             method.globalVariables.forEach((globalVar) => {
                                 toReturn.push({ label: globalVar, kind: CompletionItemKind.Variable, detail: "global variable" });
                             });
@@ -200,7 +204,7 @@ function addStaticClassMembers(toReturn: CompletionItem[], item:ClassNode)
 {
     item.constants.forEach((subNode) => {
         // if (subNode.isStatic) {
-            
+
         // }
     });
     item.properties.forEach((subNode) => {
@@ -230,7 +234,7 @@ function addStaticClassMembers(toReturn: CompletionItem[], item:ClassNode)
             });
 
             if (!found) {
-                toReturn.push({ label: subNode.name, kind: CompletionItemKind.Method, detail: "method (static)", insertText: subNode.name + "()" });
+                toReturn.push({ label: subNode.name, kind: CompletionItemKind.Method, detail: "method (static)", insertText: subNode.name + "(" + stringifyMethodParams(subNode) +")" });
             }
         }
     });
@@ -307,7 +311,7 @@ function addClassPropertiesMethodsParentClassesAndTraits(toReturn: CompletionIte
 
     classNode.methods.forEach((subNode) => {
         var accessModifier = "method " + buildAccessModifier(subNode.accessModifier);
-        var insertText = subNode.name + "()";
+        var insertText = subNode.name + "(" + stringifyMethodParams(subNode) +")";
 
         if (!isParentClass || (isParentClass && subNode.accessModifier != 1)) {
             toReturn.push({ label: subNode.name, kind: CompletionItemKind.Method, detail: accessModifier, insertText: insertText });
@@ -330,7 +334,7 @@ function addClassPropertiesMethodsParentClassesAndTraits(toReturn: CompletionIte
         if (traitNode != null) {
             addClassPropertiesMethodsParentClassesAndTraits(toReturn, traitNode, false);
         }
-    })
+    });
 
     if (classNode.extends != null && classNode.extends != "")
     {
@@ -340,6 +344,16 @@ function addClassPropertiesMethodsParentClassesAndTraits(toReturn: CompletionIte
             addClassPropertiesMethodsParentClassesAndTraits(toReturn, extendedClassNode, true);
         }
     }
+}
+
+function stringifyMethodParams(subNode): string
+{
+    var params = [];
+    subNode.params.forEach(param => {
+        if(param.optional){return;}
+        params.push(param.name);
+    });
+    return params.join(', ');
 }
 
 function buildAccessModifier(modifier:number): string
@@ -408,35 +422,79 @@ connection.onRequest(requestType, (requestObj) =>
     });
 });
 
-var requestType: RequestType<any, any, any> = { method: "buildObjectTreeForWorkspace" };
-connection.onRequest(requestType, (data) =>
-{
-    // Load all PHP files in workspace
-    glob("/**/*.php", { cwd: workspaceRoot, root: workspaceRoot }, function (err, fileNames)
-    {
-        var docsToDo = fileNames;
-        var docsDoneCount = 0;
- 
-        docsToDo.forEach(docPath =>
-        {
-            fs.readFile(docPath, { encoding: "utf8" }, (err, data) => {
-                treeBuilder.Parse(data, docPath).then(result => {
+let docsDoneCount = 0;
+var docsToDo: string[] = [];
+var stubsToDo: string[] = [];
+
+var buildFromFiles: RequestType<any, any, any> = { method: "buildFromFiles" };
+connection.onRequest(buildFromFiles, (data) => {
+    docsToDo = data.files;
+    docsDoneCount = 0;
+    connection.console.log('starting work!');
+    glob('/../phpstubs/*.php', { cwd: __dirname, root: __dirname }, (err, fileNames) => {
+        // Process the php stubs
+        stubsToDo = fileNames;
+        connection.console.log(`Stub files to process: ${stubsToDo.length}`);
+        processStub().then(data => {
+            connection.console.log('stubs done!');
+            connection.console.log(`Workspace files to process: ${docsToDo.length}`);
+            processWorkspaceFile();
+        });
+
+        // Process the users workspace
+    });
+});
+
+/**
+ * Processes the stub files
+ * @param number offset
+ */
+function processStub() {
+    return new Promise((resolve, reject) => {
+        var offset: number = 0;
+        stubsToDo.forEach(file => {
+            fq.readFile(file, { encoding: 'utf8' }, (err, data) => {
+                treeBuilder.Parse(data, file).then(result => {
                     addToWorkspaceTree(result.tree);
-
-                    docsDoneCount++;
-
-                    if (docsToDo.length == docsDoneCount) {
-                        notifyClientOfWorkComplete();
+                    connection.console.log(`${offset} Stub Processed: ${file}`);
+                    offset++;
+                    if (offset == stubsToDo.length) {
+                        resolve(offset);
                     }
-                })
-                .catch(error => {
-                    connection.console.log(error);
-                    notifyClientOfWorkComplete();
                 });
             });
         });
     });
-});
+}
+
+/**
+ * Processes the users workspace files
+ * @param number offset
+ */
+function processWorkspaceFile() {
+    var offset: number = 0;
+    docsToDo.forEach(file => {
+        fq.readFile(file, { encoding: 'utf8' }, (err, data) => {
+            treeBuilder.Parse(data, file).then(result => {
+                addToWorkspaceTree(result.tree);
+                docsDoneCount++;
+                connection.console.log(`(${docsDoneCount} of ${docsToDo.length}) File: ${file}`);
+                connection.sendNotification({ method: "fileProcessed" }, { total: docsDoneCount });
+                if (docsToDo.length == docsDoneCount) {
+                    connection.console.log('work done!');
+                    notifyClientOfWorkComplete();
+                }
+            }).catch(data => {
+                docsDoneCount++;
+                if (docsToDo.length == docsDoneCount) {
+                    connection.console.log('work done!');
+                    notifyClientOfWorkComplete();
+                }
+                connection.console.log((util.inspect(data, false, null));
+            });
+        });
+    });
+}
 
 function addToWorkspaceTree(tree:FileNode)
 {
@@ -455,7 +513,7 @@ function addToWorkspaceTree(tree:FileNode)
     }
 
     // Debug
-    connection.console.log("Parsed file: " + tree.path);
+    // connection.console.log("Parsed file: " + tree.path);
 }
 
 function getClassNodeFromTree(className:string): ClassNode

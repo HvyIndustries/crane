@@ -485,6 +485,11 @@ function processWorkspaceFile() {
                     notifyClientOfWorkComplete();
                 }
             }).catch(data => {
+                docsDoneCount++;
+                if (docsToDo.length == docsDoneCount) {
+                    connection.console.log('work done!');
+                    notifyClientOfWorkComplete();
+                }
                 connection.console.log((util.inspect(data, false, null));
             });
         });

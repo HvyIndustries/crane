@@ -439,6 +439,10 @@ connection.onRequest(buildFromFiles, (data) => {
             connection.console.log('stubs done!');
             connection.console.log(`Workspace files to process: ${docsToDo.length}`);
             processWorkspaceFile();
+        }).catch(data => {
+            connection.console.log('No stubs found!');
+            connection.console.log(`Workspace files to process: ${docsToDo.length}`);
+            processWorkspaceFile();
         });
 
         // Process the users workspace
@@ -453,7 +457,7 @@ function processStub() {
     return new Promise((resolve, reject) => {
         var offset: number = 0;
         if (stubsToDo.length == 0) {
-            resolve();
+            reject();
         }
         stubsToDo.forEach(file => {
             fq.readFile(file, { encoding: 'utf8' }, (err, data) => {

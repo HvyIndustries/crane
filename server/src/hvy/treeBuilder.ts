@@ -146,7 +146,7 @@ export class TreeBuilder
                     // branch[1] is array of namespace parts
                     // branch[2] is array of classes/interfaces/traits inside namespace
                     branch[2].forEach(item => {
-                        if (item != null) {
+                        if (item !== null) {
                             this.ProcessBranch(item, branch[1], tree);
                         }
                     });

@@ -497,7 +497,8 @@ function processWorkspaceFile() {
                     connection.console.log('work done!');
                     notifyClientOfWorkComplete();
                 }
-                connection.console.log((util.inspect(data, false, null));
+                connection.console.log((util.inspect(data, false, null)));
+                connection.console.log(`Issue processing ${file}`);
             });
         });
     });

@@ -31,30 +31,34 @@ export class TreeBuilder
         return new Promise((resolve, reject) =>
         {
 
-            phpParser.parser.locations = true;
-            phpParser.parser.docBlocks = true;
-            phpParser.parser.suppressErrors = true;
-            var ast = phpParser.parseCode(text);
+            // phpParser.parser.locations = true;
+            // phpParser.parser.docBlocks = true;
+            // phpParser.parser.suppressErrors = true;
+            // var ast = phpParser.parseCode(text);
             // connection.console.log(filePath);
-            // var phpInstance = phpParser.create({
-            //     locations: true,
-            //     docBlocks: true,
-            //     suppressErrors: true
-            // });
+            var ast = phpParser.create({
+                parser: {
+                    locations: true,
+                    docBlocks: true,
+                    suppressErrors: true
+                }
+            }).parseCode(text);
 
-            // var ast = phpInstance.parseCode(text);
+            // connection.console.log(ast);
 
-            this.BuildObjectTree(ast, filePath).then((tree) =>
-            {
-                var symbolCache = this.BuildSymbolCache(tree, filePath).then(symbolCache =>
-                {
+            this.BuildObjectTree(ast, filePath).then((tree) => {
+                var symbolCache = this.BuildSymbolCache(tree, filePath).then(symbolCache => {
                     var returnObj = {
                         tree: tree,
                         symbolCache: symbolCache
                     };
 
                     resolve(returnObj);
+                }).catch(data => {
+                    reject(data);
                 });
+            }).catch(data => {
+                reject(data);
             });
         });
     }

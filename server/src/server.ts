@@ -19,7 +19,8 @@ import { TreeBuilder, FileNode, ClassNode } from "./hvy/treeBuilder";
 const glob = require("glob");
 // const fq = require("fs");
 const FileQueue = require('filequeue');
-const fq = new FileQueue(100);
+const fq = new FileQueue(200);
+const util = require('util');
 
 let connection: IConnection = createConnection(new IPCMessageReader(process), new IPCMessageWriter(process));
 
@@ -421,48 +422,70 @@ connection.onRequest(requestType, (requestObj) =>
     });
 });
 
-let totalToDo = 0;
 let docsDoneCount = 0;
+var docsToDo: string[] = [];
+var stubsToDo: string[] = [];
 
 var buildFromFiles: RequestType<any, any, any> = { method: "buildFromFiles" };
 connection.onRequest(buildFromFiles, (data) => {
-    var docsToDo: string[] = data.files;
-    totalToDo = docsToDo.length;
+    docsToDo = data.files;
     docsDoneCount = 0;
     connection.console.log('starting work!');
-    glob('/../phpstubs/*.php', {cwd: __dirname, root: __dirname}, (err, fileNames) => {
-        connection.console.log(fileNames);
-        processFiles(fileNames);
-        processFiles(docsToDo, true);
+    glob('/../phpstubs/*.php', { cwd: __dirname, root: __dirname }, (err, fileNames) => {
+        // Process the php stubs
+        stubsToDo = fileNames;
+        connection.console.log(`Stub files to process: ${stubsToDo.length}`);
+        processStub().then(data => {
+            connection.console.log('stubs done!');
+            connection.console.log(`Workspace files to process: ${docsToDo.length}`);
+            processWorkspaceFile();
+        });
+
+        // Process the users workspace
     });
-    // glob('/**/*.php', { cwd: workspaceRoot, root: workspaceRoot }, (err, fileNames) => {
-    //     totalToDo = fileNames.length;
-    //     connection.console.log(fileNames);
-    //     processFiles(fileNames);
-    //     // processFiles(docsToDo);
-    // });
 });
 
-function processFiles(files: string[], isWorkspaceFiles: boolean = false){
-    files.forEach(file => {
-        fq.readFile(file, {encoding: 'utf8'}, (err, data) => {
-            if(err){
-                connection.console.log(err);
-                throw err;
-            }
+/**
+ * Processes the stub files
+ * @param number offset
+ */
+function processStub() {
+    return new Promise((resolve, reject) => {
+        var offset: number = 0;
+        stubsToDo.forEach(file => {
+            fq.readFile(file, { encoding: 'utf8' }, (err, data) => {
+                treeBuilder.Parse(data, file).then(result => {
+                    addToWorkspaceTree(result.tree);
+                    connection.console.log(`${offset} Stub Processed: ${file}`);
+                    offset++;
+                    if (offset == stubsToDo.length) {
+                        resolve(offset);
+                    }
+                });
+            });
+        });
+    });
+}
+
+/**
+ * Processes the users workspace files
+ * @param number offset
+ */
+function processWorkspaceFile() {
+    var offset: number = 0;
+    docsToDo.forEach(file => {
+        fq.readFile(file, { encoding: 'utf8' }, (err, data) => {
             treeBuilder.Parse(data, file).then(result => {
                 addToWorkspaceTree(result.tree);
-                var debugMsg = `Processed file: ${file}`;
-                if(isWorkspaceFiles){
-                    docsDoneCount++;
-                    connection.sendNotification({ method: "fileProcessed" }, { total: docsDoneCount });
-                    debugMsg = `(${docsDoneCount} of ${totalToDo}) File: ${file}`;
-                }
-                connection.console.log(debugMsg);
-                if (totalToDo == docsDoneCount) {
+                docsDoneCount++;
+                connection.console.log(`(${docsDoneCount} of ${docsToDo.length}) File: ${file}`);
+                connection.sendNotification({ method: "fileProcessed" }, { total: docsDoneCount });
+                if (docsToDo.length == docsDoneCount) {
                     connection.console.log('work done!');
                     notifyClientOfWorkComplete();
                 }
+            }).catch(data => {
+                connection.console.log((util.inspect(data, false, null));
             });
         });
     });

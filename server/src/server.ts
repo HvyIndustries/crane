@@ -452,6 +452,9 @@ connection.onRequest(buildFromFiles, (data) => {
 function processStub() {
     return new Promise((resolve, reject) => {
         var offset: number = 0;
+        if (stubsToDo.length == 0) {
+            resolve();
+        }
         stubsToDo.forEach(file => {
             fq.readFile(file, { encoding: 'utf8' }, (err, data) => {
                 treeBuilder.Parse(data, file).then(result => {
@@ -459,7 +462,7 @@ function processStub() {
                     connection.console.log(`${offset} Stub Processed: ${file}`);
                     offset++;
                     if (offset == stubsToDo.length) {
-                        resolve(offset);
+                        resolve();
                     }
                 });
             });

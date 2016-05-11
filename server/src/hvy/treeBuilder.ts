@@ -83,7 +83,7 @@ export class TreeBuilder
         {
             // Only foreach if branch is an array of arrays
             branch.forEach(element => {
-                if (element != null) {
+                if (element !== null) {
                     this.ProcessBranch(element, parentBranches, tree);
                 }
             });
@@ -146,7 +146,9 @@ export class TreeBuilder
                     // branch[1] is array of namespace parts
                     // branch[2] is array of classes/interfaces/traits inside namespace
                     branch[2].forEach(item => {
-                        this.ProcessBranch(item, branch[1], tree);
+                        if (item != null) {
+                            this.ProcessBranch(item, branch[1], tree);
+                        }
                     });
                     break;
 

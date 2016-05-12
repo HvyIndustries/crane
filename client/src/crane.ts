@@ -96,6 +96,7 @@ export default class Crane
     }
 
     public processFiles() {
+        if (workspace.rootPath == undefined) return;
         var fileProcessCount = 0;
         // Find all the php files to process
         workspace.findFiles('**/*.php', '').then(files => {

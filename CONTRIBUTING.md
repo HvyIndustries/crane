@@ -4,6 +4,15 @@ As an open source project, we rely on community members contributing code to sta
 
 Please feel free to find an open bug and do some work on it, then send us a pull request.
 
+## Bug Reports
+
+Please submit as much detail as possible when creating a bug report. Saying "it doesn't work" with no other detail is not helpful to us; you should include:
+
+- Project size (number of files and size on disk)
+- Overview of computer specs
+- Your operating system
+- Some basic steps to reproduce the issue (if possible)
+
 ## Making Changes
 
 When making changes, please adhere to the coding standards detailed below.

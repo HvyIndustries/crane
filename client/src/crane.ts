@@ -6,7 +6,7 @@
 
 "use strict";
 
-import { Disposable, workspace, window, TextDocument, TextEditor, StatusBarAlignment, StatusBarItem } from 'vscode';
+import { Disposable, workspace, window, commands, TextDocument, TextEditor, StatusBarAlignment, StatusBarItem } from 'vscode';
 import { LanguageClient, RequestType, NotificationType } from 'vscode-languageclient';
 import { ThrottledDelayer } from './utils/async';
 
@@ -85,6 +85,17 @@ export default class Crane
 
     private processAllFilesInWorkspace()
     {
+        workspace.findFiles('**/.crane/tree', '').then(projectFile => {
+            if (projectFile.length > 0) {
+                console.log('Project File Found Loading File...');
+                this.langClient.sendRequest({ method: "buildFromProject" });
+            } else {
+                this.processFiles();
+            }
+        });
+    }
+
+    public processFiles() {
         var fileProcessCount = 0;
         // Find all the php files to process
         workspace.findFiles('**/*.php', '').then(files => {
@@ -103,10 +114,6 @@ export default class Crane
             // Get the percent complete
             var percent:string = ((data.total / fileProcessCount) * 100).toFixed(2);
             this.statusBarItem.text = `$(zap) Processing source files (${data.total} of ${fileProcessCount} / ${percent}%)`;
-            // Once all files have been processed, update the statusBarItem
-            if(data.total == fileProcessCount){
-                this.statusBarItem.text = 'File Processing Complete';
-            }
         });
     }
 

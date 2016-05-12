@@ -48,6 +48,7 @@ export function activate(context: ExtensionContext)
 
     var requestType: RequestType<any, any, any> = { method: "workDone" };
     langClient.onRequest(requestType, () => {
+        crane.statusBarItem.text = 'File Processing Complete';
         // Load settings
         let craneSettings = workspace.getConfiguration("crane");
         if (craneSettings) {
@@ -70,7 +71,9 @@ export function activate(context: ExtensionContext)
     // Register commands for QoL improvements
     let duplicateLineCommand = commands.registerCommand("crane.duplicateLine", qol.duplicateLineOrSelection);
     let reportBugCommand = commands.registerCommand("crane.reportBug", crane.reportBug);
+    let rebuildSources = commands.registerCommand('crane.rebuildSources', () => { crane.processFiles(); });
 
+    context.subscriptions.push(rebuildSources);
     context.subscriptions.push(disposable);
     context.subscriptions.push(duplicateLineCommand);
 }

@@ -17,7 +17,7 @@ import {
 import { TreeBuilder, FileNode, ClassNode } from "./hvy/treeBuilder";
 
 const glob = require("glob");
-// const fq = require("fs");
+const fs = require("fs");
 const FileQueue = require('filequeue');
 const fq = new FileQueue(200);
 const util = require('util');
@@ -32,9 +32,11 @@ treeBuilder.SetConnection(connection);
 let workspaceTree: FileNode[] = [];
 
 let workspaceRoot: string;
+var craneProjectDir: string;
 connection.onInitialize((params): InitializeResult =>
 {
     workspaceRoot = params.rootPath;
+    craneProjectDir = `${workspaceRoot}/.crane`;
 
     return {
         capabilities:
@@ -449,6 +451,19 @@ connection.onRequest(buildFromFiles, (data) => {
     });
 });
 
+var buildFromProject: RequestType<any, any, any> = { method: "buildFromProject" };
+connection.onRequest(buildFromProject, (data) => {
+    fq.readFile(`${craneProjectDir}/tree`, (err, data) => {
+        if (err) {
+
+        } else {
+            workspaceTree = JSON.parse(data);
+            notifyClientOfWorkComplete();
+            buildProjectFile();
+        }
+    });
+});
+
 /**
  * Processes the stub files
  * @param number offset
@@ -490,12 +505,14 @@ function processWorkspaceFile() {
                 if (docsToDo.length == docsDoneCount) {
                     connection.console.log('work done!');
                     notifyClientOfWorkComplete();
+                    buildProjectFile();
                 }
             }).catch(data => {
                 docsDoneCount++;
                 if (docsToDo.length == docsDoneCount) {
                     connection.console.log('work done!');
                     notifyClientOfWorkComplete();
+                    buildProjectFile();
                 }
                 connection.console.log((util.inspect(data, false, null)));
                 connection.console.log(`Issue processing ${file}`);
@@ -558,6 +575,56 @@ function notifyClientOfWorkComplete()
 {
     var requestType: RequestType<any, any, any> = { method: "workDone" };
     connection.sendRequest(requestType);
+}
+
+function buildProjectFile() {
+    createProjectFolder().then(data => {
+        if (data.folderCreated) {
+            connection.console.log('Crane Project Folder Created');
+        }
+        if (data.folderExists) {
+            saveProjectTree().then(data => {
+                connection.console.log('Crane Project Created');
+            });
+        } else {
+            connection.console.log('Crane Project Was Not Created');
+        }
+    });
+}
+
+function createProjectFolder(): Promise<any> {
+    return new Promise((resolve, reject) => {
+        fs.stat(craneProjectDir, (err, stat) => {
+            connection.console.log(err);
+            connection.console.log(stat);
+            if (err === null) {
+                resolve({ folderExists: true });
+            } else if (err.code == 'ENOENT') {
+                fs.mkdir(craneProjectDir, err => {
+                    fs.writeFileSync(`${craneProjectDir}/.gitignore`, "*\n!.gitignore");
+                    if (!err) {
+                        resolve({ folderExists: true, folderCreated: true });
+                    } else {
+                        resolve({ folderExists: false, folderCreated: false });
+                    }
+                });
+            } else {
+                resolve({ folderExists: null, folderCreated: false });
+            }
+        });
+    });
+}
+
+function saveProjectTree(): Promise<any> {
+    return new Promise((resolve, reject) => {
+        fq.writeFile(`${craneProjectDir}/tree`, JSON.stringify(workspaceTree), (err) => {
+            if (err) {
+                reject();
+            } else {
+                resolve();
+            }
+        });
+    });
 }
 
 connection.listen();

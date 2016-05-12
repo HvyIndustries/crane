@@ -217,7 +217,7 @@ function addStaticClassMembers(toReturn: CompletionItem[], item:ClassNode)
             });
 
             // Strip the leading $
-            var insertText = subNode.name.substr(1, subNode.name.length - 1);
+            var insertText = subNode.name;
 
             if (!found) {
                 toReturn.push({ label: subNode.name, kind: CompletionItemKind.Property, detail: "property (static)", insertText: insertText });
@@ -319,12 +319,14 @@ function addClassPropertiesMethodsParentClassesAndTraits(toReturn: CompletionIte
     });
 
     classNode.properties.forEach((subNode) => {
-        var accessModifier = "property " + buildAccessModifier(subNode.accessModifier);
-        // Strip the leading $
-        var insertText = subNode.name.substr(1, subNode.name.length - 1);
+        if (!subNode.isStatic) {
+            var accessModifier = "property " + buildAccessModifier(subNode.accessModifier);
+            // Strip the leading $
+            var insertText = subNode.name.substr(1, subNode.name.length - 1);
 
-        if (!isParentClass || (isParentClass && subNode.accessModifier != 1)) {
-            toReturn.push({ label: subNode.name, kind: CompletionItemKind.Property, detail: accessModifier, insertText: insertText });
+            if (!isParentClass || (isParentClass && subNode.accessModifier != 1)) {
+                toReturn.push({ label: subNode.name, kind: CompletionItemKind.Property, detail: accessModifier, insertText: insertText });
+            }
         }
     });
 

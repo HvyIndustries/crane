@@ -7,7 +7,7 @@
 "use strict";
 
 import { Disposable, workspace, window, TextDocument, TextEditor, StatusBarAlignment, StatusBarItem } from 'vscode';
-import { LanguageClient, RequestType } from 'vscode-languageclient';
+import { LanguageClient, RequestType, NotificationType } from 'vscode-languageclient';
 import { ThrottledDelayer } from './utils/async';
 
 const exec = require('child_process').exec;
@@ -86,9 +86,29 @@ export default class Crane
     private processAllFilesInWorkspace()
     {
         if (workspace.rootPath == undefined) return;
+        var fileProcessCount = 0;
+        // Find all the php files to process
+        workspace.findFiles('**/*.php', '').then(files => {
+            console.log(`Files to parse: ${files.length}`);
+            fileProcessCount = files.length;
+            var filePaths: string[] = [];
+            // Get the objects path value for the current file system
+            files.forEach(file => { filePaths.push(file.fsPath); });
+            // Send the array of paths to the language server
+            this.langClient.sendRequest({ method: "buildFromFiles" }, { files: filePaths });
+        });
 
-        var requestType: RequestType<any, any, any> = { method: "buildObjectTreeForWorkspace" };
-        this.langClient.sendRequest(requestType);
+        // Update the UI so the user knows the processing status
+        var fileProcessed: NotificationType<any> = { method: "fileProcessed" };
+        this.langClient.onNotification(fileProcessed, data => {
+            // Get the percent complete
+            var percent:string = ((data.total / fileProcessCount) * 100).toFixed(2);
+            this.statusBarItem.text = `$(zap) Processing source files (${data.total} of ${fileProcessCount} / ${percent}%)`;
+            // Once all files have been processed, update the statusBarItem
+            if(data.total == fileProcessCount){
+                this.statusBarItem.text = 'File Processing Complete';
+            }
+        });
     }
 
     private onChangeTextHandler(textDocument: TextDocument)

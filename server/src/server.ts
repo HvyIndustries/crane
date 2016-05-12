@@ -16,11 +16,17 @@ import {
 
 import { TreeBuilder, FileNode, ClassNode } from "./hvy/treeBuilder";
 
-const glob = require("glob");
 const fs = require("fs");
+const util = require('util');
+
+// Glob for file searching
+const glob = require("glob");
+// FileQueue for queuing files so we don't open too many
 const FileQueue = require('filequeue');
 const fq = new FileQueue(200);
-const util = require('util');
+
+
+const zlib = require('zlib');
 
 let connection: IConnection = createConnection(new IPCMessageReader(process), new IPCMessageWriter(process));
 
@@ -443,14 +449,15 @@ connection.onRequest(buildFromFiles, (data) => {
 
 var buildFromProject: RequestType<any, any, any> = { method: "buildFromProject" };
 connection.onRequest(buildFromProject, (data) => {
-    fq.readFile(`${craneProjectDir}/tree`, (err, data) => {
-        if (err) {
-
-        } else {
-            workspaceTree = JSON.parse(data);
+    fs.readFile(`${craneProjectDir}/tree`, (err, data) => {
+        var treeStream = new Buffer(data);
+        zlib.unzip(treeStream, (err, buffer) => {
+            if (err) {
+                connection.console.log((util.inspect(err, false, null)));
+            }
+            workspaceTree = JSON.parse(buffer.toString());
             notifyClientOfWorkComplete();
-            buildProjectFile();
-        }
+        });
     });
 });
 
@@ -575,6 +582,8 @@ function buildProjectFile() {
         if (data.folderExists) {
             saveProjectTree().then(data => {
                 connection.console.log('Crane Project Created');
+            }).catch(e => {
+                connection.console.log(e);
             });
         } else {
             connection.console.log('Crane Project Was Not Created');
@@ -585,8 +594,6 @@ function buildProjectFile() {
 function createProjectFolder(): Promise<any> {
     return new Promise((resolve, reject) => {
         fs.stat(craneProjectDir, (err, stat) => {
-            connection.console.log(err);
-            connection.console.log(stat);
             if (err === null) {
                 resolve({ folderExists: true });
             } else if (err.code == 'ENOENT') {
@@ -607,10 +614,17 @@ function createProjectFolder(): Promise<any> {
 
 function saveProjectTree(): Promise<any> {
     return new Promise((resolve, reject) => {
-        fq.writeFile(`${craneProjectDir}/tree`, JSON.stringify(workspaceTree), (err) => {
+        connection.console.log('packing tree file');
+        fq.writeFile(`${craneProjectDir}/tree.out`, JSON.stringify(workspaceTree), (err) => {
             if (err) {
                 reject();
             } else {
+                var gzip = zlib.createGzip();
+                var inp = fs.createReadStream(`${craneProjectDir}/tree.out`);
+                var out = fs.createWriteStream(`${craneProjectDir}/tree`);
+                inp.pipe(gzip).pipe(out).on('close', function () {;
+                    fs.unlinkSync(`${craneProjectDir}/tree.out`);
+                });
                 resolve();
             }
         });

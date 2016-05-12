@@ -18,7 +18,7 @@ For the best development experience, make sure you have the PHP linter enabled i
 
 ## User Feedback
 
-> Another total must have for PHP developers using Visual Studio Code.  
+> **Another total must have for PHP developers using Visual Studio Code.**  
 > Jan Hajek
 
 > That's the tweet I've been waiting for since the first public release of VS Code. Thanks.  

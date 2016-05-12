@@ -234,7 +234,7 @@ function addStaticClassMembers(toReturn: CompletionItem[], item:ClassNode)
             });
 
             if (!found) {
-                toReturn.push({ label: subNode.name, kind: CompletionItemKind.Method, detail: "method (static)", insertText: subNode.name + "(" + stringifyMethodParams(subNode) +")" });
+                toReturn.push({ label: subNode.name, kind: CompletionItemKind.Method, detail: "method (static)", insertText: subNode.name + "()" });
             }
         }
     });
@@ -311,7 +311,7 @@ function addClassPropertiesMethodsParentClassesAndTraits(toReturn: CompletionIte
 
     classNode.methods.forEach((subNode) => {
         var accessModifier = "method " + buildAccessModifier(subNode.accessModifier);
-        var insertText = subNode.name + "(" + stringifyMethodParams(subNode) +")";
+        var insertText = subNode.name + "()";
 
         if (!isParentClass || (isParentClass && subNode.accessModifier != 1)) {
             toReturn.push({ label: subNode.name, kind: CompletionItemKind.Method, detail: accessModifier, insertText: insertText });
@@ -344,16 +344,6 @@ function addClassPropertiesMethodsParentClassesAndTraits(toReturn: CompletionIte
             addClassPropertiesMethodsParentClassesAndTraits(toReturn, extendedClassNode, true);
         }
     }
-}
-
-function stringifyMethodParams(subNode): string
-{
-    var params = [];
-    subNode.params.forEach(param => {
-        if(param.optional){return;}
-        params.push(param.name);
-    });
-    return params.join(', ');
 }
 
 function buildAccessModifier(modifier:number): string

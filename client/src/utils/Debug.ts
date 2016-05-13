@@ -11,8 +11,8 @@ export class Debug {
      * Displays an info message prefixed with [INFO]
      */
     public static info(message: string) {
-        Debug.showConsole();
         if (Debug.debugMode) {
+            Debug.showConsole();
             outputConsole.appendLine(`[INFO] ${message}`);
         }
     }
@@ -21,8 +21,8 @@ export class Debug {
      * Displays an error message prefixed with [ERROR]
      */
     public static error(message: string) {
-        Debug.showConsole();
         if (Debug.debugMode) {
+            Debug.showConsole();
             outputConsole.appendLine(`[ERROR] ${message}`);
         }
     }
@@ -31,8 +31,8 @@ export class Debug {
      * Displays a warning message prefixed with [WARN]
      */
     public static warning(message: string) {
-        Debug.showConsole();
         if (Debug.debugMode) {
+            Debug.showConsole();
             outputConsole.appendLine(`[WARN] ${message}`);
         }
     }

@@ -6,17 +6,17 @@
 
 "use strict";
 
-import { Disposable, workspace, window, TextDocument, TextEditor, StatusBarAlignment, StatusBarItem, OutputChannel } from 'vscode';
+import { Disposable, workspace, window, TextDocument, TextEditor, StatusBarAlignment, StatusBarItem } from 'vscode';
 import { LanguageClient, RequestType, NotificationType } from 'vscode-languageclient';
 import { ThrottledDelayer } from './utils/async';
 import { Cranefs } from './cranefs';
+import { Debug } from './utils/Debug';
 
 const exec = require('child_process').exec;
 
 let craneSettings = workspace.getConfiguration("crane");
 
 const cranefs: Cranefs = new Cranefs();
-const outputConsole: OutputChannel = window.createOutputChannel("Crane Console");
 
 export default class Crane
 {
@@ -112,7 +112,7 @@ export default class Crane
         workspace.findFiles('**/*.php', '').then(files => {
             console.log(`Files to parse: ${files.length}`);
 
-            Crane.debug(`[INFO] Preparing to parse ${files.length} PHP source files...`);
+            Debug.info(`Preparing to parse ${files.length} PHP source files...`);
 
             fileProcessCount = files.length;
             var filePaths: string[] = [];
@@ -133,15 +133,15 @@ export default class Crane
             var percent: string = ((data.total / fileProcessCount) * 100).toFixed(2);
             this.statusBarItem.text = `$(zap) Processing source files (${data.total} of ${fileProcessCount} / ${percent}%)`;
             if (data.error) {
-                Crane.debug("[ERROR] There was a problem parsing PHP file: " + data.filename);
-                Crane.debug(`[ERROR] ${data.error}`);
+                Debug.error("There was a problem parsing PHP file: " + data.filename);
+                Debug.error(`${data.error}`);
             } else {
-                Crane.debug(`[INFO] Parsed file ${data.total} of ${fileProcessCount} : ${data.filename}`);
+                Debug.info(`Parsed file ${data.total} of ${fileProcessCount} : ${data.filename}`);
             }
 
             // Once all files have been processed, update the statusBarItem
             if (data.total == fileProcessCount){
-                Crane.debug("[INFO] Processing complete!");
+                Debug.info("Processing complete!");
                 this.statusBarItem.text = '$(check) Processing of PHP source files complete';
             }
         });
@@ -172,15 +172,6 @@ export default class Crane
             var requestType: RequestType<any, any, any> = { method: "buildObjectTreeForDocument" };
             this.langClient.sendRequest(requestType, { path, text }).then(() => resolve() );
         });
-    }
-
-    public static debug(message: string)
-    {
-        var debugMode: boolean = craneSettings ? craneSettings.get<boolean>("debugMode", false) : false;
-        if (debugMode) {
-            outputConsole.show();
-            outputConsole.appendLine(message);
-        }
     }
 
     dispose()

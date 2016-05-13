@@ -18,7 +18,7 @@ export class Debug {
     }
 
     /**
-     * Displays and error message prefixed with [ERROR]
+     * Displays an error message prefixed with [ERROR]
      */
     public static error(message: string) {
         Debug.showConsole();
@@ -28,7 +28,7 @@ export class Debug {
     }
 
     /**
-     * Displays and warning message prefixed with [WARN]
+     * Displays a warning message prefixed with [WARN]
      */
     public static warning(message: string) {
         Debug.showConsole();

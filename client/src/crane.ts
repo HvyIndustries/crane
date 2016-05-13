@@ -9,8 +9,14 @@
 import { Disposable, workspace, window, TextDocument, TextEditor, StatusBarAlignment, StatusBarItem, OutputChannel } from 'vscode';
 import { LanguageClient, RequestType, NotificationType } from 'vscode-languageclient';
 import { ThrottledDelayer } from './utils/async';
+import { Cranefs } from './cranefs';
 
 const exec = require('child_process').exec;
+
+let craneSettings = workspace.getConfiguration("crane");
+
+const cranefs: Cranefs = new Cranefs();
+const outputConsole: OutputChannel = window.createOutputChannel("Crane Console");
 
 export default class Crane
 {
@@ -20,7 +26,6 @@ export default class Crane
     private delayers: { [key: string]: ThrottledDelayer<void> };
 
     public statusBarItem: StatusBarItem;
-    public outputConsole: OutputChannel;
 
     constructor(languageClient: LanguageClient)
     {
@@ -33,8 +38,6 @@ export default class Crane
         workspace.onDidChangeTextDocument((e) => this.onChangeTextHandler(e.document), null, subscriptions);
         workspace.onDidCloseTextDocument((textDocument)=> { delete this.delayers[textDocument.uri.toString()]; }, null, subscriptions);
         workspace.onDidSaveTextDocument((document) => this.handleFileSave());
-
-        this.outputConsole = window.createOutputChannel("Crane Console");
 
         this.disposable = Disposable.from(...subscriptions);
 
@@ -53,6 +56,8 @@ export default class Crane
         this.statusBarItem.text = "$(zap) Processing PHP source files...";
         this.statusBarItem.tooltip = "Crane is processing the PHP source files in your workspace to build code completion suggestions";
         this.statusBarItem.show();
+
+        cranefs.createProjectDir(workspace.rootPath);
 
         // Send request to server to build object tree for all workspace files
         this.processAllFilesInWorkspace();
@@ -103,19 +108,11 @@ export default class Crane
 
         var fileProcessCount = 0;
 
-        let craneSettings = workspace.getConfiguration("crane");
-        let debugMode = false;
-        if (craneSettings) {
-            debugMode = craneSettings.get<boolean>("debugMode", false);
-        }
-
         // Find all the php files to process
         workspace.findFiles('**/*.php', '').then(files => {
             console.log(`Files to parse: ${files.length}`);
 
-            if (debugMode) {
-                this.outputConsole.appendLine(`[INFO] Preparing to parse ${files.length} PHP source files...`);
-            }
+            Crane.debug(`[INFO] Preparing to parse ${files.length} PHP source files...`);
 
             fileProcessCount = files.length;
             var filePaths: string[] = [];
@@ -136,23 +133,15 @@ export default class Crane
             var percent: string = ((data.total / fileProcessCount) * 100).toFixed(2);
             this.statusBarItem.text = `$(zap) Processing source files (${data.total} of ${fileProcessCount} / ${percent}%)`;
             if (data.error) {
-                this.outputConsole.appendLine("[ERROR] There was a problem parsing PHP file: " + data.filename);
-                this.outputConsole.appendLine(`[ERROR] ${data.error}`);
-
-                if (debugMode) {
-                    this.outputConsole.show();
-                }
+                Crane.debug("[ERROR] There was a problem parsing PHP file: " + data.filename);
+                Crane.debug(`[ERROR] ${data.error}`);
             } else {
-                if (debugMode) {
-                    this.outputConsole.appendLine(`[INFO] Parsed file ${data.total} of ${fileProcessCount} : ${data.filename}`);
-                }
+                Crane.debug(`[INFO] Parsed file ${data.total} of ${fileProcessCount} : ${data.filename}`);
             }
 
             // Once all files have been processed, update the statusBarItem
             if (data.total == fileProcessCount){
-                if (debugMode) {
-                    this.outputConsole.appendLine("[INFO] Processing complete!");
-                }
+                Crane.debug("[INFO] Processing complete!");
                 this.statusBarItem.text = '$(check) Processing of PHP source files complete';
             }
         });
@@ -183,6 +172,15 @@ export default class Crane
             var requestType: RequestType<any, any, any> = { method: "buildObjectTreeForDocument" };
             this.langClient.sendRequest(requestType, { path, text }).then(() => resolve() );
         });
+    }
+
+    public static debug(message: string)
+    {
+        var debugMode: boolean = craneSettings ? craneSettings.get<boolean>("debugMode", false) : false;
+        if (debugMode) {
+            outputConsole.show();
+            outputConsole.appendLine(message);
+        }
     }
 
     dispose()

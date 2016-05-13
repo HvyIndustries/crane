@@ -18,15 +18,13 @@ import { TreeBuilder, FileNode, ClassNode } from "./hvy/treeBuilder";
 
 const fs = require("fs");
 const util = require('util');
+const zlib = require('zlib');
 
 // Glob for file searching
 const glob = require("glob");
 // FileQueue for queuing files so we don't open too many
 const FileQueue = require('filequeue');
 const fq = new FileQueue(200);
-
-
-const zlib = require('zlib');
 
 let connection: IConnection = createConnection(new IPCMessageReader(process), new IPCMessageWriter(process));
 
@@ -42,7 +40,6 @@ var craneProjectDir: string;
 connection.onInitialize((params): InitializeResult =>
 {
     workspaceRoot = params.rootPath;
-    craneProjectDir = `${workspaceRoot}/.crane`;
 
     return {
         capabilities:
@@ -444,8 +441,6 @@ connection.onRequest(buildFromFiles, (data) => {
             connection.console.log(`Workspace files to process: ${docsToDo.length}`);
             processWorkspaceFile();
         });
-
-        // Process the users workspace
     });
 });
 
@@ -622,7 +617,7 @@ function saveProjectTree(): Promise<any> {
             } else {
                 var gzip = zlib.createGzip();
                 var inp = fs.createReadStream(`${craneProjectDir}/tree.out`);
-                var out = fs.createWriteStream(`${craneProjectDir}/tree`);
+                var out = fs.createWriteStream(`${craneProjectDir}/tree.cache`);
                 inp.pipe(gzip).pipe(out).on('close', function () {;
                     fs.unlinkSync(`${craneProjectDir}/tree.out`);
                 });

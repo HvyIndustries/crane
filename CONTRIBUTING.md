@@ -24,3 +24,4 @@ When you're ready to merge your changes back into the main project, please submi
  - **Indentation** -> 4 spaces in all files
  - **Typescript** -> please use type hinting where ever possible
  - **Curly Brackets** -> should be on the same line as the declaration (eg `array.forEach(item) => {`)
+ - **Quotes** -> Use double quotes (`"`) instead of single quotes(`'`) or backticks (`)

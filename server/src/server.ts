@@ -160,6 +160,10 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
                             method.globalVariables.forEach((globalVar) => {
                                 toReturn.push({ label: globalVar, kind: CompletionItemKind.Variable, detail: "global variable" });
                             });
+
+                            method.scopeVariables.forEach((scopeVar) => {
+                                toReturn.push({ label: scopeVar.name, kind: CompletionItemKind.Variable, detail: "scope variable" });
+                            });
                         }
                     });
 
@@ -168,8 +172,13 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
                             classNode.construct.params.forEach((param) => {
                                 toReturn.push({ label: param.name, kind: CompletionItemKind.Property, detail: "parameter" });
                             });
+
                             classNode.construct.globalVariables.forEach((globalVar) => {
                                 toReturn.push({ label: globalVar, kind: CompletionItemKind.Variable, detail: "global variable" });
+                            });
+
+                            classNode.construct.scopeVariables.forEach((scopeVar) => {
+                                toReturn.push({ label: scopeVar.name, kind: CompletionItemKind.Variable, detail: "scope variable" });
                             });
                         }
                     }

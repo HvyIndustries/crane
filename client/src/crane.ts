@@ -9,7 +9,7 @@
 import { Disposable, workspace, window, TextDocument, TextEditor, StatusBarAlignment, StatusBarItem } from 'vscode';
 import { LanguageClient, RequestType, NotificationType } from 'vscode-languageclient';
 import { ThrottledDelayer } from './utils/async';
-import { Cranefs } from './cranefs';
+import { Cranefs } from './utils/Cranefs';
 import { Debug } from './utils/Debug';
 
 const exec = require('child_process').exec;

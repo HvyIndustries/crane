@@ -55,6 +55,11 @@
                     "type": "string",
                     "default": ".crane",
                     "description": "Sets the default project folder for Crane"
+                },
+                "crane.debugMode": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable or disable debug mode. WARNING: may cause performance slowdowns on large projects!"
                 }
             }
         },

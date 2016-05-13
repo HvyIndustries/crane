@@ -1,9 +1,27 @@
 <?php
 
-// use mynamespace\test2 as myspace;
+class MyFirstClass
+{
+    function __construct()
+    {
+        $exampleClass = new ExampleClass();
+        //$exampleClass->
+    }
+}
 
-// namespace MyNamespace\test;
+class ExampleClass
+{
+    public $publicProperty;
+    private $privateProperty;
 
-// class thisClass {
-     
-// }
+    function __construct()
+    {
+        $this->privateProperty = null;
+        $this->publicProperty = "test123";
+    }
+
+    public function doSomething()
+    {
+        return "test";
+    }
+}

@@ -32,8 +32,8 @@ For the best development experience, make sure you have the PHP linter enabled i
 
 ## Demo
 
-![](http://i.imgur.com/mSzirzc.png)
-![](http://i.imgur.com/zjo14WY.gif)
+![](http://i.imgur.com/7128zNV.png)
+![](http://i.imgur.com/CT2S3yX.gif)
 
 ## Upcoming features
 

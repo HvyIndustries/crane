@@ -45,6 +45,11 @@
                     "type": "boolean",
                     "default": true,
                     "description": "Show or hide the status bar item asking you to report any PHP Intellisense bugs"
+                },
+                "crane.debugMode": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable or disable debug mode. WARNING: may cause performance slowdowns on large projects!"
                 }
             }
         },

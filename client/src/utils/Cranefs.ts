@@ -15,10 +15,15 @@ export class Cranefs {
     }
 
     public getCraneDir(): string {
-        return (
-            process.env.APPDATA + '/Crane' ||
-            (process.platform == 'darwin' ? process.env.HOME + 'Library/Preferences/Crane' : '/var/local/Crane')
-        );
+        if (process.env.APPDATA) {
+            return process.env.APPDATA + '/Crane';
+        }
+        if (process.platform == 'darwin') {
+            return process.env.HOME + 'Library/Preferences/Crane';
+        }
+        if (process.platform == 'linux') {
+            return process.env.HOME + '/Crane';
+        }
     }
 
     public getProjectDir(): string {

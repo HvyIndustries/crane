@@ -18,7 +18,7 @@ const exec = require('child_process').exec;
 let craneSettings = workspace.getConfiguration("crane");
 
 const cranefs: Cranefs = new Cranefs();
-
+console.log(process.platform)
 export default class Crane
 {
     public static langClient: LanguageClient;

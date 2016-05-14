@@ -14,6 +14,7 @@ import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions, T
 import Crane from "./crane";
 import QualityOfLife from "./features/qualityOfLife";
 import { Debug } from './utils/Debug';
+import { Config } from './utils/Config';
 
 export function activate(context: ExtensionContext)
 {
@@ -56,18 +57,13 @@ export function activate(context: ExtensionContext)
             Debug.info('Project tree has been saved');
         }
         Debug.info("Processing complete!");
-        if (craneSettings) {
-            var showStatusBarItem = craneSettings.get<boolean>("showStatusBarBugReportLink", true);
-            if (showStatusBarItem) {
-                setTimeout(() => {
-                    Crane.statusBarItem.tooltip = "Found a problem with the PHP Intellisense provided by Crane? Click here to file a bug report on Github";
-                    Crane.statusBarItem.text = "$(bug) Report PHP Intellisense Bug";
-                    Crane.statusBarItem.command = "crane.reportBug";
-                    Crane.statusBarItem.show();
-                }, 5000);
-            } else {
-                Crane.statusBarItem.hide();
-            }
+        if (Config.showBugReport) {
+            setTimeout(() => {
+                Crane.statusBarItem.tooltip = "Found a problem with the PHP Intellisense provided by Crane? Click here to file a bug report on Github";
+                Crane.statusBarItem.text = "$(bug) Report PHP Intellisense Bug";
+                Crane.statusBarItem.command = "crane.reportBug";
+                Crane.statusBarItem.show();
+            }, 5000);
         } else {
             Crane.statusBarItem.hide();
         }
@@ -78,7 +74,7 @@ export function activate(context: ExtensionContext)
     let reportBugCommand = commands.registerCommand("crane.reportBug", crane.reportBug);
     let rebuildSources = commands.registerCommand('crane.rebuildSources', () => {
         Debug.info('Rebuilding project sources');
-        crane.processWorkspaceFiles();
+        crane.rebuildProject();
     });
 
     context.subscriptions.push(rebuildSources);

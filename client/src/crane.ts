@@ -11,6 +11,7 @@ import { LanguageClient, RequestType, NotificationType } from 'vscode-languagecl
 import { ThrottledDelayer } from './utils/async';
 import { Cranefs } from './utils/Cranefs';
 import { Debug } from './utils/Debug';
+import { Config } from './utils/Config';
 
 const exec = require('child_process').exec;
 
@@ -85,7 +86,7 @@ export default class Crane
         this.buildObjectTreeForDocument(document);
     }
 
-    private processAllFilesInWorkspace() {
+    public processAllFilesInWorkspace() {
         cranefs.createProjectDir().then(data => {
             var createTreeFile: boolean = false;
             // Folder was created so there is no tree cache
@@ -103,6 +104,10 @@ export default class Crane
                 });
             }
         });
+    }
+
+    public rebuildProject() {
+        cranefs.rebuildProject();
     }
 
     public processWorkspaceFiles() {

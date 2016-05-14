@@ -1,18 +1,16 @@
 import { window, workspace, OutputChannel } from 'vscode';
+import { Config } from './Config';
 
-const craneSettings = workspace.getConfiguration("crane");
 const outputConsole = window.createOutputChannel("Crane Console");
 
 export class Debug {
-
-    private static debugMode: boolean = craneSettings ? craneSettings.get<boolean>("debugMode", false) : false;
 
     /**
      * Displays an info message prefixed with [INFO]
      */
     public static info(message: string) {
         Debug.showConsole();
-        if (Debug.debugMode) {
+        if (Config.debugMode) {
             outputConsole.appendLine(`[INFO] ${message}`);
         }
     }
@@ -22,7 +20,7 @@ export class Debug {
      */
     public static error(message: string) {
         Debug.showConsole();
-        if (Debug.debugMode) {
+        if (Config.debugMode) {
             outputConsole.appendLine(`[ERROR] ${message}`);
         }
     }
@@ -32,13 +30,13 @@ export class Debug {
      */
     public static warning(message: string) {
         Debug.showConsole();
-        if (Debug.debugMode) {
+        if (Config.debugMode) {
             outputConsole.appendLine(`[WARN] ${message}`);
         }
     }
 
     private static showConsole() {
-        if (Debug.debugMode) {
+        if (Config.debugMode) {
             outputConsole.show();
         }
     }

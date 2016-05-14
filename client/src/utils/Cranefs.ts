@@ -2,11 +2,17 @@ import { workspace } from 'vscode';
 import { NotificationType, RequestType } from 'vscode-languageclient';
 import Crane from '../crane';
 import { Debug } from './Debug';
+import { Config } from './Config';
 
 const crypto = require('crypto');
 const fs = require('fs');
+let craneSettings = workspace.getConfiguration("crane");
 
 export class Cranefs {
+
+    public isCacheable(): boolean {
+        return Config.saveCache;
+    }
 
     public getCraneDir(): string {
         return (
@@ -21,11 +27,15 @@ export class Cranefs {
         return this.getCraneDir() + '/' + (md5sum.update(workspace.rootPath)).digest('hex');
     }
 
-    public createProjectDir(): Promise<{ folderExists:boolean, folderCreated:boolean, path:string }> {
+    public createProjectDir(): Promise<{ folderExists: boolean, folderCreated: boolean, path: string }> {
         return new Promise((resolve, reject) => {
-            this.createProjectFolder().then(projectCreated => {
-                resolve(projectCreated);
-            });
+            if (this.isCacheable()) {
+                this.createProjectFolder().then(projectCreated => {
+                    resolve(projectCreated);
+                });
+            } else {
+                resolve({folderExists: false, folderCreated: false, path: null})
+            }
         });
     }
 
@@ -41,7 +51,7 @@ export class Cranefs {
         });
     }
 
-    public processWorkspaceFiles() {
+    public processWorkspaceFiles(rebuild: boolean = false) {
         if (workspace.rootPath == undefined) return;
         var fileProcessCount = 0;
 
@@ -58,7 +68,13 @@ export class Cranefs {
             });
 
             // Send the array of paths to the language server
-            Crane.langClient.sendRequest({ method: "buildFromFiles" }, { files: filePaths, projectPath: this.getProjectDir(), treePath: this.getProjectDir() + '/tree.cache' });
+            Crane.langClient.sendRequest({ method: "buildFromFiles" }, {
+                files: filePaths,
+                projectPath: this.getProjectDir(),
+                treePath: this.getProjectDir() + '/tree.cache',
+                saveCache: this.isCacheable(),
+                rebuild: rebuild
+            });
         });
 
         // Update the UI so the user knows the processing status
@@ -73,17 +89,22 @@ export class Cranefs {
             } else {
                 Debug.info(`Parsed file ${data.total} of ${fileProcessCount} : ${data.filename}`);
             }
-
-            // Once all files have been processed, update the statusBarItem
-            if (data.total == fileProcessCount) {
-                Crane.statusBarItem.text = '$(check) Processing of PHP source files complete';
-            }
         });
     }
 
     public processProject() {
         Debug.info('Building project from cache file: ' + this.getProjectDir() + '/tree.cache');
-        Crane.langClient.sendRequest({ method: "buildFromProject" }, {treePath: this.getProjectDir() + '/tree.cache'});
+        Crane.langClient.sendRequest({ method: "buildFromProject" }, {
+            treePath: this.getProjectDir() + '/tree.cache',
+            saveCache: this.isCacheable()
+        });
+    }
+
+    public rebuildProject() {
+        Debug.info('Rebuilding the project files');
+        fs.unlink(`${this.getCraneDir}/tree.cache`, (err) => {
+            this.processWorkspaceFiles(true);
+        });
     }
 
     private createCraneFolder(): Promise<boolean> {

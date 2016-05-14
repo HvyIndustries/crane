@@ -37,6 +37,7 @@ let workspaceTree: FileNode[] = [];
 
 let workspaceRoot: string;
 var craneProjectDir: string;
+let saveCache: boolean = true;
 connection.onInitialize((params): InitializeResult =>
 {
     workspaceRoot = params.rootPath;
@@ -423,8 +424,12 @@ let docsDoneCount = 0;
 var docsToDo: string[] = [];
 var stubsToDo: string[] = [];
 
-var buildFromFiles: RequestType<{files:string[], projectPath:string, treePath:string}, any, any> = { method: "buildFromFiles" };
+var buildFromFiles: RequestType<{files:string[], projectPath:string, treePath:string, saveCache:boolean, rebuild:boolean}, any, any> = { method: "buildFromFiles" };
 connection.onRequest(buildFromFiles, (project) => {
+    if (project.rebuild) {
+        workspaceTree = [];
+    }
+    saveCache = project.saveCache;
     docsToDo = project.files;
     docsDoneCount = 0;
     connection.console.log('starting work!');
@@ -444,8 +449,9 @@ connection.onRequest(buildFromFiles, (project) => {
     });
 });
 
-var buildFromProject: RequestType<{treePath:string}, any, any> = { method: "buildFromProject" };
+var buildFromProject: RequestType<{treePath:string, saveCache:boolean}, any, any> = { method: "buildFromProject" };
 connection.onRequest(buildFromProject, (data) => {
+    saveCache = data.saveCache;
     fs.readFile(data.treePath, (err, data) => {
         var treeStream = new Buffer(data);
         zlib.unzip(treeStream, (err, buffer) => {
@@ -574,20 +580,24 @@ function notifyClientOfWorkComplete(treeSaved: boolean)
 
 function saveProjectTree(projectPath: string, treeFile: string): Promise<boolean> {
     return new Promise((resolve, reject) => {
-        connection.console.log('packing tree file');
-        fq.writeFile(`${projectPath}/tree.tmp`, JSON.stringify(workspaceTree), (err) => {
-            if (err) {
-                reject(false);
-            } else {
-                var gzip = zlib.createGzip();
-                var inp = fs.createReadStream(`${projectPath}/tree.tmp`);
-                var out = fs.createWriteStream(treeFile);
-                inp.pipe(gzip).pipe(out).on('close', function () {;
-                    fs.unlinkSync(`${projectPath}/tree.tmp`);
-                });
-                resolve(true);
-            }
-        });
+        if (!saveCache) {
+            resolve(false);
+        }else{
+            connection.console.log('packing tree file');
+            fq.writeFile(`${projectPath}/tree.tmp`, JSON.stringify(workspaceTree), (err) => {
+                if (err) {
+                    reject(false);
+                } else {
+                    var gzip = zlib.createGzip();
+                    var inp = fs.createReadStream(`${projectPath}/tree.tmp`);
+                    var out = fs.createWriteStream(treeFile);
+                    inp.pipe(gzip).pipe(out).on('close', function () {
+                        fs.unlinkSync(`${projectPath}/tree.tmp`);
+                    });
+                    resolve(true);
+                }
+            });
+        }
     });
 }
 

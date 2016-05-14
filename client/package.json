@@ -46,10 +46,10 @@
                     "default": true,
                     "description": "Show or hide the status bar item asking you to report any PHP Intellisense bugs"
                 },
-                "crane.isProject": {
+                "crane.saveCache": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Turning the project on will allow crane to load faster when reloading the project"
+                    "description": "Turning caching will allow Crane to start faster after the initial startup"
                 },
                 "crane.debugMode": {
                     "type": "boolean",

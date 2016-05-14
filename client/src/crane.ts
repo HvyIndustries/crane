@@ -123,7 +123,7 @@ export default class Crane
 
             if (data.error) {
                 Debug.error("There was a problem parsing PHP file: " + data.filename);
-                Debug.error(`${data.error}`);
+                Debug.error(data.error);
             } else {
                 Debug.info(`Parsed file ${data.total} of ${fileProcessCount} : ${data.filename}`);
             }

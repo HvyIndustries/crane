@@ -49,7 +49,7 @@ export function activate(context: ExtensionContext)
 
     var requestType: RequestType<{ treeSaved: boolean }, any, any> = { method: "workDone" };
     langClient.onRequest(requestType, (tree) => {
-        Crane.statusBarItem.text = 'File Processing Complete';
+        Crane.statusBarItem.text = '$(check) Project Ready';
         // Load settings
         let craneSettings = workspace.getConfiguration("crane");
         if (tree.treeSaved) {

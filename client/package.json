@@ -47,14 +47,9 @@
                     "description": "Show or hide the status bar item asking you to report any PHP Intellisense bugs"
                 },
                 "crane.isProject": {
-                    "type": "string",
+                    "type": "boolean",
                     "default": true,
                     "description": "Turning the project on will allow crane to load faster when reloading the project"
-                },
-                "crane.projectFolder": {
-                    "type": "string",
-                    "default": ".crane",
-                    "description": "Sets the default project folder for Crane"
                 },
                 "crane.debugMode": {
                     "type": "boolean",

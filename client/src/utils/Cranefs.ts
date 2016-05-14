@@ -82,7 +82,7 @@ export class Cranefs {
     }
 
     public processProject() {
-        Debug.info('Building project from cache');
+        Debug.info('Building project from cache file: ' + this.getProjectDir() + '/tree.cache');
         Crane.langClient.sendRequest({ method: "buildFromProject" }, {treePath: this.getProjectDir() + '/tree.cache'});
     }
 

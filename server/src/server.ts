@@ -428,6 +428,7 @@ var buildFromFiles: RequestType<{files:string[], projectPath:string, treePath:st
 connection.onRequest(buildFromFiles, (project) => {
     if (project.rebuild) {
         workspaceTree = [];
+        treeBuilder = new TreeBuilder();
     }
     saveCache = project.saveCache;
     docsToDo = project.files;
@@ -492,7 +493,6 @@ function processStub() {
  * Processes the users workspace files
  */
 function processWorkspaceFiles(projectPath: string, treePath: string) {
-    var offset: number = 0;
     docsToDo.forEach(file => {
         fq.readFile(file, { encoding: 'utf8' }, (err, data) => {
             treeBuilder.Parse(data, file).then(result => {

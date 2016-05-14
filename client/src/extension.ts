@@ -74,6 +74,7 @@ export function activate(context: ExtensionContext)
     let reportBugCommand = commands.registerCommand("crane.reportBug", crane.reportBug);
     let rebuildSources = commands.registerCommand('crane.rebuildSources', () => {
         Debug.info('Rebuilding project sources');
+        Debug.clear();
         crane.rebuildProject();
     });
 

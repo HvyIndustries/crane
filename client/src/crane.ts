@@ -56,6 +56,16 @@ export default class Crane
         Crane.statusBarItem.tooltip = "Crane is processing the PHP source files in your workspace to build code completion suggestions";
         Crane.statusBarItem.show();
 
+        var serverDebugMessage: NotificationType<{ type: string, message: string }> = { method: "serverDebugMessage" };
+        Crane.langClient.onNotification(serverDebugMessage, message => {
+            switch (message.type) {
+                case 'info': Debug.info(message.message); break;
+                case 'error': Debug.error(message.message); break;
+                case 'warning': Debug.warning(message.message); break;
+                default: Debug.info(message.message); break;
+            }
+        });
+
         // Send request to server to build object tree for all workspace files
         this.processAllFilesInWorkspace();
     }
@@ -83,7 +93,9 @@ export default class Crane
 
         var document = editor.document;
 
-        this.buildObjectTreeForDocument(document);
+        this.buildObjectTreeForDocument(document).then(() => {
+            Crane.langClient.sendRequest({ method: 'saveTreeCache' }, { projectDir: cranefs.getProjectDir(), projectTree: cranefs.getTreePath() });
+        });
     }
 
     public processAllFilesInWorkspace() {
@@ -138,9 +150,11 @@ export default class Crane
         return new Promise<void>((resolve, reject) => {
             var path = document.fileName;
             var text = document.getText();
+            var projectDir = cranefs.getProjectDir();
+            var projectTree = cranefs.getTreePath();
 
             var requestType: RequestType<any, any, any> = { method: "buildObjectTreeForDocument" };
-            Crane.langClient.sendRequest(requestType, { path, text }).then(() => resolve() );
+            Crane.langClient.sendRequest(requestType, { path, text, projectDir, projectTree }).then(() => resolve() );
         });
     }
 

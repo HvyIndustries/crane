@@ -15,6 +15,7 @@ import {
 } from 'vscode-languageserver';
 
 import { TreeBuilder, FileNode, ClassNode } from "./hvy/treeBuilder";
+import { Debug } from './util/Debug';
 
 const fs = require("fs");
 const util = require('util');
@@ -30,6 +31,7 @@ let connection: IConnection = createConnection(new IPCMessageReader(process), ne
 
 let documents: TextDocuments = new TextDocuments();
 documents.listen(connection);
+Debug.SetConnection(connection);
 
 let treeBuilder: TreeBuilder = new TreeBuilder();
 treeBuilder.SetConnection(connection);
@@ -402,7 +404,7 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem =>
     return item;
 });
 
-var requestType: RequestType<any, any, any> = { method: "buildObjectTreeForDocument" };
+var requestType: RequestType<{path:string,text:string,projectDir:string,projectTree:string}, any, any> = { method: "buildObjectTreeForDocument" };
 connection.onRequest(requestType, (requestObj) =>
 {
     var fileUri = requestObj.path;
@@ -410,13 +412,20 @@ connection.onRequest(requestType, (requestObj) =>
 
     treeBuilder.Parse(text, fileUri).then(result => {
         addToWorkspaceTree(result.tree);
-        notifyClientOfWorkComplete(false);
+        // notifyClientOfWorkComplete();
         return true;
     })
     .catch(error => {
         console.log(error);
-        notifyClientOfWorkComplete(false);
+        notifyClientOfWorkComplete();
         return false;
+    });
+});
+
+var saveTreeCache: RequestType<{ projectDir: string, projectTree: string }, any, any> = { method: "saveTreeCache" };
+connection.onRequest(saveTreeCache, request => {
+    saveProjectTree(request.projectDir, request.projectTree).then(saved => {
+        notifyClientOfWorkComplete();
     });
 });
 
@@ -454,14 +463,24 @@ var buildFromProject: RequestType<{treePath:string, saveCache:boolean}, any, any
 connection.onRequest(buildFromProject, (data) => {
     saveCache = data.saveCache;
     fs.readFile(data.treePath, (err, data) => {
-        var treeStream = new Buffer(data);
-        zlib.unzip(treeStream, (err, buffer) => {
-            if (err) {
-                connection.console.log((util.inspect(err, false, null)));
-            }
-            workspaceTree = JSON.parse(buffer.toString());
-            notifyClientOfWorkComplete(false);
-        });
+        if (err) {
+            Debug.error('Could not read cache file');
+            Debug.error((util.inspect(err, false, null)));
+        } else {
+            Debug.info('Unzipping the file');
+            var treeStream = new Buffer(data);
+            zlib.gunzip(treeStream, (err, buffer) => {
+                if (err) {
+                    Debug.error('Could not unzip cache file');
+                    Debug.error((util.inspect(err, false, null)));
+                } else {
+                    Debug.info('Cache file successfullly read');
+                    workspaceTree = JSON.parse(buffer.toString());
+                    Debug.info('Loaded');
+                    notifyClientOfWorkComplete();
+                }
+            });
+        }
     });
 });
 
@@ -501,24 +520,28 @@ function processWorkspaceFiles(projectPath: string, treePath: string) {
                 connection.console.log(`(${docsDoneCount} of ${docsToDo.length}) File: ${file}`);
                 connection.sendNotification({ method: "fileProcessed" }, { filename: file, total: docsDoneCount, error: null });
                 if (docsToDo.length == docsDoneCount) {
-                    connection.console.log('work done!');
-                    saveProjectTree(projectPath, treePath).then(savedTree => {
-                        notifyClientOfWorkComplete(savedTree);
-                    });
+                    workspaceProcessed(projectPath, treePath);
                 }
             }).catch(data => {
                 docsDoneCount++;
                 if (docsToDo.length == docsDoneCount) {
-                    connection.console.log('work done!');
-                    saveProjectTree(projectPath, treePath).then(savedTree => {
-                        notifyClientOfWorkComplete(savedTree);
-                    });
+                    workspaceProcessed(projectPath, treePath);
                 }
                 connection.console.log(util.inspect(data, false, null));
                 connection.console.log(`Issue processing ${file}`);
                 connection.sendNotification({ method: "fileProcessed" }, { filename: file, total: docsDoneCount, error: util.inspect(data, false, null) });
             });
         });
+    });
+}
+
+function workspaceProcessed(projectPath, treePath) {
+    Debug.info("Workspace files have processed");
+    saveProjectTree(projectPath, treePath).then(savedTree => {
+        notifyClientOfWorkComplete();
+        if (savedTree) {
+            Debug.info('Project tree has been saved');
+        }
     });
 }
 
@@ -572,10 +595,10 @@ function getTraitNodeFromTree(traitName:string): ClassNode
     return toReturn;
 }
 
-function notifyClientOfWorkComplete(treeSaved: boolean)
+function notifyClientOfWorkComplete()
 {
     var requestType: RequestType<any, any, any> = { method: "workDone" };
-    connection.sendRequest(requestType, {treeSaved: treeSaved});
+    connection.sendRequest(requestType);
 }
 
 function saveProjectTree(projectPath: string, treeFile: string): Promise<boolean> {
@@ -583,10 +606,12 @@ function saveProjectTree(projectPath: string, treeFile: string): Promise<boolean
         if (!saveCache) {
             resolve(false);
         }else{
-            connection.console.log('packing tree file');
+            Debug.info('packing tree file: ' + treeFile);
             fq.writeFile(`${projectPath}/tree.tmp`, JSON.stringify(workspaceTree), (err) => {
                 if (err) {
-                    reject(false);
+                    Debug.error('Could not write to cache file');
+                    Debug.error(util.inspect(err, false, null));
+                    resolve(false);
                 } else {
                     var gzip = zlib.createGzip();
                     var inp = fs.createReadStream(`${projectPath}/tree.tmp`);
@@ -594,6 +619,7 @@ function saveProjectTree(projectPath: string, treeFile: string): Promise<boolean
                     inp.pipe(gzip).pipe(out).on('close', function () {
                         fs.unlinkSync(`${projectPath}/tree.tmp`);
                     });
+                    Debug.info('Cache file updated');
                     resolve(true);
                 }
             });

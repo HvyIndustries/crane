@@ -10,14 +10,17 @@ export class Config {
     }
 
     public static get debugMode(): boolean {
+        Config.reloadConfig();
         return Config.craneSettings ? Config.craneSettings.get<boolean>("debugMode", false) : false;
     }
 
     public static get saveCache(): boolean {
+        Config.reloadConfig();
         return Config.craneSettings ? Config.craneSettings.get<boolean>("saveCache", true) : true;
     }
 
     public static get showBugReport(): boolean {
+        Config.reloadConfig();
         return Config.craneSettings ? Config.craneSettings.get<boolean>("showStatusBarBugReportLink", true) : true;
     }
 

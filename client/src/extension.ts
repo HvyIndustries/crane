@@ -48,14 +48,11 @@ export function activate(context: ExtensionContext)
 
     let crane: Crane = new Crane(langClient);
 
-    var requestType: RequestType<{ treeSaved: boolean }, any, any> = { method: "workDone" };
+    var requestType: RequestType<any, any, any> = { method: "workDone" };
     langClient.onRequest(requestType, (tree) => {
         Crane.statusBarItem.text = '$(check) Project Ready';
         // Load settings
         let craneSettings = workspace.getConfiguration("crane");
-        if (tree.treeSaved) {
-            Debug.info('Project tree has been saved');
-        }
         Debug.info("Processing complete!");
         if (Config.showBugReport) {
             setTimeout(() => {

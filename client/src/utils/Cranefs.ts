@@ -32,6 +32,10 @@ export class Cranefs {
         return this.getCraneDir() + '/' + (md5sum.update(workspace.rootPath)).digest('hex');
     }
 
+    public getTreePath(): string {
+        return this.getProjectDir() + '/tree.cache';
+    }
+
     public createProjectDir(): Promise<{ folderExists: boolean, folderCreated: boolean, path: string }> {
         return new Promise((resolve, reject) => {
             if (this.isCacheable()) {
@@ -46,9 +50,9 @@ export class Cranefs {
 
     public doesProjectTreeExist(): Promise<{exists:boolean, path:string}> {
         return new Promise((resolve, reject) => {
-            fs.stat(this.getProjectDir() + '/tree.cache', (err, stat) => {
+            fs.stat(this.getTreePath(), (err, stat) => {
                 if (err === null) {
-                    resolve({exists: true, path: this.getProjectDir() + '/tree.cache'});
+                    resolve({exists: true, path: this.getTreePath()});
                 } else {
                     resolve({exists: false, path: null});
                 }
@@ -76,7 +80,7 @@ export class Cranefs {
             Crane.langClient.sendRequest({ method: "buildFromFiles" }, {
                 files: filePaths,
                 projectPath: this.getProjectDir(),
-                treePath: this.getProjectDir() + '/tree.cache',
+                treePath: this.getTreePath(),
                 saveCache: this.isCacheable(),
                 rebuild: rebuild
             });
@@ -98,16 +102,16 @@ export class Cranefs {
     }
 
     public processProject() {
-        Debug.info('Building project from cache file: ' + this.getProjectDir() + '/tree.cache');
+        Debug.info('Building project from cache file: ' + this.getTreePath());
         Crane.langClient.sendRequest({ method: "buildFromProject" }, {
-            treePath: this.getProjectDir() + '/tree.cache',
+            treePath: this.getTreePath(),
             saveCache: this.isCacheable()
         });
     }
 
     public rebuildProject() {
         Debug.info('Rebuilding the project files');
-        fs.unlink(`${this.getCraneDir}/tree.cache`, (err) => {
+        fs.unlink(this.getTreePath(), (err) => {
             this.processWorkspaceFiles(true);
         });
     }

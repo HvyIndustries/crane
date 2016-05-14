@@ -68,6 +68,11 @@
                 "key": "ctrl+d",
                 "command": "crane.duplicateLine",
                 "when": "editorTextFocus && editorLangId == 'php'"
+            },
+            {
+                "key": "ctrl+shift+r",
+                "command": "crane.rebuildSources",
+                "when": "editorTextFocus && editorLangId == 'php'"
             }
         ],
         "commands": [

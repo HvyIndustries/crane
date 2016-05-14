@@ -13,6 +13,7 @@ import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions, T
 
 import Crane from "./crane";
 import QualityOfLife from "./features/qualityOfLife";
+import { Debug } from './utils/Debug';
 
 export function activate(context: ExtensionContext)
 {
@@ -46,32 +47,39 @@ export function activate(context: ExtensionContext)
 
     let crane: Crane = new Crane(langClient);
 
-    var requestType: RequestType<any, any, any> = { method: "workDone" };
-    langClient.onRequest(requestType, () => {
-        crane.statusBarItem.text = 'File Processing Complete';
+    var requestType: RequestType<{ treeSaved: boolean }, any, any> = { method: "workDone" };
+    langClient.onRequest(requestType, (tree) => {
+        Crane.statusBarItem.text = 'File Processing Complete';
         // Load settings
         let craneSettings = workspace.getConfiguration("crane");
+        if (tree.treeSaved) {
+            Debug.info('Project tree has been saved');
+        }
+        Debug.info("Processing complete!");
         if (craneSettings) {
             var showStatusBarItem = craneSettings.get<boolean>("showStatusBarBugReportLink", true);
             if (showStatusBarItem) {
                 setTimeout(() => {
-                    crane.statusBarItem.text = "$(bug) Report PHP Intellisense Bug";
-                    crane.statusBarItem.tooltip = "Found a problem with the PHP Intellisense provided by Crane? Click here to file a bug report on Github";
-                    crane.statusBarItem.command = "crane.reportBug";
-                    crane.statusBarItem.show();
+                    Crane.statusBarItem.tooltip = "Found a problem with the PHP Intellisense provided by Crane? Click here to file a bug report on Github";
+                    Crane.statusBarItem.text = "$(bug) Report PHP Intellisense Bug";
+                    Crane.statusBarItem.command = "crane.reportBug";
+                    Crane.statusBarItem.show();
                 }, 5000);
             } else {
-                crane.statusBarItem.hide();
+                Crane.statusBarItem.hide();
             }
         } else {
-            crane.statusBarItem.hide();
+            Crane.statusBarItem.hide();
         }
     });
 
     // Register commands for QoL improvements
     let duplicateLineCommand = commands.registerCommand("crane.duplicateLine", qol.duplicateLineOrSelection);
     let reportBugCommand = commands.registerCommand("crane.reportBug", crane.reportBug);
-    let rebuildSources = commands.registerCommand('crane.rebuildSources', () => { crane.processFiles(); });
+    let rebuildSources = commands.registerCommand('crane.rebuildSources', () => {
+        Debug.info('Rebuilding project sources');
+        crane.processWorkspaceFiles();
+    });
 
     context.subscriptions.push(rebuildSources);
     context.subscriptions.push(disposable);

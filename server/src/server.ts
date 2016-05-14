@@ -409,12 +409,12 @@ connection.onRequest(requestType, (requestObj) =>
 
     treeBuilder.Parse(text, fileUri).then(result => {
         addToWorkspaceTree(result.tree);
-        notifyClientOfWorkComplete();
+        notifyClientOfWorkComplete(false);
         return true;
     })
     .catch(error => {
         console.log(error);
-        notifyClientOfWorkComplete();
+        notifyClientOfWorkComplete(false);
         return false;
     });
 });
@@ -423,9 +423,9 @@ let docsDoneCount = 0;
 var docsToDo: string[] = [];
 var stubsToDo: string[] = [];
 
-var buildFromFiles: RequestType<any, any, any> = { method: "buildFromFiles" };
-connection.onRequest(buildFromFiles, (data) => {
-    docsToDo = data.files;
+var buildFromFiles: RequestType<{files:string[], projectPath:string, treePath:string}, any, any> = { method: "buildFromFiles" };
+connection.onRequest(buildFromFiles, (project) => {
+    docsToDo = project.files;
     docsDoneCount = 0;
     connection.console.log('starting work!');
     glob('/../phpstubs/*.php', { cwd: __dirname, root: __dirname }, (err, fileNames) => {
@@ -435,25 +435,25 @@ connection.onRequest(buildFromFiles, (data) => {
         processStub().then(data => {
             connection.console.log('stubs done!');
             connection.console.log(`Workspace files to process: ${docsToDo.length}`);
-            processWorkspaceFile();
+            processWorkspaceFiles(project.projectPath, project.treePath);
         }).catch(data => {
             connection.console.log('No stubs found!');
             connection.console.log(`Workspace files to process: ${docsToDo.length}`);
-            processWorkspaceFile();
+            processWorkspaceFiles(project.projectPath, project.treePath);
         });
     });
 });
 
-var buildFromProject: RequestType<any, any, any> = { method: "buildFromProject" };
+var buildFromProject: RequestType<{treePath:string}, any, any> = { method: "buildFromProject" };
 connection.onRequest(buildFromProject, (data) => {
-    fs.readFile(`${craneProjectDir}/tree`, (err, data) => {
+    fs.readFile(data.treePath, (err, data) => {
         var treeStream = new Buffer(data);
         zlib.unzip(treeStream, (err, buffer) => {
             if (err) {
                 connection.console.log((util.inspect(err, false, null)));
             }
             workspaceTree = JSON.parse(buffer.toString());
-            notifyClientOfWorkComplete();
+            notifyClientOfWorkComplete(false);
         });
     });
 });
@@ -485,7 +485,7 @@ function processStub() {
 /**
  * Processes the users workspace files
  */
-function processWorkspaceFile() {
+function processWorkspaceFiles(projectPath: string, treePath: string) {
     var offset: number = 0;
     docsToDo.forEach(file => {
         fq.readFile(file, { encoding: 'utf8' }, (err, data) => {
@@ -496,15 +496,17 @@ function processWorkspaceFile() {
                 connection.sendNotification({ method: "fileProcessed" }, { filename: file, total: docsDoneCount, error: null });
                 if (docsToDo.length == docsDoneCount) {
                     connection.console.log('work done!');
-                    notifyClientOfWorkComplete();
-                    buildProjectFile();
+                    saveProjectTree(projectPath, treePath).then(savedTree => {
+                        notifyClientOfWorkComplete(savedTree);
+                    });
                 }
             }).catch(data => {
                 docsDoneCount++;
                 if (docsToDo.length == docsDoneCount) {
                     connection.console.log('work done!');
-                    notifyClientOfWorkComplete();
-                    buildProjectFile();
+                    saveProjectTree(projectPath, treePath).then(savedTree => {
+                        notifyClientOfWorkComplete(savedTree);
+                    });
                 }
                 connection.console.log(util.inspect(data, false, null));
                 connection.console.log(`Issue processing ${file}`);
@@ -564,64 +566,26 @@ function getTraitNodeFromTree(traitName:string): ClassNode
     return toReturn;
 }
 
-function notifyClientOfWorkComplete()
+function notifyClientOfWorkComplete(treeSaved: boolean)
 {
     var requestType: RequestType<any, any, any> = { method: "workDone" };
-    connection.sendRequest(requestType);
+    connection.sendRequest(requestType, {treeSaved: treeSaved});
 }
 
-function buildProjectFile() {
-    createProjectFolder().then(data => {
-        if (data.folderCreated) {
-            connection.console.log('Crane Project Folder Created');
-        }
-        if (data.folderExists) {
-            saveProjectTree().then(data => {
-                connection.console.log('Crane Project Created');
-            }).catch(e => {
-                connection.console.log(e);
-            });
-        } else {
-            connection.console.log('Crane Project Was Not Created');
-        }
-    });
-}
-
-function createProjectFolder(): Promise<any> {
-    return new Promise((resolve, reject) => {
-        fs.stat(craneProjectDir, (err, stat) => {
-            if (err === null) {
-                resolve({ folderExists: true });
-            } else if (err.code == 'ENOENT') {
-                fs.mkdir(craneProjectDir, err => {
-                    fs.writeFileSync(`${craneProjectDir}/.gitignore`, "*\n!.gitignore");
-                    if (!err) {
-                        resolve({ folderExists: true, folderCreated: true });
-                    } else {
-                        resolve({ folderExists: false, folderCreated: false });
-                    }
-                });
-            } else {
-                resolve({ folderExists: null, folderCreated: false });
-            }
-        });
-    });
-}
-
-function saveProjectTree(): Promise<any> {
+function saveProjectTree(projectPath: string, treeFile: string): Promise<boolean> {
     return new Promise((resolve, reject) => {
         connection.console.log('packing tree file');
-        fq.writeFile(`${craneProjectDir}/tree.out`, JSON.stringify(workspaceTree), (err) => {
+        fq.writeFile(`${projectPath}/tree.tmp`, JSON.stringify(workspaceTree), (err) => {
             if (err) {
-                reject();
+                reject(false);
             } else {
                 var gzip = zlib.createGzip();
-                var inp = fs.createReadStream(`${craneProjectDir}/tree.out`);
-                var out = fs.createWriteStream(`${craneProjectDir}/tree.cache`);
+                var inp = fs.createReadStream(`${projectPath}/tree.tmp`);
+                var out = fs.createWriteStream(treeFile);
                 inp.pipe(gzip).pipe(out).on('close', function () {;
-                    fs.unlinkSync(`${craneProjectDir}/tree.out`);
+                    fs.unlinkSync(`${projectPath}/tree.tmp`);
                 });
-                resolve();
+                resolve(true);
             }
         });
     });

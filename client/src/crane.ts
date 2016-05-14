@@ -6,9 +6,10 @@
 
 "use strict";
 
-import { Disposable, workspace, window, TextDocument, TextEditor, StatusBarAlignment, StatusBarItem, OutputChannel } from 'vscode';
+import { Disposable, workspace, window, TextDocument, TextEditor, StatusBarAlignment, StatusBarItem } from 'vscode';
 import { LanguageClient, RequestType, NotificationType } from 'vscode-languageclient';
 import { ThrottledDelayer } from './utils/async';
+import { Debug } from './utils/Debug';
 
 const exec = require('child_process').exec;
 
@@ -20,7 +21,6 @@ export default class Crane
     private delayers: { [key: string]: ThrottledDelayer<void> };
 
     public statusBarItem: StatusBarItem;
-    public outputConsole: OutputChannel;
 
     constructor(languageClient: LanguageClient)
     {
@@ -33,8 +33,6 @@ export default class Crane
         workspace.onDidChangeTextDocument((e) => this.onChangeTextHandler(e.document), null, subscriptions);
         workspace.onDidCloseTextDocument((textDocument)=> { delete this.delayers[textDocument.uri.toString()]; }, null, subscriptions);
         workspace.onDidSaveTextDocument((document) => this.handleFileSave());
-
-        this.outputConsole = window.createOutputChannel("Crane Console");
 
         this.disposable = Disposable.from(...subscriptions);
 
@@ -102,16 +100,14 @@ export default class Crane
         workspace.findFiles('**/*.php', '').then(files => {
             console.log(`Files to parse: ${files.length}`);
 
-            if (debugMode) {
-                this.outputConsole.appendLine(`[INFO] Preparing to parse ${files.length} PHP source files...`);
-            }
+            Debug.info(`Preparing to parse ${files.length} PHP source files...`);
 
             fileProcessCount = files.length;
             var filePaths: string[] = [];
 
             // Get the objects path value for the current file system
-            files.forEach(file => { 
-                filePaths.push(file.fsPath); 
+            files.forEach(file => {
+                filePaths.push(file.fsPath);
             });
 
             // Send the array of paths to the language server
@@ -126,23 +122,15 @@ export default class Crane
             this.statusBarItem.text = `$(zap) Processing source files (${data.total} of ${fileProcessCount} / ${percent}%)`;
 
             if (data.error) {
-                this.outputConsole.appendLine("[ERROR] There was a problem parsing PHP file: " + data.filename);
-                this.outputConsole.appendLine(`[ERROR] ${data.error}`);
-
-                if (debugMode) {
-                    this.outputConsole.show();
-                }
+                Debug.error("There was a problem parsing PHP file: " + data.filename);
+                Debug.error(data.error);
             } else {
-                if (debugMode) {
-                    this.outputConsole.appendLine(`[INFO] Parsed file ${data.total} of ${fileProcessCount} : ${data.filename}`);
-                }
+                Debug.info(`Parsed file ${data.total} of ${fileProcessCount} : ${data.filename}`);
             }
 
             // Once all files have been processed, update the statusBarItem
             if (data.total == fileProcessCount){
-                if (debugMode) {
-                    this.outputConsole.appendLine("[INFO] Processing complete!");
-                }
+                Debug.info("Processing complete!");
                 this.statusBarItem.text = '$(check) Processing of PHP source files complete';
             }
         });

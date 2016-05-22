@@ -65,10 +65,11 @@ class ExampleClass extends ExistingClass implements myInterface // todo inline
     public function __construct()
     {
         $constructorVar = "test";
-        echo $this->testFunc($this->mymethod());
+        echo $this->testFunc($this->mymethod()); 
         $this->DoSomething();
 
         $this->publicProp = "test2";
+        $inst = new ExampleClass();
     }
 
     public function DoSomething()

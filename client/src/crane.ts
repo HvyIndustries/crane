@@ -9,6 +9,7 @@
 import { Disposable, workspace, window, TextDocument, TextEditor, StatusBarAlignment, StatusBarItem } from 'vscode';
 import { LanguageClient, RequestType, NotificationType } from 'vscode-languageclient';
 import { ThrottledDelayer } from './utils/async';
+import { Debug } from './utils/Debug';
 
 const exec = require('child_process').exec;
 
@@ -47,7 +48,7 @@ export default class Crane
     {
         console.log("Crane Initialised...");
 
-        this.statusBarItem.text = "$(zap) Processing source files...";
+        this.statusBarItem.text = "$(zap) Processing PHP source files...";
         this.statusBarItem.tooltip = "Crane is processing the PHP source files in your workspace to build code completion suggestions";
         this.statusBarItem.show();
 
@@ -86,14 +87,29 @@ export default class Crane
     private processAllFilesInWorkspace()
     {
         if (workspace.rootPath == undefined) return;
+
         var fileProcessCount = 0;
+
+        let craneSettings = workspace.getConfiguration("crane");
+        let debugMode = false;
+        if (craneSettings) {
+            debugMode = craneSettings.get<boolean>("debugMode", false);
+        }
+
         // Find all the php files to process
         workspace.findFiles('**/*.php', '').then(files => {
             console.log(`Files to parse: ${files.length}`);
+
+            Debug.info(`Preparing to parse ${files.length} PHP source files...`);
+
             fileProcessCount = files.length;
             var filePaths: string[] = [];
+
             // Get the objects path value for the current file system
-            files.forEach(file => { filePaths.push(file.fsPath); });
+            files.forEach(file => {
+                filePaths.push(file.fsPath);
+            });
+
             // Send the array of paths to the language server
             this.langClient.sendRequest({ method: "buildFromFiles" }, { files: filePaths });
         });
@@ -102,11 +118,20 @@ export default class Crane
         var fileProcessed: NotificationType<any> = { method: "fileProcessed" };
         this.langClient.onNotification(fileProcessed, data => {
             // Get the percent complete
-            var percent:string = ((data.total / fileProcessCount) * 100).toFixed(2);
+            var percent: string = ((data.total / fileProcessCount) * 100).toFixed(2);
             this.statusBarItem.text = `$(zap) Processing source files (${data.total} of ${fileProcessCount} / ${percent}%)`;
+
+            if (data.error) {
+                Debug.error("There was a problem parsing PHP file: " + data.filename);
+                Debug.error(data.error);
+            } else {
+                Debug.info(`Parsed file ${data.total} of ${fileProcessCount} : ${data.filename}`);
+            }
+
             // Once all files have been processed, update the statusBarItem
-            if(data.total == fileProcessCount){
-                this.statusBarItem.text = 'File Processing Complete';
+            if (data.total == fileProcessCount){
+                Debug.info("Processing complete!");
+                this.statusBarItem.text = '$(check) Processing of PHP source files complete';
             }
         });
     }

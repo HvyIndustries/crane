@@ -160,6 +160,10 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
                             method.globalVariables.forEach((globalVar) => {
                                 toReturn.push({ label: globalVar, kind: CompletionItemKind.Variable, detail: "global variable" });
                             });
+
+                            method.scopeVariables.forEach((scopeVar) => {
+                                toReturn.push({ label: scopeVar.name, kind: CompletionItemKind.Variable, detail: "scope variable" });
+                            });
                         }
                     });
 
@@ -168,8 +172,13 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
                             classNode.construct.params.forEach((param) => {
                                 toReturn.push({ label: param.name, kind: CompletionItemKind.Property, detail: "parameter" });
                             });
+
                             classNode.construct.globalVariables.forEach((globalVar) => {
                                 toReturn.push({ label: globalVar, kind: CompletionItemKind.Variable, detail: "global variable" });
+                            });
+
+                            classNode.construct.scopeVariables.forEach((scopeVar) => {
+                                toReturn.push({ label: scopeVar.name, kind: CompletionItemKind.Variable, detail: "scope variable" });
                             });
                         }
                     }
@@ -385,7 +394,7 @@ function buildDocumentPath(uri:string): string
 // the completion list.
 connection.onCompletionResolve((item: CompletionItem): CompletionItem =>
 {
-    // TODO
+    // TODO -- Add phpDoc info
     // if (item.data === 1) {
     //     item.detail = 'TypeScript details',
     //     item.documentation = 'TypeScript documentation'
@@ -443,7 +452,6 @@ connection.onRequest(buildFromFiles, (data) => {
 
 /**
  * Processes the stub files
- * @param number offset
  */
 function processStub() {
     return new Promise((resolve, reject) => {
@@ -468,7 +476,6 @@ function processStub() {
 
 /**
  * Processes the users workspace files
- * @param number offset
  */
 function processWorkspaceFile() {
     var offset: number = 0;
@@ -478,7 +485,7 @@ function processWorkspaceFile() {
                 addToWorkspaceTree(result.tree);
                 docsDoneCount++;
                 connection.console.log(`(${docsDoneCount} of ${docsToDo.length}) File: ${file}`);
-                connection.sendNotification({ method: "fileProcessed" }, { total: docsDoneCount });
+                connection.sendNotification({ method: "fileProcessed" }, { filename: file, total: docsDoneCount, error: null });
                 if (docsToDo.length == docsDoneCount) {
                     connection.console.log('work done!');
                     notifyClientOfWorkComplete();
@@ -489,8 +496,9 @@ function processWorkspaceFile() {
                     connection.console.log('work done!');
                     notifyClientOfWorkComplete();
                 }
-                connection.console.log((util.inspect(data, false, null)));
+                connection.console.log(util.inspect(data, false, null));
                 connection.console.log(`Issue processing ${file}`);
+                connection.sendNotification({ method: "fileProcessed" }, { filename: file, total: docsDoneCount, error: util.inspect(data, false, null) });
             });
         });
     });

@@ -180,7 +180,7 @@ export class TreeBuilder
 
                             methodNode.name = branch[3][1];
 
-                            methodNode.params = this.BuildFunctionParams(branch[3][2]);
+                            methodNode.params = this.BuildFunctionParams(branch[3][2], tree.lineCache);
                             if (branch[3][5] != null && Array.isArray(branch[3][5]))
                             {
                                 methodNode.returns = branch[3][5][0];
@@ -265,7 +265,7 @@ export class TreeBuilder
                                 methodNode.startPos = this.BuildStartLocation(method[1]);
                                 methodNode.endPos = this.BuildEndLocation(method[2]);
 
-                                methodNode.params = this.BuildFunctionParams(method[3][2]);
+                                methodNode.params = this.BuildFunctionParams(method[3][2], tree.lineCache);
                                 if (method[3][5] != null && Array.isArray(method[3][5]))
                                 {
                                     methodNode.returns = method[3][5][0];
@@ -360,7 +360,7 @@ export class TreeBuilder
                                 methodNode.startPos = this.BuildStartLocation(method[1]);
                                 methodNode.endPos = this.BuildEndLocation(method[2]);
 
-                                methodNode.params = this.BuildFunctionParams(method[3][2]);
+                                methodNode.params = this.BuildFunctionParams(method[3][2], tree.lineCache);
 
                                 methodNode.isAbstract = false;
 
@@ -503,7 +503,7 @@ export class TreeBuilder
                                         constructorNode.isDeprecated = true;
                                     }
 
-                                    constructorNode.params = this.BuildFunctionParams(methodLevel[3][2]);
+                                    constructorNode.params = this.BuildFunctionParams(methodLevel[3][2], tree.lineCache);
 
                                     if (methodLevel[3][6] != null)
                                     {
@@ -570,7 +570,7 @@ export class TreeBuilder
                                         methodNode.isAbstract = true;
                                     }
 
-                                    methodNode.params = this.BuildFunctionParams(methodLevel[3][2]);
+                                    methodNode.params = this.BuildFunctionParams(methodLevel[3][2], tree.lineCache);
 
                                     if (methodLevel[3][6] != null)
                                     {
@@ -656,7 +656,7 @@ export class TreeBuilder
     }
 
     // paramsArray == methodLevel[3][2]
-    private BuildFunctionParams(paramsArray): ParameterNode[]
+    private BuildFunctionParams(paramsArray, lineCache): ParameterNode[]
     {
         var params: ParameterNode[] = [];
 
@@ -668,11 +668,19 @@ export class TreeBuilder
                 let paramNode: ParameterNode = new ParameterNode();
                 paramNode.name = paramLevel[0];
 
+                if (Array.isArray(paramLevel[1])) {
+                    paramNode.type = paramLevel[1][paramLevel[1].length - 1];
+                    var lineCacheItem = new LineCache();
+                    lineCacheItem.name = paramNode.name;
+                    lineCacheItem.value = paramNode.type;
+                    lineCache.push(lineCacheItem);
+                } else {
+                    paramNode.type = paramLevel[1];
+                }
+
                 if (paramLevel[2] != null && paramLevel[2].length != 0) {
                     paramNode.optional = true;
                     paramNode.type = paramLevel[2][0];
-                } else {
-                    paramNode.type = paramLevel[1];
                 }
 
                 params.push(paramNode);

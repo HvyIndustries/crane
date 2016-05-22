@@ -13,8 +13,8 @@ import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions, T
 
 import Crane from "./crane";
 import QualityOfLife from "./features/qualityOfLife";
-import PhpSignatureHelpProvider from "./features/phpSignatureHelpProvider";
-import PhpDefinitionProvider from "./features/phpDefinitionProvider";
+//import PhpSignatureHelpProvider from "./features/phpSignatureHelpProvider";
+//import PhpDefinitionProvider from "./features/phpDefinitionProvider";
 
 export function activate(context: ExtensionContext)
 {

@@ -1,11 +1,11 @@
 "use strict";
 
 // Takes a PHP function signature like:
-//     (foo, bar string, baz number) (string, string)
+//     (foo, thisClass bar, otherClass baz)
 // and returns an array of parameter strings:
-//     ["foo", "bar string", "baz string"]
+//     ["foo", "thisClass bar", "otherClass baz"]
 // Takes care of balancing parens so to not get confused by signatures like:
-//     (pattern string, handler func(ResponseWriter, *Request)) {
+//     (pattern string, handler func(ResponseWriter, &Request)) {
 export function parameters(signature: string): string[] {
     let ret: string[] = [];
     let parenCount = 0;

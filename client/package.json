@@ -46,6 +46,11 @@
                     "default": true,
                     "description": "Show or hide the status bar item asking you to report any PHP Intellisense bugs"
                 },
+                "crane.saveCache": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Turning caching will allow Crane to start faster after the initial startup"
+                },
                 "crane.debugMode": {
                     "type": "boolean",
                     "default": false,
@@ -58,12 +63,21 @@
                 "key": "ctrl+d",
                 "command": "crane.duplicateLine",
                 "when": "editorTextFocus && editorLangId == 'php'"
+            },
+            {
+                "key": "ctrl+shift+r",
+                "command": "crane.rebuildSources",
+                "when": "editorTextFocus && editorLangId == 'php'"
             }
         ],
         "commands": [
             {
                 "command": "crane.reportBug",
                 "title": "Crane - Report PHP Intellisense Bug"
+            },
+            {
+                "command": "crane.rebuildSources",
+                "title": "Crane - Rebuild Sources"
             }
         ],
         "snippets": [

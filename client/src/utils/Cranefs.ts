@@ -19,7 +19,7 @@ export class Cranefs {
             return process.env.APPDATA + '/Crane';
         }
         if (process.platform == 'darwin') {
-            return process.env.HOME + 'Library/Preferences/Crane';
+            return process.env.HOME + '/Library/Preferences/Crane';
         }
         if (process.platform == 'linux') {
             return process.env.HOME + '/Crane';

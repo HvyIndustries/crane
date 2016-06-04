@@ -49,7 +49,7 @@
                 "crane.saveCache": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Turning caching will allow Crane to start faster after the initial startup"
+                    "description": "Turning on caching will allow Crane to start faster after the initial startup"
                 },
                 "crane.debugMode": {
                     "type": "boolean",

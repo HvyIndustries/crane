@@ -24,4 +24,9 @@ export class Config {
         return Config.craneSettings ? Config.craneSettings.get<boolean>("showStatusBarBugReportLink", true) : true;
     }
 
+    public static get phpstubsZipFile(): string {
+        Config.reloadConfig();
+        return Config.craneSettings ? Config.craneSettings.get<string>("phpstubsZipFile", "https://codeload.github.com/HvyIndustries/crane-php-stubs/zip/master") : "https://codeload.github.com/HvyIndustries/crane-php-stubs/zip/master";
+    }
+
 }

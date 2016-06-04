@@ -18,22 +18,35 @@ For the best development experience, make sure you have the PHP linter enabled i
 
 ## User Feedback
 
-> **Another total must have for PHP developers using Visual Studio Code.**  
+> **Another total must have for PHP developers using Visual Studio Code.**
 > Jan Hajek
 
-> That's the tweet I've been waiting for since the first public release of VS Code. Thanks.  
+> That's the tweet I've been waiting for since the first public release of VS Code. Thanks.
 > [Bruno Baketaric](https://twitter.com/laphblog/status/719631906598449152)
 
-> omg omg omg omg omg  
+> omg omg omg omg omg
 > [Rich Perez](https://twitter.com/imperez/status/719645661461921793)
 
-> 👌👌👌 super awesome.  
+> 👌👌👌 super awesome.
 > [яєαℓιѕт נανѕтαн](https://twitter.com/RHJOfficial/status/719630044310740992)
 
 ## Demo
 
 ![](http://i.imgur.com/7128zNV.png)
 ![](http://i.imgur.com/CT2S3yX.gif)
+
+## Customization
+
+### Downloading PHP Libraries
+
+To download additional php libraries, press `F1` and search for `Crane - Download PHP Libraries`
+Once the libraries have been downloaded, you will need to rebuild the sources if sources have already been built.
+
+### Rebuilding Sources
+
+To rebuild sources, press `F1` and search for `Crane - Rebuild Sources`. This will instruct
+Crane to rebuild the file sources. This can be useful if your sources somehow get out of sync.
+This is also useful if new typings are added.
 
 ## Upcoming features
 

@@ -1,4 +1,4 @@
-import { workspace } from 'vscode';
+import { workspace, window } from 'vscode';
 import { NotificationType, RequestType } from 'vscode-languageclient';
 import Crane from '../crane';
 import { Debug } from './Debug';
@@ -143,6 +143,7 @@ export class Cranefs {
                                 fs.createReadStream(tmp)
                                     .pipe(unzip.Parse())
                                     .pipe(fstream.Writer(this.getStubsDir()));
+                                window.showInformationMessage('Libraries dowloaded and unziped. You might want need rebuild sources.');
                             });
                         });
                     }

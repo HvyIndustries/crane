@@ -29,4 +29,20 @@ export class Config {
         return Config.craneSettings ? Config.craneSettings.get<string>("phpstubsZipFile", "https://codeload.github.com/HvyIndustries/crane-php-stubs/zip/master") : "https://codeload.github.com/HvyIndustries/crane-php-stubs/zip/master";
     }
 
+    public static get phpFileTypes() {
+        var fileSettings = workspace.getConfiguration("files");
+        var obj: Object = fileSettings.get<Object>("associations", new Object());
+
+        var extentions = { include: [], exclude: [] };
+        for (var i in obj) {
+            var value: string = '**/*' + i.replace(/^\*/, '');
+            if (obj[i].toLowerCase() == 'php') {
+                extentions.include.push(value);
+            } else {
+                extentions.exclude.push(value);
+            }
+        }
+        return extentions;
+    }
+
 }

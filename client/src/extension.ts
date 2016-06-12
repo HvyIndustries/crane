@@ -67,7 +67,6 @@ export function activate(context: ExtensionContext)
     });
 
     // Register commands for QoL improvements
-    let duplicateLineCommand = commands.registerCommand("crane.duplicateLine", qol.duplicateLineOrSelection);
     let reportBugCommand = commands.registerCommand("crane.reportBug", crane.reportBug);
     let rebuildSources = commands.registerCommand('crane.rebuildSources', () => {
         Debug.info('Rebuilding project sources');
@@ -77,5 +76,4 @@ export function activate(context: ExtensionContext)
 
     context.subscriptions.push(rebuildSources);
     context.subscriptions.push(disposable);
-    context.subscriptions.push(duplicateLineCommand);
 }

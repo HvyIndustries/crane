@@ -18,7 +18,7 @@ class myClass
     public function doSomethingElse()
     {
         $localVar = new ExampleClass();
-        
+
         $localVar->doSomething();
 
         // Recurse
@@ -32,7 +32,7 @@ echo $test->doSomething();
 echo doWork();
 
 $otherTest = new ConnectionDB();
-$otherTest->
+//$otherTest->
 
 function doWork()
 {

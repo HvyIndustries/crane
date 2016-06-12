@@ -171,7 +171,7 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
                             });
 
                             method.scopeVariables.forEach((scopeVar) => {
-                                toReturn.push({ label: scopeVar.name, kind: CompletionItemKind.Variable, detail: "scope variable" });
+                                toReturn.push({ label: scopeVar.name, kind: CompletionItemKind.Variable, detail: "local variable" });
                             });
                         }
                     });
@@ -187,7 +187,7 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
                             });
 
                             classNode.construct.scopeVariables.forEach((scopeVar) => {
-                                toReturn.push({ label: scopeVar.name, kind: CompletionItemKind.Variable, detail: "scope variable" });
+                                toReturn.push({ label: scopeVar.name, kind: CompletionItemKind.Variable, detail: "local variable" });
                             });
                         }
                     }
@@ -234,7 +234,6 @@ function addStaticClassMembers(toReturn: CompletionItem[], item:ClassNode)
                 }
             });
 
-            // Strip the leading $
             var insertText = subNode.name;
 
             if (!found) {
@@ -252,7 +251,7 @@ function addStaticClassMembers(toReturn: CompletionItem[], item:ClassNode)
             });
 
             if (!found) {
-                toReturn.push({ label: subNode.name, kind: CompletionItemKind.Method, detail: "method (static)", insertText: subNode.name + "();" });
+                toReturn.push({ label: subNode.name, kind: CompletionItemKind.Method, detail: "method (static)", insertText: subNode.name + "()" });
             }
         }
     });
@@ -363,7 +362,7 @@ function addClassPropertiesMethodsParentClassesAndTraits(toReturn: CompletionIte
 
     classNode.methods.forEach((subNode) => {
         var accessModifier = "method " + buildAccessModifier(subNode.accessModifier);
-        var insertText = subNode.name + "();";
+        var insertText = subNode.name + "()";
 
         if (subNode.isStatic) {
             accessModifier = "static " + accessModifier;
@@ -604,35 +603,6 @@ function workspaceProcessed(projectPath, treePath) {
         }
     });
 }
-
-var requestType: RequestType<any, any, any> = { method: "findSymbolInTree" };
-connection.onRequest(requestType, (request) =>
-{
-    // If request.word starts with $ then variable
-    // If request.word starts with $this-> then class property
-    // If request.word contains ( then function or class instantiation
-    // If request.word starts with $this-> and ( then class method
-
-    let word = request.word;
-    let position = request.position;
-
-    word = word.toLowerCase();
-
-    let node = null;
-
-    // Search symbol cache
-    workspaceTree.forEach(fileNode =>
-    {
-        let matches = fileNode.symbolCache.filter(item => {
-            return item.name.toLowerCase() == word;
-        });
-
-        let t = "";
-    });
-
-    // Return filenodes with matches
-    return { node: node };
-});
 
 function addToWorkspaceTree(tree:FileNode)
 {

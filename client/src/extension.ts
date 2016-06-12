@@ -50,14 +50,14 @@ export function activate(context: ExtensionContext)
 
     var requestType: RequestType<any, any, any> = { method: "workDone" };
     langClient.onRequest(requestType, (tree) => {
-        Crane.statusBarItem.text = '$(check) Project Ready';
+        Crane.statusBarItem.text = '$(check) PHP Project Ready';
         // Load settings
         let craneSettings = workspace.getConfiguration("crane");
         Debug.info("Processing complete!");
         if (Config.showBugReport) {
             setTimeout(() => {
                 Crane.statusBarItem.tooltip = "Found a problem with the PHP Intellisense provided by Crane? Click here to file a bug report on Github";
-                Crane.statusBarItem.text = "$(bug) Report PHP Intellisense Bug";
+                Crane.statusBarItem.text = "$(bug) Found a PHP Intellisense Bug?";
                 Crane.statusBarItem.command = "crane.reportBug";
                 Crane.statusBarItem.show();
             }, 5000);

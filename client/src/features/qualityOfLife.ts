@@ -41,63 +41,6 @@ export default class QualityOfLife
         this.styleTodoComments();
     }
 
-    public duplicateLineOrSelection()
-    {
-        var selection = vscode.window.activeTextEditor.selection;
-
-        if (selection.isEmpty && selection.isSingleLine)
-        {
-            // Duplicate line
-            vscode.window.activeTextEditor.edit((editBuilder) =>
-            {
-                // Get string to duplicate
-                var oldLine = selection.start.line;
-                var range = new vscode.Range(oldLine, 0, oldLine, 999999);
-                var text = vscode.window.activeTextEditor.document.getText(range);
-                text += "\n";
-
-                var newPosition = new vscode.Position(oldLine + 1, 0);
-
-                editBuilder.insert(newPosition, text);
-            });
-        }
-        else
-        {
-            if (selection.isSingleLine)
-            {
-                // Duplicate selection on single line
-                vscode.window.activeTextEditor.edit((editBuilder) =>
-                {
-                    // Get string to duplicate
-                    var range = new vscode.Range(selection.start, selection.end);
-                    var text = vscode.window.activeTextEditor.document.getText(range);
-
-                    var line = selection.end.line;
-                    var char = selection.end.character;
-                    var newPosition = new vscode.Position(line, char);
-
-                    editBuilder.insert(newPosition, text);
-                    vscode.window.activeTextEditor.selection = selection;
-                });
-            }
-            else
-            {
-                // Duplicate selection spanning multiple lines
-                vscode.window.activeTextEditor.edit((editBuilder) =>
-                {
-                    // Get string to duplicate
-                    var range = new vscode.Range(selection.start.line, 0, selection.end.line, 999999);
-                    var text = vscode.window.activeTextEditor.document.getText(range);
-                    text += "\n";
-
-                    var newPosition = new vscode.Position(selection.end.line + 1, 0);
-
-                    editBuilder.insert(newPosition, text);
-                });
-            }
-        }
-    }
-
     private styleTodoComments()
     {
         var editor = vscode.window.activeTextEditor;
@@ -112,7 +55,6 @@ export default class QualityOfLife
         for (var i = 0; i < editor.document.lineCount; i++) {
             var line = editor.document.lineAt(i);
 
-            //var regex = /(\/\/|#)(.*todo|todo)/ig;
             var regex = /(\/\/|#)(\stodo|todo)/ig;
             var result = regex.exec(line.text);
 

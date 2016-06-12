@@ -12,6 +12,10 @@ var phpParser = require("php-parser");
 
 let connection: IConnection;
 
+function isset(value) {
+    return typeof value != 'undefined';
+}
+
 export class TreeBuilder
 {
     // v1.4 - added lineCache
@@ -31,21 +35,16 @@ export class TreeBuilder
     {
         return new Promise((resolve, reject) =>
         {
-
-            // phpParser.parser.locations = true;
-            // phpParser.parser.docBlocks = true;
-            // phpParser.parser.suppressErrors = true;
-            // var ast = phpParser.parseCode(text);
-            // connection.console.log(filePath);
-            var ast = phpParser.create({
+            var parserInst = phpParser.create({
                 parser: {
                     locations: true,
                     docBlocks: true,
                     suppressErrors: true
                 }
-            }).parseCode(text);
+            });
 
-            // connection.console.log(ast);
+            var ast = parserInst.parseCode(text);
+            parserInst = null;
 
             this.BuildObjectTree(ast, filePath).then((tree) => {
                 var symbolCache = this.BuildSymbolCache(tree, filePath).then(symbolCache => {
@@ -122,13 +121,15 @@ export class TreeBuilder
 
                 case "const":
                     let constantNode: ConstantNode = new ConstantNode();
-                    constantNode.name = branch[1][0][0];
-                    constantNode.type = branch[1][0][1][0];
-                    if (constantNode.type == "string" || constantNode.type == "number") {
-                        constantNode.value = branch[1][0][1][1];
+                    if (isset(branch[1][0][0] || false) && isset(branch[1][0][1][0] || false)) {
+                        constantNode.name = branch[1][0][0];
+                        constantNode.type = branch[1][0][1][0];
+                        if (constantNode.type == "string" || constantNode.type == "number") {
+                            constantNode.value = branch[1][0][1][1];
+                        }
+                        // TODO -- Add location
+                        tree.constants.push(constantNode);
                     }
-                    // TODO -- Add location
-                    tree.constants.push(constantNode);
                     break;
 
                 case "use":

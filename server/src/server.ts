@@ -16,23 +16,31 @@ import {
 } from 'vscode-languageserver';
 
 import { TreeBuilder, FileNode, FileSymbolCache, SymbolType, AccessModifierNode, ClassNode } from "./hvy/treeBuilder";
+import { Debug } from './util/Debug';
 
+const fs = require("fs");
+const util = require('util');
+const zlib = require('zlib');
+
+// Glob for file searching
 const glob = require("glob");
-// const fq = require("fs");
+// FileQueue for queuing files so we don't open too many
 const FileQueue = require('filequeue');
 const fq = new FileQueue(200);
-const util = require('util');
 
 let connection: IConnection = createConnection(new IPCMessageReader(process), new IPCMessageWriter(process));
 
 let documents: TextDocuments = new TextDocuments();
 documents.listen(connection);
+Debug.SetConnection(connection);
 
 let treeBuilder: TreeBuilder = new TreeBuilder();
 treeBuilder.SetConnection(connection);
 let workspaceTree: FileNode[] = [];
 
 let workspaceRoot: string;
+var craneProjectDir: string;
+let saveCache: boolean = true;
 connection.onInitialize((params): InitializeResult =>
 {
     workspaceRoot = params.rootPath;
@@ -161,6 +169,10 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
                             method.globalVariables.forEach((globalVar) => {
                                 toReturn.push({ label: globalVar, kind: CompletionItemKind.Variable, detail: "global variable" });
                             });
+
+                            method.scopeVariables.forEach((scopeVar) => {
+                                toReturn.push({ label: scopeVar.name, kind: CompletionItemKind.Variable, detail: "scope variable" });
+                            });
                         }
                     });
 
@@ -169,8 +181,13 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
                             classNode.construct.params.forEach((param) => {
                                 toReturn.push({ label: param.name, kind: CompletionItemKind.Property, detail: "parameter" });
                             });
+
                             classNode.construct.globalVariables.forEach((globalVar) => {
                                 toReturn.push({ label: globalVar, kind: CompletionItemKind.Variable, detail: "global variable" });
+                            });
+
+                            classNode.construct.scopeVariables.forEach((scopeVar) => {
+                                toReturn.push({ label: scopeVar.name, kind: CompletionItemKind.Variable, detail: "scope variable" });
                             });
                         }
                     }
@@ -447,7 +464,7 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem =>
     return item;
 });
 
-var requestType: RequestType<any, any, any> = { method: "buildObjectTreeForDocument" };
+var requestType: RequestType<{path:string,text:string,projectDir:string,projectTree:string}, any, any> = { method: "buildObjectTreeForDocument" };
 connection.onRequest(requestType, (requestObj) =>
 {
     var fileUri = requestObj.path;
@@ -455,7 +472,7 @@ connection.onRequest(requestType, (requestObj) =>
 
     treeBuilder.Parse(text, fileUri).then(result => {
         addToWorkspaceTree(result.tree);
-        notifyClientOfWorkComplete();
+        // notifyClientOfWorkComplete();
         return true;
     })
     .catch(error => {
@@ -465,13 +482,25 @@ connection.onRequest(requestType, (requestObj) =>
     });
 });
 
+var saveTreeCache: RequestType<{ projectDir: string, projectTree: string }, any, any> = { method: "saveTreeCache" };
+connection.onRequest(saveTreeCache, request => {
+    saveProjectTree(request.projectDir, request.projectTree).then(saved => {
+        notifyClientOfWorkComplete();
+    });
+});
+
 let docsDoneCount = 0;
 var docsToDo: string[] = [];
 var stubsToDo: string[] = [];
 
-var buildFromFiles: RequestType<any, any, any> = { method: "buildFromFiles" };
-connection.onRequest(buildFromFiles, (data) => {
-    docsToDo = data.files;
+var buildFromFiles: RequestType<{files:string[], projectPath:string, treePath:string, saveCache:boolean, rebuild:boolean}, any, any> = { method: "buildFromFiles" };
+connection.onRequest(buildFromFiles, (project) => {
+    if (project.rebuild) {
+        workspaceTree = [];
+        treeBuilder = new TreeBuilder();
+    }
+    saveCache = project.saveCache;
+    docsToDo = project.files;
     docsDoneCount = 0;
     connection.console.log('starting work!');
     glob('/../phpstubs/*.php', { cwd: __dirname, root: __dirname }, (err, fileNames) => {
@@ -481,14 +510,37 @@ connection.onRequest(buildFromFiles, (data) => {
         processStub().then(data => {
             connection.console.log('stubs done!');
             connection.console.log(`Workspace files to process: ${docsToDo.length}`);
-            processWorkspaceFile();
+            processWorkspaceFiles(project.projectPath, project.treePath);
         }).catch(data => {
             connection.console.log('No stubs found!');
             connection.console.log(`Workspace files to process: ${docsToDo.length}`);
-            processWorkspaceFile();
+            processWorkspaceFiles(project.projectPath, project.treePath);
         });
+    });
+});
 
-        // Process the users workspace
+var buildFromProject: RequestType<{treePath:string, saveCache:boolean}, any, any> = { method: "buildFromProject" };
+connection.onRequest(buildFromProject, (data) => {
+    saveCache = data.saveCache;
+    fs.readFile(data.treePath, (err, data) => {
+        if (err) {
+            Debug.error('Could not read cache file');
+            Debug.error((util.inspect(err, false, null)));
+        } else {
+            Debug.info('Unzipping the file');
+            var treeStream = new Buffer(data);
+            zlib.gunzip(treeStream, (err, buffer) => {
+                if (err) {
+                    Debug.error('Could not unzip cache file');
+                    Debug.error((util.inspect(err, false, null)));
+                } else {
+                    Debug.info('Cache file successfullly read');
+                    workspaceTree = JSON.parse(buffer.toString());
+                    Debug.info('Loaded');
+                    notifyClientOfWorkComplete();
+                }
+            });
+        }
     });
 });
 
@@ -519,8 +571,7 @@ function processStub() {
 /**
  * Processes the users workspace files
  */
-function processWorkspaceFile() {
-    var offset: number = 0;
+function processWorkspaceFiles(projectPath: string, treePath: string) {
     docsToDo.forEach(file => {
         fq.readFile(file, { encoding: 'utf8' }, (err, data) => {
             treeBuilder.Parse(data, file).then(result => {
@@ -529,20 +580,28 @@ function processWorkspaceFile() {
                 connection.console.log(`(${docsDoneCount} of ${docsToDo.length}) File: ${file}`);
                 connection.sendNotification({ method: "fileProcessed" }, { filename: file, total: docsDoneCount, error: null });
                 if (docsToDo.length == docsDoneCount) {
-                    connection.console.log('work done!');
-                    notifyClientOfWorkComplete();
+                    workspaceProcessed(projectPath, treePath);
                 }
             }).catch(data => {
                 docsDoneCount++;
                 if (docsToDo.length == docsDoneCount) {
-                    connection.console.log('work done!');
-                    notifyClientOfWorkComplete();
+                    workspaceProcessed(projectPath, treePath);
                 }
                 connection.console.log(util.inspect(data, false, null));
                 connection.console.log(`Issue processing ${file}`);
                 connection.sendNotification({ method: "fileProcessed" }, { filename: file, total: docsDoneCount, error: util.inspect(data, false, null) });
             });
         });
+    });
+}
+
+function workspaceProcessed(projectPath, treePath) {
+    Debug.info("Workspace files have processed");
+    saveProjectTree(projectPath, treePath).then(savedTree => {
+        notifyClientOfWorkComplete();
+        if (savedTree) {
+            Debug.info('Project tree has been saved');
+        }
     });
 }
 
@@ -629,6 +688,32 @@ function notifyClientOfWorkComplete()
 {
     var requestType: RequestType<any, any, any> = { method: "workDone" };
     connection.sendRequest(requestType);
+}
+
+function saveProjectTree(projectPath: string, treeFile: string): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+        if (!saveCache) {
+            resolve(false);
+        }else{
+            Debug.info('packing tree file: ' + treeFile);
+            fq.writeFile(`${projectPath}/tree.tmp`, JSON.stringify(workspaceTree), (err) => {
+                if (err) {
+                    Debug.error('Could not write to cache file');
+                    Debug.error(util.inspect(err, false, null));
+                    resolve(false);
+                } else {
+                    var gzip = zlib.createGzip();
+                    var inp = fs.createReadStream(`${projectPath}/tree.tmp`);
+                    var out = fs.createWriteStream(treeFile);
+                    inp.pipe(gzip).pipe(out).on('close', function () {
+                        fs.unlinkSync(`${projectPath}/tree.tmp`);
+                    });
+                    Debug.info('Cache file updated');
+                    resolve(true);
+                }
+            });
+        }
+    });
 }
 
 connection.listen();

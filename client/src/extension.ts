@@ -13,8 +13,8 @@ import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions, T
 
 import Crane from "./crane";
 import QualityOfLife from "./features/qualityOfLife";
-//import PhpSignatureHelpProvider from "./features/phpSignatureHelpProvider";
-//import PhpDefinitionProvider from "./features/phpDefinitionProvider";
+import { Debug } from './utils/Debug';
+import { Config } from './utils/Config';
 
 export function activate(context: ExtensionContext)
 {
@@ -51,31 +51,33 @@ export function activate(context: ExtensionContext)
     //let phpDefinitionProvider: PhpDefinitionProvider = new PhpDefinitionProvider(langClient);
 
     var requestType: RequestType<any, any, any> = { method: "workDone" };
-    langClient.onRequest(requestType, () => {
+    langClient.onRequest(requestType, (tree) => {
+        Crane.statusBarItem.text = '$(check) PHP Project Ready';
         // Load settings
         let craneSettings = workspace.getConfiguration("crane");
-        if (craneSettings) {
-            var showStatusBarItem = craneSettings.get<boolean>("showStatusBarBugReportLink", true);
-            if (showStatusBarItem) {
-                setTimeout(() => {
-                    crane.statusBarItem.text = "$(bug) Report PHP Intellisense Bug";
-                    crane.statusBarItem.tooltip = "Found a problem with the PHP Intellisense provided by Crane? Click here to file a bug report on Github";
-                    crane.statusBarItem.command = "crane.reportBug";
-                    crane.statusBarItem.show();
-                }, 5000);
-            } else {
-                crane.statusBarItem.hide();
-            }
+        Debug.info("Processing complete!");
+        if (Config.showBugReport) {
+            setTimeout(() => {
+                Crane.statusBarItem.tooltip = "Found a problem with the PHP Intellisense provided by Crane? Click here to file a bug report on Github";
+                Crane.statusBarItem.text = "$(bug) Found a PHP Intellisense Bug?";
+                Crane.statusBarItem.command = "crane.reportBug";
+                Crane.statusBarItem.show();
+            }, 5000);
         } else {
-            crane.statusBarItem.hide();
+            Crane.statusBarItem.hide();
         }
     });
 
     // Register commands for QoL improvements
     context.subscriptions.push(commands.registerCommand("crane.duplicateLine", qol.duplicateLineOrSelection));
     context.subscriptions.push(commands.registerCommand("crane.reportBug", crane.reportBug));
-    //context.subscriptions.push(languages.registerSignatureHelpProvider({ language: "php", scheme: "file"}, phpSignatureHelpProvider, "(", ","));
-    //context.subscriptions.push(languages.registerDefinitionProvider({ language: "php", scheme: "file"}, phpDefinitionProvider));
+    let reportBugCommand = commands.registerCommand("crane.reportBug", crane.reportBug);
+    let rebuildSources = commands.registerCommand('crane.rebuildSources', () => {
+        Debug.info('Rebuilding project sources');
+        Debug.clear();
+        crane.rebuildProject();
+    });
 
+    context.subscriptions.push(rebuildSources);
     context.subscriptions.push(disposable);
 }

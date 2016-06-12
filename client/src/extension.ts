@@ -8,7 +8,7 @@
 
 import * as path from "path";
 
-import { workspace, Disposable, ExtensionContext, commands, languages } from "vscode";
+import { workspace, Disposable, ExtensionContext, commands } from "vscode";
 import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions, TransportKind, RequestType } from "vscode-languageclient";
 
 import Crane from "./crane";
@@ -69,15 +69,12 @@ export function activate(context: ExtensionContext)
     });
 
     // Register commands for QoL improvements
-    context.subscriptions.push(commands.registerCommand("crane.duplicateLine", qol.duplicateLineOrSelection));
     context.subscriptions.push(commands.registerCommand("crane.reportBug", crane.reportBug));
-    let reportBugCommand = commands.registerCommand("crane.reportBug", crane.reportBug);
-    let rebuildSources = commands.registerCommand('crane.rebuildSources', () => {
+    context.subscriptions.push(commands.registerCommand('crane.rebuildSources', () => {
         Debug.info('Rebuilding project sources');
         Debug.clear();
         crane.rebuildProject();
-    });
+    }));
 
-    context.subscriptions.push(rebuildSources);
     context.subscriptions.push(disposable);
 }

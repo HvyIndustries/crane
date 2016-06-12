@@ -691,7 +691,6 @@ export class TreeBuilder
         return params;
     }
 
-    // codeLevel == codeLevel
     private BuildVariableOrProp(codeLevel): any
     {
         if (codeLevel[0] == "set")

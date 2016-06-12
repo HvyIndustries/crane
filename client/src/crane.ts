@@ -9,22 +9,27 @@
 import { Disposable, workspace, window, TextDocument, TextEditor, StatusBarAlignment, StatusBarItem } from 'vscode';
 import { LanguageClient, RequestType, NotificationType } from 'vscode-languageclient';
 import { ThrottledDelayer } from './utils/async';
+import { Cranefs } from './utils/Cranefs';
 import { Debug } from './utils/Debug';
+import { Config } from './utils/Config';
 
 const exec = require('child_process').exec;
 
+let craneSettings = workspace.getConfiguration("crane");
+
+const cranefs: Cranefs = new Cranefs();
+console.log(process.platform)
 export default class Crane
 {
-    public langClient: LanguageClient;
+    public static langClient: LanguageClient;
 
     private disposable: Disposable;
     private delayers: { [key: string]: ThrottledDelayer<void> };
 
-    public statusBarItem: StatusBarItem;
+    public static statusBarItem: StatusBarItem;
 
-    constructor(languageClient: LanguageClient)
-    {
-        this.langClient = languageClient;
+    constructor(languageClient: LanguageClient) {
+        Crane.langClient = languageClient;
 
         this.delayers = Object.create(null);
 
@@ -36,28 +41,36 @@ export default class Crane
 
         this.disposable = Disposable.from(...subscriptions);
 
-        if (!this.statusBarItem) {
-            this.statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left);
-            this.statusBarItem.hide();
+        if (!Crane.statusBarItem) {
+            Crane.statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left);
+            Crane.statusBarItem.hide();
         }
 
         this.doInit();
     }
 
-    public doInit()
-    {
+    public doInit() {
         console.log("Crane Initialised...");
 
-        this.statusBarItem.text = "$(zap) Processing PHP source files...";
-        this.statusBarItem.tooltip = "Crane is processing the PHP source files in your workspace to build code completion suggestions";
-        this.statusBarItem.show();
+        Crane.statusBarItem.text = "$(zap) Processing PHP source files...";
+        Crane.statusBarItem.tooltip = "Crane is processing the PHP source files in your workspace to build code completion suggestions";
+        Crane.statusBarItem.show();
+
+        var serverDebugMessage: NotificationType<{ type: string, message: string }> = { method: "serverDebugMessage" };
+        Crane.langClient.onNotification(serverDebugMessage, message => {
+            switch (message.type) {
+                case 'info': Debug.info(message.message); break;
+                case 'error': Debug.error(message.message); break;
+                case 'warning': Debug.warning(message.message); break;
+                default: Debug.info(message.message); break;
+            }
+        });
 
         // Send request to server to build object tree for all workspace files
         this.processAllFilesInWorkspace();
     }
 
-    public reportBug()
-    {
+    public reportBug() {
         let openCommand: string;
 
         switch (process.platform) {
@@ -74,70 +87,50 @@ export default class Crane
         exec(openCommand + "https://github.com/HvyIndustries/crane/issues");
     }
 
-    public handleFileSave()
-    {
+    public handleFileSave() {
         var editor = window.activeTextEditor;
         if (editor == null) return;
 
         var document = editor.document;
 
-        this.buildObjectTreeForDocument(document);
+        this.buildObjectTreeForDocument(document).then(() => {
+            Crane.langClient.sendRequest({ method: 'saveTreeCache' }, { projectDir: cranefs.getProjectDir(), projectTree: cranefs.getTreePath() });
+        });
     }
 
-    private processAllFilesInWorkspace()
-    {
-        if (workspace.rootPath == undefined) return;
-
-        var fileProcessCount = 0;
-
-        let craneSettings = workspace.getConfiguration("crane");
-        let debugMode = false;
-        if (craneSettings) {
-            debugMode = craneSettings.get<boolean>("debugMode", false);
-        }
-
-        // Find all the php files to process
-        workspace.findFiles('**/*.php', '').then(files => {
-            console.log(`Files to parse: ${files.length}`);
-
-            Debug.info(`Preparing to parse ${files.length} PHP source files...`);
-
-            fileProcessCount = files.length;
-            var filePaths: string[] = [];
-
-            // Get the objects path value for the current file system
-            files.forEach(file => {
-                filePaths.push(file.fsPath);
-            });
-
-            // Send the array of paths to the language server
-            this.langClient.sendRequest({ method: "buildFromFiles" }, { files: filePaths });
-        });
-
-        // Update the UI so the user knows the processing status
-        var fileProcessed: NotificationType<any> = { method: "fileProcessed" };
-        this.langClient.onNotification(fileProcessed, data => {
-            // Get the percent complete
-            var percent: string = ((data.total / fileProcessCount) * 100).toFixed(2);
-            this.statusBarItem.text = `$(zap) Processing source files (${data.total} of ${fileProcessCount} / ${percent}%)`;
-
-            if (data.error) {
-                Debug.error("There was a problem parsing PHP file: " + data.filename);
-                Debug.error(data.error);
+    public processAllFilesInWorkspace() {
+        cranefs.createProjectDir().then(data => {
+            var createTreeFile: boolean = false;
+            // Folder was created so there is no tree cache
+            if (data.folderCreated) {
+                this.processWorkspaceFiles();
             } else {
-                Debug.info(`Parsed file ${data.total} of ${fileProcessCount} : ${data.filename}`);
-            }
-
-            // Once all files have been processed, update the statusBarItem
-            if (data.total == fileProcessCount){
-                Debug.info("Processing complete!");
-                this.statusBarItem.text = '$(check) Processing of PHP source files complete';
+                // Check for a tree file, if it exists load it;
+                // otherwise we need to process the files in the workspace
+                cranefs.doesProjectTreeExist().then(tree => {
+                    if (!tree.exists) {
+                        this.processWorkspaceFiles();
+                    } else {
+                        this.processProject();
+                    }
+                });
             }
         });
     }
 
-    private onChangeTextHandler(textDocument: TextDocument)
-    {
+    public rebuildProject() {
+        cranefs.rebuildProject();
+    }
+
+    public processWorkspaceFiles() {
+        cranefs.processWorkspaceFiles();
+    }
+
+    public processProject() {
+        cranefs.processProject();
+    }
+
+    private onChangeTextHandler(textDocument: TextDocument) {
         // Only parse PHP files
         if (textDocument.languageId != "php") return;
 
@@ -157,15 +150,17 @@ export default class Crane
         return new Promise<void>((resolve, reject) => {
             var path = document.fileName;
             var text = document.getText();
+            var projectDir = cranefs.getProjectDir();
+            var projectTree = cranefs.getTreePath();
 
             var requestType: RequestType<any, any, any> = { method: "buildObjectTreeForDocument" };
-            this.langClient.sendRequest(requestType, { path, text }).then(() => resolve() );
+            Crane.langClient.sendRequest(requestType, { path, text, projectDir, projectTree }).then(() => resolve() );
         });
     }
 
     dispose()
     {
         this.disposable.dispose();
-        this.statusBarItem.dispose();
+        Crane.statusBarItem.dispose();
     }
 }

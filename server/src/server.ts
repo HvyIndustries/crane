@@ -261,6 +261,18 @@ function addStaticGlobalVariables(toReturn: CompletionItem[], item:FileNode)
 {
 }
 
+function findCaller(filePath:string, line:string, char:number) : string
+{
+    // Starting at char, go back through the line until we find a $, then return the value
+    var partLine = line.substr(char, line.length - char);
+
+    // TODO -- the line being passed through does not have leading spaces,
+    //         so the char offset is incorrect at this point.
+
+    // Return the matched caller. eg "$this", "$this->function()->", "$this->prop->", "$instVar->", etc
+    return null;
+}
+
 function recurseMethodCalls(toReturn: CompletionItem[], item:FileNode, currentLine:string, line:number, lines:string[], filePath:string, char:number)
 {
     currentLine = currentLine.replace(/\t/gm, " ");
@@ -269,10 +281,16 @@ function recurseMethodCalls(toReturn: CompletionItem[], item:FileNode, currentLi
         return item != "";
     });
 
-    // TODO -- Handle properties set to class instances (ie. intellisense for $this->prop->)
-    // TODO -- Only chain method calls, not property calls (eg. $this->func()->func2())
+    //findCaller(filePath, currentLine, char);
+    // if (findCaller(currentLine, char) == "$this") {
+    // } else {
+    // }
+
+    // Check that we're calling this
     if (parts[0].indexOf("$this", parts[0].length - 5) !== -1)
     {
+        // TODO -- Only chain method calls, not property calls (eg. $this->func()->func2())
+        // TODO -- Handle properties set to class instances (ie. intellisense for $this->prop->)
         // We're referencing the current class, show everything
         item.classes.forEach((classNode) => {
             if (item.path == filePath && classNode.startPos.line <= line && classNode.endPos.line >= line) {

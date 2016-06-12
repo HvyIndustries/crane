@@ -271,7 +271,7 @@ function recurseMethodCalls(toReturn: CompletionItem[], item:FileNode, currentLi
 
     // TODO -- Handle properties set to class instances (ie. intellisense for $this->prop->)
     // TODO -- Only chain method calls, not property calls (eg. $this->func()->func2())
-    if (parts[0] == "$this")
+    if (parts[0].indexOf("$this", parts[0].length - 5) !== -1)
     {
         // We're referencing the current class, show everything
         item.classes.forEach((classNode) => {

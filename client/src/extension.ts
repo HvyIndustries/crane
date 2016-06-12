@@ -47,8 +47,6 @@ export function activate(context: ExtensionContext)
     let disposable = langClient.start();
 
     let crane: Crane = new Crane(langClient);
-    //let phpSignatureHelpProvider: PhpSignatureHelpProvider = new PhpSignatureHelpProvider(langClient);
-    //let phpDefinitionProvider: PhpDefinitionProvider = new PhpDefinitionProvider(langClient);
 
     var requestType: RequestType<any, any, any> = { method: "workDone" };
     langClient.onRequest(requestType, (tree) => {

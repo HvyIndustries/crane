@@ -73,12 +73,12 @@ export class Cranefs {
         if (workspace.rootPath == undefined) return;
         var fileProcessCount = 0;
 
+        // Get PHP files from 'files.associations' to be processed
         var files = Config.phpFileTypes;
         if (files.include.indexOf('**/*.php') == -1) {
             files.include.push('**/*.php');
         }
-        console.log(`{${files.include.join(',')}}`);
-        console.log(`{${files.exclude.join(',')}}`);
+
         // Find all the php files to process
         workspace.findFiles(`{${files.include.join(',')}}`, `{${files.exclude.join(',')}}`).then(files => {
             Debug.info(`Preparing to parse ${files.length} PHP source files...`);

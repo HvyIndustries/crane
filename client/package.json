@@ -73,6 +73,10 @@
             {
                 "command": "crane.rebuildSources",
                 "title": "Crane - Rebuild PHP Source Caches"
+            },
+            {
+              "command": "crane.downloadPHPLibraries",
+              "title": "Crane - Download PHP Libraries"
             }
         ],
         "snippets": [

@@ -38,8 +38,8 @@
     "main": "./out/src/extension",
     "contributes": {
         "configuration": {
-        "type": "object",
-        "title": "Crane Configuration",
+            "type": "object",
+            "title": "Crane Configuration",
             "properties": {
                 "crane.showStatusBarBugReportLink": {
                     "type": "boolean",

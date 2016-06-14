@@ -10,6 +10,7 @@ const fstream = require('fstream');
 const http    = require('https');
 const unzip   = require('unzip');
 const util    = require('util');
+const mkdirp  = require('mkdirp');
 
 let craneSettings = workspace.getConfiguration("crane");
 
@@ -34,7 +35,7 @@ export class Cranefs {
     public getProjectDir(): string {
         var md5sum = crypto.createHash('md5');
         // Get the workspace location for the user
-        return this.getCraneDir() + '/' + (md5sum.update(workspace.rootPath)).digest('hex');
+        return this.getCraneDir() + '/projects/' + (md5sum.update(workspace.rootPath)).digest('hex');
     }
 
     public getStubsDir(): string {
@@ -136,59 +137,31 @@ export class Cranefs {
         var zip = Config.phpstubsZipFile;
         var tmp = this.getCraneDir() + '/phpstubs.tmp.zip';
         Debug.info(`Downloading ${zip} to ${tmp}`);
-        this.createCraneFolder().then((created) => {
-            fs.unlink(this.getStubsDir(), (err) => {
-                this.createPhpStubsFolder().then((stubsCreated) => {
-                    if (stubsCreated) {
-                        var file = fs.createWriteStream(tmp);
-                        http.get(zip, (response) => {
-                            response.pipe(file);
-                            response.on('end', () => {
-                                Debug.info('PHPStubs Download Complete');
-                                Debug.info(`Unzipping to ${this.getStubsDir()}`);
-                                fs.createReadStream(tmp)
-                                    .pipe(unzip.Parse())
-                                    .pipe(fstream.Writer(this.getStubsDir()));
-                                window.showInformationMessage('PHP Library Stubs downloaded and installed. You might need to rebuild the PHP sources for them to work correctly.');
-                            });
-                        });
-                    }
-                });
-            });
-        });
-    }
-
-    private createCraneFolder(): Promise<boolean> {
-        return new Promise((resolve, reject) => {
-            var craneDir = this.getCraneDir();
-            fs.stat(craneDir, (err, stat) => {
-                if (err === null) {
-                    resolve(true);
-                } else if (err.code == 'ENOENT') {
-                    fs.mkdirSync(craneDir);
-                    resolve(true);
-                } else {
-                    resolve(false);
-                }
-            });
-        });
-    }
-
-    private createProjectFolder(): Promise<{ folderExists:boolean, folderCreated:boolean, path:string }> {
-        return new Promise((resolve, reject) => {
-            this.createCraneFolder().then(craneCreated => {
-                if (craneCreated) {
-                    var projectDir = this.getProjectDir();
-                    fs.stat(projectDir, (err, stat) => {
-                        if (err === null) {
-                            Debug.info(`Project folder: ${projectDir}`);
-                            resolve({ folderExists: true, folderCreated: false, path: projectDir });
-                        } else if (err.code == 'ENOENT') {
-                            Debug.info(`Creating project folder: ${projectDir}`);
-                            fs.mkdirSync(projectDir);
-                            resolve({ folderExists: false, folderCreated: false, path: projectDir });
-                        }
+        this.createPhpStubsFolder().then(created => {
+            if (created) {
+                var file = fs.createWriteStream(tmp);
+                http.get(zip, (response) => {
+                    response.pipe(file);
+                    response.on('end', () => {
+                        Debug.info('PHPStubs Download Complete');
+                        Debug.info(`Unzipping to ${this.getStubsDir()}`);
+                        fs.createReadStream(tmp)
+                            .pipe(unzip.Parse())
+                            .pipe(fstream.Writer(this.getStubsDir()));
+                        window.showInformationMessage('PHP Library Stubs downloaded and installed. You might need to rebuild the PHP sources for them to work correctly.');
                     });
+                });
+            }
+        });
+    }
+
+    private createProjectFolder(): Promise<{ folderExists: boolean, folderCreated: boolean, path: string }> {
+        return new Promise((resolve, reject) => {
+            mkdirp(this.getProjectDir(), (err) => {
+                if (err) {
+                    resolve(false);
+                } else {
+                    resolve(true);
                 }
             });
         });
@@ -196,15 +169,12 @@ export class Cranefs {
 
     private createPhpStubsFolder(): Promise<boolean> {
         return new Promise((resolve, reject) => {
-            var craneDir = this.getCraneDir();
-            fs.stat(this.getStubsDir(), (err, stat) => {
-                if (err === null) {
-                    resolve(true);
-                } else if (err.code == 'ENOENT') {
-                    fs.mkdirSync(this.getStubsDir());
-                    resolve(true);
-                } else {
+            var craneDir: string = this.getCraneDir();
+            mkdirp(craneDir + '/phpstubs', (err) => {
+                if (err) {
                     resolve(false);
+                } else {
+                    resolve(true);
                 }
             });
         });

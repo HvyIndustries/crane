@@ -149,7 +149,7 @@ export class Cranefs {
                                 fs.createReadStream(tmp)
                                     .pipe(unzip.Parse())
                                     .pipe(fstream.Writer(this.getStubsDir()));
-                                window.showInformationMessage('Libraries dowloaded and unziped. You might need to rebuild php sources.');
+                                window.showInformationMessage('PHP Library Stubs downloaded and installed. You might need to rebuild the PHP sources for them to work correctly.');
                             });
                         });
                     }

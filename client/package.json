@@ -80,8 +80,8 @@
                 "title": "Crane - Rebuild PHP Source Caches"
             },
             {
-              "command": "crane.downloadPHPLibraries",
-              "title": "Crane - Download PHP Libraries"
+                "command": "crane.downloadPHPLibraries",
+                "title": "Crane - Download PHP Library Stubs"
             }
         ],
         "snippets": [

@@ -1,11 +1,16 @@
-import { workspace } from 'vscode';
+import { workspace, window } from 'vscode';
 import { NotificationType, RequestType } from 'vscode-languageclient';
 import Crane from '../crane';
 import { Debug } from './Debug';
 import { Config } from './Config';
 
-const crypto = require('crypto');
-const fs = require('fs');
+const crypto  = require('crypto');
+const fs      = require('fs');
+const fstream = require('fstream');
+const http    = require('https');
+const unzip   = require('unzip');
+const util    = require('util');
+
 let craneSettings = workspace.getConfiguration("crane");
 
 export class Cranefs {
@@ -30,6 +35,10 @@ export class Cranefs {
         var md5sum = crypto.createHash('md5');
         // Get the workspace location for the user
         return this.getCraneDir() + '/' + (md5sum.update(workspace.rootPath)).digest('hex');
+    }
+
+    public getStubsDir(): string {
+        return this.getCraneDir() + '/phpstubs';
     }
 
     public getTreePath(): string {
@@ -64,8 +73,14 @@ export class Cranefs {
         if (workspace.rootPath == undefined) return;
         var fileProcessCount = 0;
 
+        // Get PHP files from 'files.associations' to be processed
+        var files = Config.phpFileTypes;
+        if (files.include.indexOf('**/*.php') == -1) {
+            files.include.push('**/*.php');
+        }
+
         // Find all the php files to process
-        workspace.findFiles('**/*.php', '').then(files => {
+        workspace.findFiles(`{${files.include.join(',')}}`, `{${files.exclude.join(',')}}`).then(files => {
             Debug.info(`Preparing to parse ${files.length} PHP source files...`);
 
             fileProcessCount = files.length;
@@ -79,6 +94,7 @@ export class Cranefs {
             // Send the array of paths to the language server
             Crane.langClient.sendRequest({ method: "buildFromFiles" }, {
                 files: filePaths,
+                craneRoot: this.getCraneDir(),
                 projectPath: this.getProjectDir(),
                 treePath: this.getTreePath(),
                 saveCache: this.isCacheable(),
@@ -101,7 +117,7 @@ export class Cranefs {
         });
     }
 
-    public processProject() {
+    public processProject(): void {
         Debug.info('Building project from cache file: ' + this.getTreePath());
         Crane.langClient.sendRequest({ method: "buildFromProject" }, {
             treePath: this.getTreePath(),
@@ -109,10 +125,36 @@ export class Cranefs {
         });
     }
 
-    public rebuildProject() {
+    public rebuildProject(): void {
         Debug.info('Rebuilding the project files');
         fs.unlink(this.getTreePath(), (err) => {
             this.processWorkspaceFiles(true);
+        });
+    }
+
+    public downloadPHPLibraries(): void {
+        var zip = Config.phpstubsZipFile;
+        var tmp = this.getCraneDir() + '/phpstubs.tmp.zip';
+        Debug.info(`Downloading ${zip} to ${tmp}`);
+        this.createCraneFolder().then((created) => {
+            fs.unlink(this.getStubsDir(), (err) => {
+                this.createPhpStubsFolder().then((stubsCreated) => {
+                    if (stubsCreated) {
+                        var file = fs.createWriteStream(tmp);
+                        http.get(zip, (response) => {
+                            response.pipe(file);
+                            response.on('end', () => {
+                                Debug.info('PHPStubs Download Complete');
+                                Debug.info(`Unzipping to ${this.getStubsDir()}`);
+                                fs.createReadStream(tmp)
+                                    .pipe(unzip.Parse())
+                                    .pipe(fstream.Writer(this.getStubsDir()));
+                                window.showInformationMessage('PHP Library Stubs downloaded and installed. You might need to rebuild the PHP sources for them to work correctly.');
+                            });
+                        });
+                    }
+                });
+            });
         });
     }
 
@@ -125,6 +167,8 @@ export class Cranefs {
                 } else if (err.code == 'ENOENT') {
                     fs.mkdirSync(craneDir);
                     resolve(true);
+                } else {
+                    resolve(false);
                 }
             });
         });
@@ -145,6 +189,22 @@ export class Cranefs {
                             resolve({ folderExists: false, folderCreated: false, path: projectDir });
                         }
                     });
+                }
+            });
+        });
+    }
+
+    private createPhpStubsFolder(): Promise<boolean> {
+        return new Promise((resolve, reject) => {
+            var craneDir = this.getCraneDir();
+            fs.stat(this.getStubsDir(), (err, stat) => {
+                if (err === null) {
+                    resolve(true);
+                } else if (err.code == 'ENOENT') {
+                    fs.mkdirSync(this.getStubsDir());
+                    resolve(true);
+                } else {
+                    resolve(false);
                 }
             });
         });

@@ -442,7 +442,14 @@ let docsDoneCount = 0;
 var docsToDo: string[] = [];
 var stubsToDo: string[] = [];
 
-var buildFromFiles: RequestType<{files:string[], projectPath:string, treePath:string, saveCache:boolean, rebuild:boolean}, any, any> = { method: "buildFromFiles" };
+var buildFromFiles: RequestType<{
+    files: string[],
+    craneRoot: string,
+    projectPath: string,
+    treePath: string,
+    saveCache: boolean,
+    rebuild: boolean
+}, any, any> = { method: "buildFromFiles" };
 connection.onRequest(buildFromFiles, (project) => {
     if (project.rebuild) {
         workspaceTree = [];
@@ -452,20 +459,24 @@ connection.onRequest(buildFromFiles, (project) => {
     docsToDo = project.files;
     docsDoneCount = 0;
     connection.console.log('starting work!');
-    glob('/../phpstubs/*.php', { cwd: __dirname, root: __dirname }, (err, fileNames) => {
-        // Process the php stubs
-        stubsToDo = fileNames;
-        connection.console.log(`Stub files to process: ${stubsToDo.length}`);
-        processStub().then(data => {
-            connection.console.log('stubs done!');
-            connection.console.log(`Workspace files to process: ${docsToDo.length}`);
-            processWorkspaceFiles(project.projectPath, project.treePath);
-        }).catch(data => {
-            connection.console.log('No stubs found!');
-            connection.console.log(`Workspace files to process: ${docsToDo.length}`);
-            processWorkspaceFiles(project.projectPath, project.treePath);
+    // Run asynchronously
+    setTimeout(() => {
+        glob(project.craneRoot + '/phpstubs/*/*.php', (err, fileNames) => {
+            // Process the php stubs
+            stubsToDo = fileNames;
+            Debug.info(`Processing ${stubsToDo.length} stubs from ${project.craneRoot}/phpstubs`)
+            connection.console.log(`Stub files to process: ${stubsToDo.length}`);
+            processStub().then(data => {
+                connection.console.log('stubs done!');
+                connection.console.log(`Workspace files to process: ${docsToDo.length}`);
+                processWorkspaceFiles(project.projectPath, project.treePath);
+            }).catch(data => {
+                connection.console.log('No stubs found!');
+                connection.console.log(`Workspace files to process: ${docsToDo.length}`);
+                processWorkspaceFiles(project.projectPath, project.treePath);
+            });
         });
-    });
+    }, 100);
 });
 
 var buildFromProject: RequestType<{treePath:string, saveCache:boolean}, any, any> = { method: "buildFromProject" };

@@ -269,7 +269,7 @@ function findCaller(filePath:string, line:string, char:number) : string
     // TODO -- the line being passed through does not have leading spaces,
     //         so the char offset is incorrect at this point.
 
-    // Return the matched caller. eg "$this", "$this->function()->", "$this->prop->", "$instVar->", etc
+    // Return the matched caller. eg "$this", "$this->function()", "$this->prop", "$instVar", etc
     return null;
 }
 
@@ -319,22 +319,27 @@ function recurseMethodCalls(toReturn: CompletionItem[], item:FileNode, currentLi
             return found.length > 0;
         });
 
+        // Check the matched variable is declared in scope
+        // Check we're in the same file
+        // We know the current line, so we know the current class and function for this file
+
         if (matches.length > 0) {
             if (parts[0].search(matches[0].name) != 1) {
                 let className = matches[0].value;
                 var nodeMatches = [];
+
                 // Lookup classname in tree
                 workspaceTree.forEach(item => {
                     let found = item.symbolCache.filter(cache => {
                         return cache.name == className;
                     });
 
-                    if (found.length != 0) {
+                    if (found.length > 0) {
                         nodeMatches.push(item);
                     }
                 });
 
-                if (nodeMatches.length != 0) {
+                if (nodeMatches.length > 0) {
                     nodeMatches[0].classes.forEach(classNode => {
                         if (classNode.name == className) {
                             addClassPropertiesMethodsParentClassesAndTraits(toReturn, classNode, false, false);

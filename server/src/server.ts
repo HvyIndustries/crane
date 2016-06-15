@@ -194,7 +194,12 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
                 }
             });
         } else {
-           recurseMethodCalls(toReturn, item, currentLine, line, lines, filePath, char);
+            try {
+                recurseMethodCalls(toReturn, item, currentLine, line, lines, filePath, char);
+            }
+            catch(e) {
+                debugger;
+            }
         }
     });
 
@@ -300,21 +305,61 @@ function recurseMethodCalls(toReturn: CompletionItem[], item:FileNode, currentLi
     }
     else
     {
+        var doProcess = false;
+
         // We're probably calling from a instantiated variable
+        // Check the variable is in scope for suggestions
+        item.classes.forEach((classNode) => {
+            if (item.path == filePath && classNode.startPos.line <= line && classNode.endPos.line >= line) {
+                classNode.methods.forEach(method => {
+                    if (method.startPos.line <= line && method.endPos.line >= line) {
+                        // Check for params/scope/global
+                        let found = checkVariableScopeForSuggestions(method, parts[0]);
+                        if (found) {
+                            doProcess = true;
+                        }
+                    }
+                });
+
+                if (classNode.construct.startPos.line <= line && classNode.construct.endPos.line >= line) {
+                    let found = checkVariableScopeForSuggestions(classNode.construct, parts[0]);
+                    if (found) {
+                        doProcess = true;
+                    }
+                }
+            }
+        });
+
+        // Loop through functions outside a class
+        item.functions.forEach(func => {
+            let found = checkVariableScopeForSuggestions(func, parts[0]);
+            if (found) {
+                doProcess = true;
+            }
+        });
+
+        // Loop though traits
+        item.traits.forEach(trait => {
+            trait.methods.forEach(method => {
+                let found = checkVariableScopeForSuggestions(method, parts[0]);
+                if (found) {
+                    doProcess = true;
+                }
+            });
+        });
+
+        // Break out if the variable isn't in scope
+        if (!doProcess) {
+            return;
+        }
+
+
         // Lookup the name in the tree to find what class it's set to at this point
         var matches = item.lineCache.filter(subItem => {
 
             var found = parts.filter(part => {
-                var splitParts = part.split(" ");
-                if (splitParts.length > 1) {
-                    var matched = splitParts.filter(splitPart => {
-                        return splitPart == subItem.name;
-                    });
-                    return matched.length > 0;
-                } else {
-                    return part == subItem.name;
-                }
-            })
+                return part == subItem.name;
+            });
 
             return found.length > 0;
         });
@@ -349,6 +394,32 @@ function recurseMethodCalls(toReturn: CompletionItem[], item:FileNode, currentLi
             }
         }
     }
+}
+
+function checkVariableScopeForSuggestions(method, variable: string) {
+    var matches:boolean[] = [];
+                        
+    if (method.hasOwnProperty("globalVariables")) {
+        matches.push(method.globalVariables.some(variable => {
+            return variable == variable;
+        }));
+    }
+    matches.push(method.params.some(variable => {
+        return variable.name == variable;
+    }));
+    matches.push(method.scopeVariables.some(variable => {
+        return variable.name == variable;
+    }));
+
+    var found = matches.filter(element => {
+        return element == true;
+    });
+
+    if (found.length > 0) {
+        return true;
+    }
+
+    return false;
 }
 
 function addClassTraitInterfaceNames(toReturn: CompletionItem[], item:FileNode)

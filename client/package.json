@@ -55,6 +55,11 @@
                     "type": "boolean",
                     "default": false,
                     "description": "Enable or disable debug mode. WARNING: may cause performance slowdowns on large projects!"
+                },
+                "crane.phpstubsZipFile": {
+                    "type": "string",
+                    "default": "https://codeload.github.com/HvyIndustries/crane-php-stubs/zip/master",
+                    "description": "The location to the PHP Stubs zip file that can be downloaded and unzipped for 3rd party library autocompletion."
                 }
             }
         },
@@ -73,6 +78,10 @@
             {
                 "command": "crane.rebuildSources",
                 "title": "Crane - Rebuild PHP Source Caches"
+            },
+            {
+                "command": "crane.downloadPHPLibraries",
+                "title": "Crane - Download PHP Library Stubs"
             }
         ],
         "snippets": [
@@ -92,7 +101,10 @@
         "vscode": "^0.11.13"
     },
     "dependencies": {
-        "vscode-languageclient": "^1.1.0",
-        "php-parser": "glayzzle/php-parser#6131b11"
+        "fstream": "^1.0.9",
+        "mkdirp": "^0.5.1",
+        "php-parser": "glayzzle/php-parser#6131b11",
+        "unzip": "^0.1.11",
+        "vscode-languageclient": "^1.1.0"
     }
 }

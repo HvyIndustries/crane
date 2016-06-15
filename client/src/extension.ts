@@ -69,9 +69,14 @@ export function activate(context: ExtensionContext)
     // Register commands for QoL improvements
     context.subscriptions.push(commands.registerCommand("crane.reportBug", crane.reportBug));
     context.subscriptions.push(commands.registerCommand('crane.rebuildSources', () => {
-        Debug.info('Rebuilding project sources');
         Debug.clear();
+        Debug.info('Rebuilding project sources');
         crane.rebuildProject();
+    }));
+    context.subscriptions.push(commands.registerCommand('crane.downloadPHPLibraries', () => {
+        Debug.clear();
+        Debug.info('Downloading PHP Libraries');
+        crane.downloadPHPLibraries();
     }));
 
     context.subscriptions.push(disposable);

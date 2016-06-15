@@ -122,6 +122,10 @@ export default class Crane
         cranefs.rebuildProject();
     }
 
+    public downloadPHPLibraries() {
+        cranefs.downloadPHPLibraries();
+    }
+
     public processWorkspaceFiles() {
         cranefs.processWorkspaceFiles();
     }

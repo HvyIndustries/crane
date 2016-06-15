@@ -9,10 +9,13 @@ class myClass
         $this->testProp = "test2";
     }
 
-    public function doSomething()
+    public function doSomething(ParamClass $param)
     {
         $this->testProp = "test3";
-        //$this->testProp
+        $param->
+
+        $localVar = new ParamClass();
+        $localVar->secondProp;
     }
 
     public function doSomethingElse()
@@ -34,6 +37,13 @@ echo doWork();
 $otherTest = new ConnectionDB();
 //$otherTest->
 
-function doWork()
+function doWork(ParamClass $dir)
 {
+    //$dir->
+}
+
+class ParamClass
+{
+    public $prop;
+    public $secondProp;
 }

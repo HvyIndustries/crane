@@ -198,7 +198,7 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
                 recurseMethodCalls(toReturn, item, currentLine, line, lines, filePath, char);
             }
             catch(e) {
-                debugger;
+                console.error(e);
             }
         }
     });
@@ -281,10 +281,20 @@ function findCaller(filePath:string, line:string, char:number) : string
 function recurseMethodCalls(toReturn: CompletionItem[], item:FileNode, currentLine:string, line:number, lines:string[], filePath:string, char:number)
 {
     currentLine = currentLine.replace(/\t/gm, " ");
-    var parts = currentLine.trim().split("->");
-    parts = parts.filter(item => {
-        return item != "";
-    });
+    var rawParts = currentLine.trim().match(/\$.*(?=->)/gm);
+
+    var parts: string[] = [];
+
+    if (rawParts[0].indexOf("->") > -1) {
+        rawParts.forEach(part => {
+            var splitParts = part.split("->");
+            splitParts.forEach(splitPart => {
+                parts.push(splitPart);
+            });
+        });
+    } else {
+        parts = rawParts;
+    }
 
     //findCaller(filePath, currentLine, char);
     // if (findCaller(currentLine, char) == "$this") {
@@ -296,6 +306,7 @@ function recurseMethodCalls(toReturn: CompletionItem[], item:FileNode, currentLi
     {
         // TODO -- Only chain method calls, not property calls (eg. $this->func()->func2())
         // TODO -- Handle properties set to class instances (ie. intellisense for $this->prop->)
+
         // We're referencing the current class, show everything
         item.classes.forEach((classNode) => {
             if (item.path == filePath && classNode.startPos.line <= line && classNode.endPos.line >= line) {
@@ -348,6 +359,13 @@ function recurseMethodCalls(toReturn: CompletionItem[], item:FileNode, currentLi
             });
         });
 
+        // Loop through top level (global) variables
+        item.topLevelVariables.forEach(variable => {
+            if (variable.name == parts[0]) {
+                doProcess = true;
+            }
+        });
+
         // Break out if the variable isn't in scope
         if (!doProcess) {
             return;
@@ -396,19 +414,19 @@ function recurseMethodCalls(toReturn: CompletionItem[], item:FileNode, currentLi
     }
 }
 
-function checkVariableScopeForSuggestions(method, variable: string) {
+function checkVariableScopeForSuggestions(method, passedVariable: string) {
     var matches:boolean[] = [];
                         
     if (method.hasOwnProperty("globalVariables")) {
         matches.push(method.globalVariables.some(variable => {
-            return variable == variable;
+            return variable == passedVariable;
         }));
     }
     matches.push(method.params.some(variable => {
-        return variable.name == variable;
+        return variable.name == passedVariable;
     }));
     matches.push(method.scopeVariables.some(variable => {
-        return variable.name == variable;
+        return variable.name == passedVariable;
     }));
 
     var found = matches.filter(element => {

@@ -372,7 +372,7 @@ export class TreeBuilder
 
                                 // Build return type
                                 if (method[3][5] != null && Array.isArray(method[3][5]) && method[3][5][0] != null) {
-                                    methodNode.returns = branch[3][5][0];
+                                    methodNode.returns = method[3][5][0];
                                 }
 
                                 methodNode.params = this.BuildFunctionParams(method[3][2], tree.lineCache, methodNode.startPos);

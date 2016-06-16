@@ -694,8 +694,9 @@ function processStub() {
                     if (offset == stubsToDo.length) {
                         resolve();
                     }
-                }).catch(result => {
+                }).catch(err => {
                     connection.console.log(`${offset} Stub Error: ${file}`);
+                    Debug.error((util.inspect(err, false, null)));
                     offset++;
                     if (offset == stubsToDo.length) {
                         resolve();

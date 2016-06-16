@@ -183,10 +183,12 @@ export class TreeBuilder
 
                             methodNode.name = branch[3][1];
 
-                            methodNode.params = this.BuildFunctionParams(branch[3][2], tree.lineCache, methodNode.startPos);
+                            // Build return type
                             if (branch[3][5] != null && Array.isArray(branch[3][5]) && branch[3][5][0] != null) {
                                 methodNode.returns = branch[3][5][0];
                             }
+
+                            methodNode.params = this.BuildFunctionParams(branch[3][2], tree.lineCache, methodNode.startPos);
 
                             branch[3][6].forEach(codeLevel =>
                             {
@@ -268,10 +270,12 @@ export class TreeBuilder
                                 methodNode.startPos = this.BuildStartLocation(method[1]);
                                 methodNode.endPos = this.BuildEndLocation(method[2]);
 
-                                methodNode.params = this.BuildFunctionParams(method[3][2], tree.lineCache, methodNode.startPos);
+                                // Build return type
                                 if (method[3][5] != null && Array.isArray(method[3][5]) && method[3][5][0] != null) {
                                     methodNode.returns = method[3][5][0];
                                 }
+
+                                methodNode.params = this.BuildFunctionParams(method[3][2], tree.lineCache, methodNode.startPos);
 
                                 interfaceNode.methods.push(methodNode);
                             });
@@ -365,6 +369,11 @@ export class TreeBuilder
 
                                 methodNode.startPos = this.BuildStartLocation(method[1]);
                                 methodNode.endPos = this.BuildEndLocation(method[2]);
+
+                                // Build return type
+                                if (method[3][5] != null && Array.isArray(method[3][5]) && method[3][5][0] != null) {
+                                    methodNode.returns = branch[3][5][0];
+                                }
 
                                 methodNode.params = this.BuildFunctionParams(method[3][2], tree.lineCache, methodNode.startPos);
 
@@ -575,6 +584,11 @@ export class TreeBuilder
                                     // Mark abstract
                                     if (methodLevel[4][2] == 1) {
                                         methodNode.isAbstract = true;
+                                    }
+
+                                    // Build return type
+                                    if (methodLevel[3][5] != null && Array.isArray(methodLevel[3][5]) && methodLevel[3][5][0] != null) {
+                                        methodNode.returns = methodLevel[3][5][0];
                                     }
 
                                     methodNode.params = this.BuildFunctionParams(methodLevel[3][2], tree.lineCache, methodNode.startPos);

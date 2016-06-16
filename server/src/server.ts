@@ -332,7 +332,7 @@ function recurseMethodCalls(toReturn: CompletionItem[], item:FileNode, currentLi
                     }
                 });
 
-                if (classNode.construct.startPos.line <= line && classNode.construct.endPos.line >= line) {
+                if (classNode.construct && classNode.construct.startPos.line <= line && classNode.construct.endPos.line >= line) {
                     let found = checkVariableScopeForSuggestions(classNode.construct, parts[0]);
                     if (found) {
                         doProcess = true;

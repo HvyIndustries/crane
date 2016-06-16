@@ -3,6 +3,7 @@
 class myClass
 {
     public $testProp = "test";
+    const MYCONST = 5;
 
     function __construct()
     {
@@ -12,7 +13,6 @@ class myClass
     public function doSomething(ParamClass $param)
     {
         $this->testProp = "test3";
-        $param->
 
         $localVar = new ParamClass();
         $localVar->secondProp;
@@ -22,10 +22,11 @@ class myClass
     {
         $localVar = new ExampleClass();
 
-        $localVar->doSomething();
+        //$localVar->
 
         // Recurse
         $this->doSomething();
+        //$this->
     }
 }
 
@@ -39,7 +40,9 @@ $otherTest = new ConnectionDB();
 
 function doWork(ParamClass $dir)
 {
+    global $myGlobal;
     //$dir->
+    $dir->secondProp = "test";
 }
 
 class ParamClass

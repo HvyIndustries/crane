@@ -123,10 +123,12 @@ export class TreeBuilder
                     let constantNode: ConstantNode = new ConstantNode();
                     if (isset(branch[1][0][0] || false) && isset(branch[1][0][1][0] || false)) {
                         constantNode.name = branch[1][0][0];
-                        constantNode.type = branch[1][0][1][0];
-                        if (constantNode.type == "string" || constantNode.type == "number") {
-                            constantNode.value = branch[1][0][1][1];
+
+                        if (branch[3][0][3][1] != null) {
+                            constantNode.type = branch[3][0][3][1][0];
+                            constantNode.value = branch[3][0][3][1][1];
                         }
+
                         // TODO -- Add location
                         tree.constants.push(constantNode);
                     }
@@ -182,8 +184,7 @@ export class TreeBuilder
                             methodNode.name = branch[3][1];
 
                             methodNode.params = this.BuildFunctionParams(branch[3][2], tree.lineCache, methodNode.startPos);
-                            if (branch[3][5] != null && Array.isArray(branch[3][5]))
-                            {
+                            if (branch[3][5] != null && Array.isArray(branch[3][5]) && branch[3][5][0] != null) {
                                 methodNode.returns = branch[3][5][0];
                             }
 
@@ -246,8 +247,9 @@ export class TreeBuilder
                             {
                                 let constantNode: ConstantNode = new ConstantNode();
                                 constantNode.name = constant[3][0][3][0];
-                                constantNode.type = constant[3][0][3][1][0];
-                                if (constantNode.type == "string" || constantNode.type == "number") {
+
+                                if (constant[3][0][3][1] != null) {
+                                    constantNode.type = constant[3][0][3][1][0];
                                     constantNode.value = constant[3][0][3][1][1];
                                 }
 
@@ -267,8 +269,7 @@ export class TreeBuilder
                                 methodNode.endPos = this.BuildEndLocation(method[2]);
 
                                 methodNode.params = this.BuildFunctionParams(method[3][2], tree.lineCache, methodNode.startPos);
-                                if (method[3][5] != null && Array.isArray(method[3][5]))
-                                {
+                                if (method[3][5] != null && Array.isArray(method[3][5]) && method[3][5][0] != null) {
                                     methodNode.returns = method[3][5][0];
                                 }
 
@@ -338,7 +339,11 @@ export class TreeBuilder
                             {
                                 let constantNode: ConstantNode = new ConstantNode();
                                 constantNode.name = constant[3][0][3][0];
-                                constantNode.type = constant[3][0][3][1][0];
+
+                                if (constant[3][0][3][1] != null) {
+                                    constantNode.type = constant[3][0][3][1][0];
+                                    constantNode.value = constant[3][0][3][1][1];
+                                }
 
                                 constantNode.startPos = this.BuildStartLocation(constant[3][0][1]);
                                 constantNode.endPos = this.BuildEndLocation(constant[3][0][2]);
@@ -476,6 +481,7 @@ export class TreeBuilder
 
                                 if (constLevel[3][0][3][1] != null) {
                                     constNode.type = constLevel[3][0][3][1][0];
+                                    constNode.value = constLevel[3][0][3][1][1];
                                 }
 
                                 var symbolCache = new FileSymbolCache();
@@ -962,7 +968,7 @@ export class InterfaceNode extends BaseNode
 export class MethodNode extends BaseNode
 {
     public params: ParameterNode[] = [];
-    public returns: string;
+    public returns: string = "unknown";
     public accessModifier: AccessModifierNode = AccessModifierNode.public;
     public isStatic: boolean = false;
     public isAbstract: boolean = false;
@@ -984,7 +990,7 @@ export class FunctionCallNode extends BaseNode
 
 export class VariableNode extends BaseNode
 {
-    public type: string;
+    public type: string = "unknown";
     public value: string;
     public variableType: string = "variable"; // "variable" or "property"
 }
@@ -997,7 +1003,7 @@ export class ParameterNode extends VariableNode
 
 export class PropertyNode extends BaseNode
 {
-    public type: string;
+    public type: string = "unknown";
     public accessModifier: AccessModifierNode;
     public isStatic: boolean = false;
 }
@@ -1006,7 +1012,7 @@ export class ConstantNode extends BaseNode
 {
     // Constants are always public
     // Constants (should) only be basic types
-    public type: string;
+    public type: string = "unknown";
     public value: string;
 }
 

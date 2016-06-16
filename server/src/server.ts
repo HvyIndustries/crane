@@ -151,10 +151,10 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
             item.functions.forEach((func) => {
                 if (func.startPos.line <= line && func.endPos.line >= line) {
                     func.params.forEach((param) => {
-                        toReturn.push({ label: param.name, kind: CompletionItemKind.Property, detail: `${param.type} [parameter]` });
+                        toReturn.push({ label: param.name, kind: CompletionItemKind.Property, detail: `(parameter) ${param.type}` });
                     });
                     func.globalVariables.forEach((globalVar) => {
-                        toReturn.push({ label: globalVar, kind: CompletionItemKind.Variable, detail: `(imported global)` });
+                        toReturn.push({ label: globalVar, kind: CompletionItemKind.Variable, detail: `(imported global) : unknown` });
                     });
                 }
             });
@@ -167,7 +167,7 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
                             });
 
                             method.globalVariables.forEach((globalVar) => {
-                                toReturn.push({ label: globalVar, kind: CompletionItemKind.Variable, detail: `(imported global)` });
+                                toReturn.push({ label: globalVar, kind: CompletionItemKind.Variable, detail: `(imported global) : unknown` });
                             });
 
                             method.scopeVariables.forEach((scopeVar) => {
@@ -183,7 +183,7 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
                             });
 
                             classNode.construct.globalVariables.forEach((globalVar) => {
-                                toReturn.push({ label: globalVar, kind: CompletionItemKind.Variable, detail: `(imported global)` });
+                                toReturn.push({ label: globalVar, kind: CompletionItemKind.Variable, detail: `(imported global) : unknown` });
                             });
 
                             classNode.construct.scopeVariables.forEach((scopeVar) => {
@@ -458,7 +458,11 @@ function addClassTraitInterfaceNames(toReturn: CompletionItem[], item:FileNode)
 function addFileLevelFuncsAndConsts(toReturn: CompletionItem[], item:FileNode)
 {
     item.constants.forEach((node) => {
-        toReturn.push({ label: node.name, kind: CompletionItemKind.Value, detail: `(constant) : ${node.type} : ${node.value}` });
+        let value = node.value;
+        if (node.type == "string") {
+            value = "\"" + value + "\"";
+        }
+        toReturn.push({ label: node.name, kind: CompletionItemKind.Value, detail: `(constant) : ${node.type} : ${value}` });
     });
 
     item.functions.forEach((node) => {
@@ -469,7 +473,11 @@ function addFileLevelFuncsAndConsts(toReturn: CompletionItem[], item:FileNode)
 function addClassPropertiesMethodsParentClassesAndTraits(toReturn: CompletionItem[], classNode: ClassNode, includeProtected:boolean, includePrivate:boolean = true)
 {
     classNode.constants.forEach((subNode) => {
-        toReturn.push({ label: subNode.name, kind: CompletionItemKind.Value, detail: `(constant) : ${subNode.type} : ${subNode.value}` });
+        let value = subNode.value;
+        if (subNode.type == "string") {
+            value = "\"" + value + "\"";
+        }
+        toReturn.push({ label: subNode.name, kind: CompletionItemKind.Value, detail: `(constant) : ${subNode.type} : ${value}` });
     });
 
     classNode.methods.forEach((subNode) => {
@@ -477,10 +485,10 @@ function addClassPropertiesMethodsParentClassesAndTraits(toReturn: CompletionIte
         var insertText = subNode.name + "()";
 
         if (subNode.isStatic) {
-            accessModifier = accessModifier + " static ";
+            accessModifier = accessModifier + " static";
         }
 
-        accessModifier = accessModifier + `method) : ${subNode.returns}`;
+        accessModifier = accessModifier + ` method) : ${subNode.returns}`;
 
         if (includeProtected && subNode.accessModifier == AccessModifierNode.protected) {
             toReturn.push({ label: subNode.name, kind: CompletionItemKind.Method, detail: accessModifier, insertText: insertText });

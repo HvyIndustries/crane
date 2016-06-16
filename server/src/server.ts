@@ -283,7 +283,7 @@ function findCaller(filePath:string, line:string, char:number) : string
 function recurseMethodCalls(toReturn: CompletionItem[], item:FileNode, currentLine:string, line:number, lines:string[], filePath:string, char:number)
 {
     currentLine = currentLine.replace(/\t/gm, " ");
-    var rawParts = currentLine.trim().match(/\$.*(?=->)/gm);
+    var rawParts = currentLine.trim().match(/\$\S*(?=->)/gm);
 
     var parts: string[] = [];
 

@@ -242,7 +242,8 @@ function addStaticClassMembers(toReturn: CompletionItem[], item:ClassNode)
             var insertText = subNode.name;
 
             if (!found) {
-                toReturn.push({ label: subNode.name, kind: CompletionItemKind.Property, detail: `(property) [static] : ${subNode.type}`, insertText: insertText });
+                var accessModifier = buildAccessModifier(subNode.accessModifier);
+                toReturn.push({ label: subNode.name, kind: CompletionItemKind.Property, detail: `(${accessModifier} static property) : ${subNode.type}`, insertText: insertText });
             }
         }
     });
@@ -256,7 +257,8 @@ function addStaticClassMembers(toReturn: CompletionItem[], item:ClassNode)
             });
 
             if (!found) {
-                toReturn.push({ label: subNode.name, kind: CompletionItemKind.Method, detail: `(method) [static] : ${subNode.returns}`, insertText: subNode.name + "()" });
+                var accessModifier = buildAccessModifier(subNode.accessModifier);
+                toReturn.push({ label: subNode.name, kind: CompletionItemKind.Function, detail: `(${accessModifier} static method) : ${subNode.returns}`, insertText: subNode.name + "()" });
             }
         }
     });
@@ -285,7 +287,8 @@ function recurseMethodCalls(toReturn: CompletionItem[], item:FileNode, currentLi
 
     var parts: string[] = [];
 
-    if (rawParts[0].indexOf("->") > -1) {
+    var rawLast = rawParts.length - 1;
+    if (rawParts[rawLast].indexOf("->") > -1) {
         rawParts.forEach(part => {
             var splitParts = part.split("->");
             splitParts.forEach(splitPart => {
@@ -301,8 +304,11 @@ function recurseMethodCalls(toReturn: CompletionItem[], item:FileNode, currentLi
     // } else {
     // }
 
+    // TODO -- use the char offset to work out which part to use instead of always last
+    var last = parts.length - 1;
+
     // Check that we're calling this
-    if (parts[0].indexOf("$this", parts[0].length - 5) !== -1)
+    if (parts[last].indexOf("$this", parts[last].length - 5) !== -1)
     {
         // TODO -- Only chain method calls, not property calls (eg. $this->func()->func2())
         // TODO -- Handle properties set to class instances (ie. intellisense for $this->prop->)
@@ -325,7 +331,7 @@ function recurseMethodCalls(toReturn: CompletionItem[], item:FileNode, currentLi
                 classNode.methods.forEach(method => {
                     if (method.startPos.line <= line && method.endPos.line >= line) {
                         // Check for params/scope/global
-                        let found = checkVariableScopeForSuggestions(method, parts[0]);
+                        let found = checkVariableScopeForSuggestions(method, parts[last]);
                         if (found) {
                             doProcess = true;
                         }
@@ -333,7 +339,7 @@ function recurseMethodCalls(toReturn: CompletionItem[], item:FileNode, currentLi
                 });
 
                 if (classNode.construct && classNode.construct.startPos.line <= line && classNode.construct.endPos.line >= line) {
-                    let found = checkVariableScopeForSuggestions(classNode.construct, parts[0]);
+                    let found = checkVariableScopeForSuggestions(classNode.construct, parts[last]);
                     if (found) {
                         doProcess = true;
                     }
@@ -343,7 +349,7 @@ function recurseMethodCalls(toReturn: CompletionItem[], item:FileNode, currentLi
 
         // Loop through functions outside a class
         item.functions.forEach(func => {
-            let found = checkVariableScopeForSuggestions(func, parts[0]);
+            let found = checkVariableScopeForSuggestions(func, parts[last]);
             if (found) {
                 doProcess = true;
             }
@@ -352,7 +358,7 @@ function recurseMethodCalls(toReturn: CompletionItem[], item:FileNode, currentLi
         // Loop though traits
         item.traits.forEach(trait => {
             trait.methods.forEach(method => {
-                let found = checkVariableScopeForSuggestions(method, parts[0]);
+                let found = checkVariableScopeForSuggestions(method, parts[last]);
                 if (found) {
                     doProcess = true;
                 }
@@ -361,7 +367,7 @@ function recurseMethodCalls(toReturn: CompletionItem[], item:FileNode, currentLi
 
         // Loop through top level (global) variables
         item.topLevelVariables.forEach(variable => {
-            if (variable.name == parts[0]) {
+            if (variable.name == parts[last]) {
                 doProcess = true;
             }
         });
@@ -387,7 +393,7 @@ function recurseMethodCalls(toReturn: CompletionItem[], item:FileNode, currentLi
         // We know the current line, so we know the current class and function for this file
 
         if (matches.length > 0) {
-            if (parts[0].search(matches[0].name) != 1) {
+            if (parts[last].search(matches[0].name) != 1) {
                 let className = matches[0].value;
                 var nodeMatches = [];
 
@@ -491,13 +497,13 @@ function addClassPropertiesMethodsParentClassesAndTraits(toReturn: CompletionIte
         accessModifier = accessModifier + ` method) : ${subNode.returns}`;
 
         if (includeProtected && subNode.accessModifier == AccessModifierNode.protected) {
-            toReturn.push({ label: subNode.name, kind: CompletionItemKind.Method, detail: accessModifier, insertText: insertText });
+            toReturn.push({ label: subNode.name, kind: CompletionItemKind.Function, detail: accessModifier, insertText: insertText });
         }
         if (includePrivate && subNode.accessModifier == AccessModifierNode.private) {
-            toReturn.push({ label: subNode.name, kind: CompletionItemKind.Method, detail: accessModifier, insertText: insertText });
+            toReturn.push({ label: subNode.name, kind: CompletionItemKind.Function, detail: accessModifier, insertText: insertText });
         }
         if (subNode.accessModifier == AccessModifierNode.public) {
-            toReturn.push({ label: subNode.name, kind: CompletionItemKind.Method, detail: accessModifier, insertText: insertText });
+            toReturn.push({ label: subNode.name, kind: CompletionItemKind.Function, detail: accessModifier, insertText: insertText });
         }
     });
 

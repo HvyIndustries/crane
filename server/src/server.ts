@@ -416,7 +416,7 @@ function recurseMethodCalls(toReturn: CompletionItem[], item:FileNode, currentLi
 
 function checkVariableScopeForSuggestions(method, passedVariable: string) {
     var matches:boolean[] = [];
-                        
+
     if (method.hasOwnProperty("globalVariables")) {
         matches.push(method.globalVariables.some(variable => {
             return variable == passedVariable;
@@ -690,6 +690,13 @@ function processStub() {
                 treeBuilder.Parse(data, file).then(result => {
                     addToWorkspaceTree(result.tree);
                     connection.console.log(`${offset} Stub Processed: ${file}`);
+                    offset++;
+                    if (offset == stubsToDo.length) {
+                        resolve();
+                    }
+                }).catch(err => {
+                    connection.console.log(`${offset} Stub Error: ${file}`);
+                    Debug.error((util.inspect(err, false, null)));
                     offset++;
                     if (offset == stubsToDo.length) {
                         resolve();

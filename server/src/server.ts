@@ -17,6 +17,7 @@ import {
 
 import { TreeBuilder, FileNode, FileSymbolCache, SymbolType, AccessModifierNode, ClassNode } from "./hvy/treeBuilder";
 import { Debug } from './util/Debug';
+import { SuggestionBuilder } from './suggestionBuilder';
 
 const fs = require("fs");
 const util = require('util');
@@ -97,113 +98,119 @@ connection.onCompletion((textDocumentPosition: TextDocumentPosition): Completion
 {
     if (textDocumentPosition.languageId != "php") return;
 
-    var line = textDocumentPosition.position.line;
-    var char = textDocumentPosition.position.character;
-
-    // Lookup what the last char typed was
     var doc = documents.get(textDocumentPosition.uri);
-    var text = doc.getText();
-    var lines = text.split(/\r\n|\r|\n/gm);
+    var suggestionBuilder = new SuggestionBuilder();
 
-    var currentLine = lines[line];
-    var lastChar = currentLine[char - 1];
-    var filePath = buildDocumentPath(textDocumentPosition.uri);
+    suggestionBuilder.prepare(textDocumentPosition, doc, workspaceTree);
 
-    var toReturn: CompletionItem[] = [];
-
-    workspaceTree.forEach(item =>
-    {
-        // Only add these top level when last char != ">"
-        if (lastChar != ">") {
-            // TODO -- Find last occurance of "->" and load suggestions (this will match cases of half entered props and methods)
-            if (lastChar == "$") {
-                // Only load these if they're in the same file
-                if (item.path == filePath) {
-                    // TODO -- Only show these if we're either not in a function/class
-                    //         or if we're calling "global" to import them (or they've already been imported)
-                    item.topLevelVariables.forEach((node) => {
-                        toReturn.push({ label: node.name, kind: CompletionItemKind.Variable, detail: `(variable) : ${node.type}` });
-                    });
-                }
-            } else if (lastChar == ":") {
-                // Get static methods, properties, consts declared in scope
-                if (currentLine.substr(char - 6, char - 1) === "self::") {
-                    if (item.path == filePath) {
-                        item.classes.forEach((node) => addStaticClassMembers(toReturn, node));
-                    }
-                    addStaticGlobalVariables(toReturn, item);
-                } else {
-                    if (currentLine.substr(char - 6, char - 1) !== " self:") {
-                        // We're calling via ClassName::
-                        lookupClassAndAddStaticMembers(toReturn, currentLine);
-                    }
-                }
-            } else {
-                addClassTraitInterfaceNames(toReturn, item);
-            }
-
-            // Only load these if they're in the same file
-            if (item.path == filePath) {
-                addFileLevelFuncsAndConsts(toReturn, item);
-            }
-
-            // Add parameters for functions and class methods
-            item.functions.forEach((func) => {
-                if (func.startPos.line <= line && func.endPos.line >= line) {
-                    func.params.forEach((param) => {
-                        toReturn.push({ label: param.name, kind: CompletionItemKind.Property, detail: `(parameter) ${param.type}` });
-                    });
-                    func.globalVariables.forEach((globalVar) => {
-                        toReturn.push({ label: globalVar, kind: CompletionItemKind.Variable, detail: `(imported global) : unknown` });
-                    });
-                }
-            });
-            item.classes.forEach((classNode) => {
-                if (classNode.startPos.line <= line && classNode.endPos.line >= line) {
-                    classNode.methods.forEach((method) => {
-                        if (method.startPos.line <= line && method.endPos.line >= line) {
-                            method.params.forEach((param) => {
-                                toReturn.push({ label: param.name, kind: CompletionItemKind.Property, detail: `(parameter) : ${param.type}` });
-                            });
-
-                            method.globalVariables.forEach((globalVar) => {
-                                toReturn.push({ label: globalVar, kind: CompletionItemKind.Variable, detail: `(imported global) : unknown` });
-                            });
-
-                            method.scopeVariables.forEach((scopeVar) => {
-                                toReturn.push({ label: scopeVar.name, kind: CompletionItemKind.Variable, detail: `(variable) : ${scopeVar.type}` });
-                            });
-                        }
-                    });
-
-                    if (classNode.construct != null) {
-                        if (classNode.construct.startPos.line <= line && classNode.construct.endPos.line >= line) {
-                            classNode.construct.params.forEach((param) => {
-                                toReturn.push({ label: param.name, kind: CompletionItemKind.Property, detail: `(parameter) : ${param.type}` });
-                            });
-
-                            classNode.construct.globalVariables.forEach((globalVar) => {
-                                toReturn.push({ label: globalVar, kind: CompletionItemKind.Variable, detail: `(imported global) : unknown` });
-                            });
-
-                            classNode.construct.scopeVariables.forEach((scopeVar) => {
-                                toReturn.push({ label: scopeVar.name, kind: CompletionItemKind.Variable, detail: `(variable) : ${scopeVar.type}` });
-                            });
-                        }
-                    }
-                }
-            });
-        } else {
-            try {
-                recurseMethodCalls(toReturn, item, currentLine, line, lines, filePath, char);
-            }
-            catch(e) {
-                console.error(e);
-            }
-        }
-    });
+    var toReturn: CompletionItem[] = suggestionBuilder.build();
 
     return toReturn;
+
+
+
+
+    // Work out what scope we're in
+    // var fileNode = workspaceTree.filter(item => {
+    //     return item.path == filePath;
+    // });
+
+    //console.log(fileNode);
+
+    // workspaceTree.forEach(item =>
+    // {
+    //     // Only add these top level when last char != ">"
+    //     if (lastChar != ">") {
+    //         // TODO -- Find last occurance of "->" and load suggestions (this will match cases of half entered props and methods)
+    //         if (lastChar == "$") {
+    //             // Only load these if they're in the same file
+    //             if (item.path == filePath) {
+    //                 // TODO -- Only show these if we're either not in a function/class
+    //                 //         or if we're calling "global" to import them (or they've already been imported)
+    //                 item.topLevelVariables.forEach((node) => {
+    //                     toReturn.push({ label: node.name, kind: CompletionItemKind.Variable, detail: `(variable) : ${node.type}` });
+    //                 });
+    //             }
+    //         } else if (lastChar == ":") {
+    //             // Get static methods, properties, consts declared in scope
+    //             if (currentLine.substr(char - 6, char - 1) === "self::") {
+    //                 if (item.path == filePath) {
+    //                     item.classes.forEach((node) => addStaticClassMembers(toReturn, node));
+    //                 }
+    //                 addStaticGlobalVariables(toReturn, item);
+    //                 // TODO -- Break here to avoid adding non-static items
+    //             } else {
+    //                 if (currentLine.substr(char - 6, char - 1) !== " self:") {
+    //                     // We might be calling via ClassName::
+    //                     lookupClassAndAddStaticMembers(toReturn, currentLine);
+    //                 }
+    //             }
+    //         } else {
+    //             addClassTraitInterfaceNames(toReturn, item);
+    //         }
+
+    //         // Only load these if they're in the same file
+    //         if (item.path == filePath) {
+    //             addFileLevelFuncsAndConsts(toReturn, item);
+    //         }
+
+    //         // Add parameters for functions and class methods
+    //         item.functions.forEach((func) => {
+    //             if (func.startPos.line <= line && func.endPos.line >= line) {
+    //                 func.params.forEach((param) => {
+    //                     toReturn.push({ label: param.name, kind: CompletionItemKind.Property, detail: `(parameter) ${param.type}` });
+    //                 });
+    //                 func.globalVariables.forEach((globalVar) => {
+    //                     toReturn.push({ label: globalVar, kind: CompletionItemKind.Variable, detail: `(imported global) : unknown` });
+    //                 });
+    //             }
+    //         });
+    //         item.classes.forEach((classNode) => {
+    //             if (classNode.startPos.line <= line && classNode.endPos.line >= line) {
+    //                 classNode.methods.forEach((method) => {
+    //                     if (method.startPos.line <= line && method.endPos.line >= line) {
+    //                         method.params.forEach((param) => {
+    //                             toReturn.push({ label: param.name, kind: CompletionItemKind.Property, detail: `(parameter) : ${param.type}` });
+    //                         });
+
+    //                         method.globalVariables.forEach((globalVar) => {
+    //                             toReturn.push({ label: globalVar, kind: CompletionItemKind.Variable, detail: `(imported global) : unknown` });
+    //                         });
+
+    //                         method.scopeVariables.forEach((scopeVar) => {
+    //                             toReturn.push({ label: scopeVar.name, kind: CompletionItemKind.Variable, detail: `(variable) : ${scopeVar.type}` });
+    //                         });
+    //                     }
+    //                 });
+
+    //                 if (classNode.construct != null) {
+    //                     if (classNode.construct.startPos.line <= line && classNode.construct.endPos.line >= line) {
+    //                         classNode.construct.params.forEach((param) => {
+    //                             toReturn.push({ label: param.name, kind: CompletionItemKind.Property, detail: `(parameter) : ${param.type}` });
+    //                         });
+
+    //                         classNode.construct.globalVariables.forEach((globalVar) => {
+    //                             toReturn.push({ label: globalVar, kind: CompletionItemKind.Variable, detail: `(imported global) : unknown` });
+    //                         });
+
+    //                         classNode.construct.scopeVariables.forEach((scopeVar) => {
+    //                             toReturn.push({ label: scopeVar.name, kind: CompletionItemKind.Variable, detail: `(variable) : ${scopeVar.type}` });
+    //                         });
+    //                     }
+    //                 }
+    //             }
+    //         });
+    //     } else {
+    //         try {
+    //             recurseMethodCalls(toReturn, item, currentLine, line, lines, filePath, char);
+    //         }
+    //         catch(e) {
+    //             console.error(e);
+    //         }
+    //     }
+    // });
+
+    // return toReturn;
 });
 
 function lookupClassAndAddStaticMembers(toReturn: CompletionItem[], currentLine:string)
@@ -810,7 +817,7 @@ function saveProjectTree(projectPath: string, treeFile: string): Promise<boolean
     return new Promise((resolve, reject) => {
         if (!saveCache) {
             resolve(false);
-        }else{
+        } else {
             Debug.info('packing tree file: ' + treeFile);
             fq.writeFile(`${projectPath}/tree.tmp`, JSON.stringify(workspaceTree), (err) => {
                 if (err) {

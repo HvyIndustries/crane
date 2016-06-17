@@ -162,15 +162,17 @@ export class TreeBuilder
 
                 case "set":
                     let variable = this.BuildVariableOrProp(branch);
-                    tree.topLevelVariables.push(variable.variableNode);
-                    if (variable.lineCache != null) {
-                        tree.lineCache.push(variable.lineCache);
-                    }
+                    if (variable != null) {
+                        tree.topLevelVariables.push(variable.variableNode);
+                        if (variable.lineCache != null) {
+                            tree.lineCache.push(variable.lineCache);
+                        }
 
-                    var symbolCache = new FileSymbolCache();
-                    symbolCache.name = variable.name;
-                    symbolCache.type = SymbolType.TopLevelVariable;
-                    tree.symbolCache.push(symbolCache);
+                        var symbolCache = new FileSymbolCache();
+                        symbolCache.name = variable.name;
+                        symbolCache.type = SymbolType.TopLevelVariable;
+                        tree.symbolCache.push(symbolCache);
+                    }
                     break;
 
                 case "position":
@@ -597,31 +599,33 @@ export class TreeBuilder
                                     {
                                         methodLevel[3][6].forEach(codeLevel =>
                                         {
-                                            // Build local scope variable setters
-                                            let scopeVar = this.BuildVariableOrProp(codeLevel);
-                                            if (scopeVar != null) {
-                                                methodNode.scopeVariables.push(scopeVar.variableNode);
-                                                if (scopeVar.lineCache != null) {
-                                                    tree.lineCache.push(scopeVar.lineCache);
-                                                }
-                                            }
-
-                                            // Build function calls
-                                            let functionCalls = this.BuildFunctionCallsToOtherFunctions(codeLevel);
-                                            functionCalls.forEach(element => {
-                                                methodNode.functionCalls.push(element);
-                                            });
-
-                                            // Build imported global variables
-                                            if (codeLevel[0] == "global")
-                                            {
-                                                codeLevel[1].forEach(importGlobalLevel =>
-                                                {
-                                                    if (importGlobalLevel[0] == "var")
-                                                    {
-                                                        methodNode.globalVariables.push(importGlobalLevel[1]);
+                                            if (codeLevel != null) {
+                                                // Build local scope variable setters
+                                                let scopeVar = this.BuildVariableOrProp(codeLevel);
+                                                if (scopeVar != null) {
+                                                    methodNode.scopeVariables.push(scopeVar.variableNode);
+                                                    if (scopeVar.lineCache != null) {
+                                                        tree.lineCache.push(scopeVar.lineCache);
                                                     }
+                                                }
+
+                                                // Build function calls
+                                                let functionCalls = this.BuildFunctionCallsToOtherFunctions(codeLevel);
+                                                functionCalls.forEach(element => {
+                                                    methodNode.functionCalls.push(element);
                                                 });
+
+                                                // Build imported global variables
+                                                if (codeLevel[0] == "global")
+                                                {
+                                                    codeLevel[1].forEach(importGlobalLevel =>
+                                                    {
+                                                        if (importGlobalLevel[0] == "var")
+                                                        {
+                                                            methodNode.globalVariables.push(importGlobalLevel[1]);
+                                                        }
+                                                    });
+                                                }
                                             }
                                         });
                                     }

@@ -186,16 +186,6 @@ export class SuggestionBuilder
             }
         });
 
-
-
-    // item.traits.forEach((node) => {
-    //     toReturn.push({ label: node.name, kind: CompletionItemKind.Module, detail: "(trait)" });
-    // });
-
-    // item.interfaces.forEach((node) => {
-    //     toReturn.push({ label: node.name, kind: CompletionItemKind.Interface, detail: "(interface)" });
-    // });
-
         return toReturn;
     }
 

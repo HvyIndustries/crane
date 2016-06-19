@@ -18,6 +18,7 @@ function isset(value) {
 
 export class TreeBuilder
 {
+    // v1.5 - added extra types for variables
     // v1.4 - added lineCache
     // v1.3 - support for namespaces + use recursion
     // v1.2 - added option to suppress errors
@@ -468,7 +469,14 @@ export class TreeBuilder
                                 propNode.name = propLevel[3][0];
 
                                 if (propLevel[3][1] != null) {
-                                    propNode.type = propLevel[3][1][0];
+                                    let type = propLevel[3][1][0];
+                                    if (type == "string" || type == "number") {
+                                        propNode.type = type;
+                                        //propNode.value = codeLevel[3][1][1];
+                                    } else if (type == "const") {
+                                        propNode.type = "boolean";
+                                        //propNode.value = codeLevel[2][1];
+                                    }
                                 }
 
                                 var symbolCache = new FileSymbolCache();
@@ -732,10 +740,13 @@ export class TreeBuilder
                 if (type == "string" || type == "number") {
                     variableNode.type = type;
                     variableNode.value = codeLevel[2][1];
+                } else if (type == "const") {
+                    variableNode.type = "boolean";
+                    variableNode.value = codeLevel[2][1];
                 } else if (type == "position") {
                     if (codeLevel[2][3] != null && Array.isArray(codeLevel[2][3]) && codeLevel[2][3][0] == "new") {
-                        variableNode.type = "class";
-                        variableNode.value = codeLevel[2][3][1][0];
+                        variableNode.type = codeLevel[2][3][1][0];
+                        //variableNode.value = codeLevel[2][3][1][0];
 
                         variableNode.startPos = this.BuildStartLocation(codeLevel[2][1]);
                         variableNode.endPos = this.BuildEndLocation(codeLevel[2][2]);
@@ -761,10 +772,13 @@ export class TreeBuilder
                     if (type == "string" || type == "number") {
                         propSetNode.type = type;
                         propSetNode.value = codeLevel[2][1];
+                    } else if (type == "const") {
+                        propSetNode.type = "boolean";
+                        propSetNode.value = codeLevel[2][1];
                     } else if (type == "position") {
                         if (codeLevel[2][3] != null && Array.isArray(codeLevel[2][3]) && codeLevel[2][3][0] == "new") {
-                            propSetNode.type = "class";
-                            propSetNode.value = codeLevel[2][3][1][0];
+                            propSetNode.type = codeLevel[2][3][1][0];
+                            //propSetNode.value = codeLevel[2][3][1][0];
                             propSetNode.variableType = "property";
 
                             propSetNode.startPos = this.BuildStartLocation(codeLevel[2][1]);

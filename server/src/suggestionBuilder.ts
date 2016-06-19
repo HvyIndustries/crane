@@ -180,7 +180,7 @@ export class SuggestionBuilder
 
         if (options.topVariables) {
             this.currentFileNode.topLevelVariables.forEach(item => {
-                toReturn.push({ label: item.name, kind: CompletionItemKind.Variable, detail: `(variable) : ${item.value}` });
+                toReturn.push({ label: item.name, kind: CompletionItemKind.Variable, detail: `(variable) : ${item.type}` });
             });
         }
 
@@ -218,7 +218,7 @@ export class SuggestionBuilder
             if (funcs.length > 0) {
                 if (options.localVariables) {
                     funcs[0].scopeVariables.forEach(item => {
-                        toReturn.push({ label: item.name, kind: CompletionItemKind.Variable, detail: `(variable) : ${item.value}` });
+                        toReturn.push({ label: item.name, kind: CompletionItemKind.Variable, detail: `(variable) : ${item.type}` });
                     });
                 }
 
@@ -569,8 +569,12 @@ export class SuggestionBuilder
         classNode.properties.forEach((subNode) => {
             if (subNode.isStatic == staticOnly) {
                 var accessModifier = "(" + this.buildAccessModifierText(subNode.accessModifier) + ` property) : ${subNode.type}`;
-                // Strip the leading $
-                var insertText = subNode.name.substr(1, subNode.name.length - 1);
+                var insertText = subNode.name;
+
+                if (!staticOnly) {
+                    // Strip the leading $
+                    insertText = subNode.name.substr(1, subNode.name.length - 1);
+                }
 
                 if (includeProtected && subNode.accessModifier == AccessModifierNode.protected) {
                     toReturn.push({ label: subNode.name, kind: CompletionItemKind.Property, detail: accessModifier, insertText: insertText });
@@ -589,7 +593,7 @@ export class SuggestionBuilder
             // Look up the trait node in the tree
             var traitNode = this.getTraitNodeFromTree(traitName);
             if (traitNode != null) {
-                toReturn = toReturn.concat(this.addClassMembers(traitNode, false, true, true));
+                toReturn = toReturn.concat(this.addClassMembers(traitNode, staticOnly, true, true));
             }
         });
 
@@ -598,7 +602,7 @@ export class SuggestionBuilder
             // Look up the class node in the tree
             var extendedClassNode = this.getClassNodeFromTree(classNode.extends);
             if (extendedClassNode != null) {
-                toReturn = toReturn.concat(this.addClassMembers(extendedClassNode, false, false, true));
+                toReturn = toReturn.concat(this.addClassMembers(extendedClassNode, staticOnly, false, true));
             }
         }
 

@@ -27,6 +27,8 @@ class Awesome2
     public function ha(Awesome $a)
     {
         $a->test();
+
+        echo "$test->test->test";
     }
 
     public function he()

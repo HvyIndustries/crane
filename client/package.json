@@ -103,7 +103,7 @@
     "dependencies": {
         "fstream": "^1.0.9",
         "mkdirp": "^0.5.1",
-        "php-parser": "glayzzle/php-parser#6131b11",
+        "php-parser": "HvyIndustries/php-parser",
         "unzip": "^0.1.11",
         "vscode-languageclient": "^1.1.0"
     }

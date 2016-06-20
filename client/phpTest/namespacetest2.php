@@ -17,11 +17,10 @@ class ExampleClass
     function __construct()
     {
         $this->privateProperty = null;
-        $this->publicProperty = "test123";
+        $this->publicProperty = new MyFirstClass();
     }
 
     public function doSomething()
     {
-        return "test";
     }
 }

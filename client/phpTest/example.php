@@ -65,10 +65,11 @@ class ExampleClass extends ExistingClass implements myInterface // todo inline
     public function __construct()
     {
         $constructorVar = "test";
-        echo $this->testFunc($this->mymethod());
+        echo $this->testFunc($this->mymethod()); 
         $this->DoSomething();
 
         $this->publicProp = "test2";
+        $inst = new ExampleClass();
     }
 
     public function DoSomething()
@@ -90,6 +91,8 @@ class ExampleClass extends ExistingClass implements myInterface // todo inline
         OtherFunc($param1);
         $this->DoWork($this->publicProp);
         $local = $this->DoWork();
+
+        $this->DoWork();
     }
 
     private static function OtherFunc($optional = "opt") 

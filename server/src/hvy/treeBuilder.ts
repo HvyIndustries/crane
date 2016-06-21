@@ -125,10 +125,8 @@ export class TreeBuilder
                     if (isset(branch[1][0][0] || false) && isset(branch[1][0][1][0] || false)) {
                         constantNode.name = branch[1][0][0];
 
-                        if (branch[3][0][3][1] != null) {
-                            constantNode.type = branch[3][0][3][1][0];
-                            constantNode.value = branch[3][0][3][1][1];
-                        }
+                        constantNode.type = branch[1][0][1][0];
+                        constantNode.value = branch[1][0][1][1];
 
                         // TODO -- Add location
                         tree.constants.push(constantNode);
@@ -736,7 +734,7 @@ export class TreeBuilder
 
                 variableNode.name = codeLevel[1][1];
 
-                let type = codeLevel[2][0];
+                var type = codeLevel[2][0];
                 if (type == "string" || type == "number") {
                     variableNode.type = type;
                     variableNode.value = codeLevel[2][1];
@@ -745,8 +743,13 @@ export class TreeBuilder
                     variableNode.value = codeLevel[2][1];
                 } else if (type == "position") {
                     if (codeLevel[2][3] != null && Array.isArray(codeLevel[2][3]) && codeLevel[2][3][0] == "new") {
-                        variableNode.type = codeLevel[2][3][1][0];
-                        //variableNode.value = codeLevel[2][3][1][0];
+
+                        if (codeLevel[2][3][1][0] == "ns") {
+                            variableNode.type = codeLevel[2][3][1][1][0];
+                        } else {
+                            variableNode.type = codeLevel[2][3][1][0];
+                            //variableNode.value = codeLevel[2][3][1][0];
+                        }
 
                         variableNode.startPos = this.BuildStartLocation(codeLevel[2][1]);
                         variableNode.endPos = this.BuildEndLocation(codeLevel[2][2]);
@@ -756,6 +759,9 @@ export class TreeBuilder
                         lineCache.name = variableNode.name;
                         lineCache.value = variableNode.value;
                     }
+                } else if (type == "call") {
+                    // TODO -- handle function return params
+                    // TODO -- check if it's a namespaced class (?)
                 }
 
                 return { variableNode: variableNode, lineCache: lineCache };

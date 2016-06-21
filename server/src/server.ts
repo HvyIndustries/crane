@@ -144,12 +144,10 @@ connection.onRequest(buildObjectTreeForDocument, (requestObj) =>
 var deleteFile: RequestType<{path:string}, any, any> = { method: "deleteFile" };
 connection.onRequest(deleteFile, (requestObj) =>
 {
-
     var node = getFileNodeFromPath(requestObj.path);
     if (node instanceof FileNode) {
         removeFromWorkspaceTree(node);
     }
-
 });
 
 var saveTreeCache: RequestType<{ projectDir: string, projectTree: string }, any, any> = { method: "saveTreeCache" };
@@ -355,12 +353,15 @@ function getTraitNodeFromTree(traitName: string): ClassNode
 }
 
 function getFileNodeFromPath(path: string): FileNode {
+    var returnNode = null;
+
     workspaceTree.forEach(fileNode => {
         if (fileNode.path == path) {
-            return fileNode;
+            returnNode = fileNode;
         }
     });
-    return null;
+
+    return returnNode;
 }
 
 function notifyClientOfWorkComplete()

@@ -141,7 +141,7 @@ connection.onRequest(buildObjectTreeForDocument, (requestObj) =>
     });
 });
 
-var deleteFile: RequestType<{path:string,text:string}, any, any> = { method: "deleteFile" };
+var deleteFile: RequestType<{path:string}, any, any> = { method: "deleteFile" };
 connection.onRequest(deleteFile, (requestObj) =>
 {
 

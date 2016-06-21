@@ -157,7 +157,22 @@ export class SuggestionBuilder
             }
         }
 
-        return toReturn;
+        // Remove duplicated (overwritten) items
+        var filtered = [];
+        toReturn.forEach(item => {
+            var found = false;
+            filtered.forEach(subItem => {
+                if (subItem.label == item.label) {
+                    found = true;
+                }
+            });
+
+            if (!found) {
+                filtered.push(item);
+            }
+        });
+
+        return filtered;
     }
 
     private buildSuggestionsForScope(scope: Scope, options: ScopeOptions) : CompletionItem[]
@@ -621,7 +636,7 @@ export class SuggestionBuilder
             }
         });
 
-        return toReturn;
+        return filtered;
     }
 }
 

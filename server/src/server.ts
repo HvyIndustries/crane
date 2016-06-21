@@ -147,7 +147,7 @@ connection.onRequest(deleteFile, (requestObj) =>
 
     var node = getFileNodeFromPath(requestObj.path);
     if (node instanceof FileNode) {
-        removeFromWorkspaceTree(getFileNodeFromPath(requestObj.path));
+        removeFromWorkspaceTree(node);
     }
 
 });

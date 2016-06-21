@@ -51,6 +51,8 @@ export class Cranefs {
             if (this.isCacheable()) {
                 this.createProjectFolder().then(projectCreated => {
                     resolve(projectCreated);
+                }).catch(error => {
+                    Debug.error(util.inspect(error, false, null));
                 });
             } else {
                 resolve({folderExists: false, folderCreated: false, path: null})
@@ -76,9 +78,6 @@ export class Cranefs {
 
         // Get PHP files from 'files.associations' to be processed
         var files = Config.phpFileTypes;
-        if (files.include.indexOf('**/*.php') == -1) {
-            files.include.push('**/*.php');
-        }
 
         // Find all the php files to process
         workspace.findFiles(`{${files.include.join(',')}}`, `{${files.exclude.join(',')}}`).then(files => {
@@ -152,6 +151,8 @@ export class Cranefs {
                     });
                 });
             }
+        }).catch(error => {
+            Debug.error(util.inspect(error, false, null));
         });
     }
 

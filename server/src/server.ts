@@ -145,7 +145,10 @@ var deleteFile: RequestType<{path:string,text:string}, any, any> = { method: "de
 connection.onRequest(deleteFile, (requestObj) =>
 {
 
-    removeFromWorkspaceTree(getFileNodeFromPath(requestObj.path));
+    var node = getFileNodeFromPath(requestObj.path);
+    if (node instanceof FileNode) {
+        removeFromWorkspaceTree(getFileNodeFromPath(requestObj.path));
+    }
 
 });
 

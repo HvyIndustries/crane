@@ -48,6 +48,9 @@ export class Config {
                 extentions.exclude.push(value);
             }
         }
+        if (extentions.include.indexOf('**/*.php') == -1) {
+            extentions.include.push('**/*.php');
+        }
         return extentions;
     }
 

@@ -123,8 +123,8 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem =>
     return item;
 });
 
-var requestType: RequestType<{path:string,text:string,projectDir:string,projectTree:string}, any, any> = { method: "buildObjectTreeForDocument" };
-connection.onRequest(requestType, (requestObj) =>
+var buildObjectTreeForDocument: RequestType<{path:string,text:string}, any, any> = { method: "buildObjectTreeForDocument" };
+connection.onRequest(buildObjectTreeForDocument, (requestObj) =>
 {
     var fileUri = requestObj.path;
     var text = requestObj.text;
@@ -141,10 +141,23 @@ connection.onRequest(requestType, (requestObj) =>
     });
 });
 
+var deleteFile: RequestType<{path:string}, any, any> = { method: "deleteFile" };
+connection.onRequest(deleteFile, (requestObj) =>
+{
+
+    var node = getFileNodeFromPath(requestObj.path);
+    if (node instanceof FileNode) {
+        removeFromWorkspaceTree(node);
+    }
+
+});
+
 var saveTreeCache: RequestType<{ projectDir: string, projectTree: string }, any, any> = { method: "saveTreeCache" };
 connection.onRequest(saveTreeCache, request => {
     saveProjectTree(request.projectDir, request.projectTree).then(saved => {
         notifyClientOfWorkComplete();
+    }).catch(error => {
+        Debug.error(util.inspect(error, false, null));
     });
 });
 
@@ -279,6 +292,8 @@ function workspaceProcessed(projectPath, treePath) {
         if (savedTree) {
             Debug.info('Project tree has been saved');
         }
+    }).catch(error => {
+        Debug.error(util.inspect(error, false, null));
     });
 }
 
@@ -302,6 +317,13 @@ function addToWorkspaceTree(tree:FileNode)
     // connection.console.log("Parsed file: " + tree.path);
 }
 
+function removeFromWorkspaceTree(tree: FileNode) {
+    var index: number = workspaceTree.indexOf(tree);
+    if (index > -1) {
+        workspaceTree.splice(index, 1);
+    }
+}
+
 function getClassNodeFromTree(className:string): ClassNode
 {
     var toReturn = null;
@@ -317,7 +339,7 @@ function getClassNodeFromTree(className:string): ClassNode
     return toReturn;
 }
 
-function getTraitNodeFromTree(traitName:string): ClassNode
+function getTraitNodeFromTree(traitName: string): ClassNode
 {
     var toReturn = null;
 
@@ -330,6 +352,15 @@ function getTraitNodeFromTree(traitName:string): ClassNode
     });
 
     return toReturn;
+}
+
+function getFileNodeFromPath(path: string): FileNode {
+    workspaceTree.forEach(fileNode => {
+        if (fileNode.path == path) {
+            return fileNode;
+        }
+    });
+    return null;
 }
 
 function notifyClientOfWorkComplete()

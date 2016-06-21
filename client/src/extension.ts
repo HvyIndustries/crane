@@ -8,7 +8,7 @@
 
 import * as path from "path";
 
-import { workspace, Disposable, ExtensionContext, commands } from "vscode";
+import { workspace, Disposable, ExtensionContext, commands, FileSystemWatcher, TextDocument } from "vscode";
 import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions, TransportKind, RequestType } from "vscode-languageclient";
 
 import Crane from "./crane";
@@ -80,4 +80,5 @@ export function activate(context: ExtensionContext)
     }));
 
     context.subscriptions.push(disposable);
+
 }

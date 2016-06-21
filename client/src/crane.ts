@@ -6,7 +6,11 @@
 
 "use strict";
 
-import { Disposable, workspace, window, TextDocument, TextEditor, StatusBarAlignment, StatusBarItem } from 'vscode';
+import {
+    Disposable, workspace, window, TextDocument,
+    TextEditor, StatusBarAlignment, StatusBarItem,
+    FileSystemWatcher
+} from 'vscode';
 import { LanguageClient, RequestType, NotificationType } from 'vscode-languageclient';
 import { ThrottledDelayer } from './utils/async';
 import { Cranefs } from './utils/Cranefs';
@@ -14,6 +18,7 @@ import { Debug } from './utils/Debug';
 import { Config } from './utils/Config';
 
 const exec = require('child_process').exec;
+const util = require('util');
 
 let craneSettings = workspace.getConfiguration("crane");
 
@@ -71,6 +76,37 @@ export default class Crane
             }
         });
 
+        var types = Config.phpFileTypes;
+        Debug.info(`Watching these files: {${types.include.join(',')}}`);
+
+        var fsw: FileSystemWatcher = workspace.createFileSystemWatcher(`{${types.include.join(',')}}`);
+        fsw.onDidChange(e => {
+            workspace.openTextDocument(e).then(document => {
+                if (document.languageId != 'php') return;
+                Debug.info('File Changed: ' + e.fsPath);
+                Crane.langClient.sendRequest({ method: 'buildObjectTreeForDocument' }, {
+                    path: e.fsPath,
+                    text: document.getText()
+                });
+            });
+        });
+        fsw.onDidCreate(e => {
+            workspace.openTextDocument(e).then(document => {
+                if (document.languageId != 'php') return;
+                Debug.info('File Created: ' + e.fsPath);
+                Crane.langClient.sendRequest({ method: 'buildObjectTreeForDocument' }, {
+                    path: e.fsPath,
+                    text: document.getText()
+                });
+            });
+        });
+        fsw.onDidDelete(e => {
+            Debug.info('File Deleted: ' + e.fsPath);
+            Crane.langClient.sendRequest({ method: 'deleteFile' }, {
+                path: e.fsPath
+            });
+        });
+
         // Send request to server to build object tree for all workspace files
         this.processAllFilesInWorkspace();
     }
@@ -100,6 +136,8 @@ export default class Crane
 
         this.buildObjectTreeForDocument(document).then(() => {
             Crane.langClient.sendRequest({ method: 'saveTreeCache' }, { projectDir: cranefs.getProjectDir(), projectTree: cranefs.getTreePath() });
+        }).catch(error => {
+            Debug.error(util.inspect(error, false, null));
         });
     }
 
@@ -120,6 +158,8 @@ export default class Crane
                     }
                 });
             }
+        }).catch(error => {
+            Debug.error(util.inspect(error, false, null));
         });
     }
 

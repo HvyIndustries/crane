@@ -56,6 +56,11 @@ export default class Crane
         Crane.statusBarItem.tooltip = "Crane is processing the PHP source files in your workspace to build code completion suggestions";
         Crane.statusBarItem.show();
 
+        var statusBarItem: StatusBarItem = window.createStatusBarItem(StatusBarAlignment.Right);
+        statusBarItem.text = Config.version;
+        statusBarItem.tooltip = 'Crane (PHP Code-completion) version ' + Config.version;
+        statusBarItem.show();
+
         var serverDebugMessage: NotificationType<{ type: string, message: string }> = { method: "serverDebugMessage" };
         Crane.langClient.onNotification(serverDebugMessage, message => {
             switch (message.type) {

@@ -204,7 +204,7 @@ connection.onRequest(buildFromProject, (data) => {
                     Debug.error('Could not unzip cache file');
                     Debug.error((util.inspect(err, false, null)));
                 } else {
-                    Debug.info('Cache file successfullly read');
+                    Debug.info('Cache file successfully read');
                     workspaceTree = JSON.parse(buffer.toString());
                     Debug.info('Loaded');
                     notifyClientOfWorkComplete();
@@ -343,7 +343,7 @@ function saveProjectTree(projectPath: string, treeFile: string): Promise<boolean
         if (!saveCache) {
             resolve(false);
         } else {
-            Debug.info('packing tree file: ' + treeFile);
+            Debug.info('Packing tree file: ' + treeFile);
             fq.writeFile(`${projectPath}/tree.tmp`, JSON.stringify(workspaceTree), (err) => {
                 if (err) {
                     Debug.error('Could not write to cache file');

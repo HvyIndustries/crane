@@ -277,6 +277,11 @@ export default class Crane
     }
 
     public processProject() {
+        if (this.projectBuilding) {
+            window.showInformationMessage('Project is currently building please wait until it completes.');
+            return;
+        }
+        this.projectBuilding = true;
         cranefs.processProject();
     }
 

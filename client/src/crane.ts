@@ -51,50 +51,58 @@ export default class Crane
             Crane.statusBarItem.hide();
         }
 
-        this.checkVersion();
-        this.doInit();
+        this.checkVersion().then(result => {
+            this.doInit();
+        });
+        // this.doInit();
     }
 
-    private checkVersion()
+    private checkVersion(): Thenable<boolean>
     {
-        cranefs.getVersionFile().then(result => {
-            if (result.err && result.err.code == "ENOENT") {
-                // New install
-                window.showInformationMessage(`Welcome to Crane v${Config.version}. Click the button to the right to get started!`, "Getting Started Guide").then(data => {
-                    if (data != null) {
-                        Crane.openLinkInBrowser("https://github.com/HvyIndustries/crane/wiki/end-user-guide#getting-started");
-                    }
-                });
-                cranefs.createOrUpdateVersionFile(false);
-
-                // Try to delete caches anyway as this might be an upgrade from an older version
-                // without a 'verion' file
-                cranefs.deleteAllCaches(function(data) {
-                    if (data && data.code == "ENOTEMPTY") {
-                        Debug.error(data);
-                        debugger;
-                    }
-                });
-            } else {
-                // Strip newlines from data
-                result.data = result.data.replace("\n", "");
-                result.data = result.data.replace("\r", "");
-                if (result.data && result.data != Config.version) {
-                    // Updated install
-                    window.showInformationMessage(`You're been upgraded to Crane v${Config.version}. We've made a few changes...`, "View Release Notes").then(data => {
+        Debug.info('Checking the current version of Crane');
+        return new Promise((resolve, reject) => {
+            cranefs.getVersionFile().then(result => {
+                if (result.err && result.err.code == "ENOENT") {
+                    // New install
+                    window.showInformationMessage(`Welcome to Crane v${Config.version}. Click the button to the right to get started!`, "Getting Started Guide").then(data => {
                         if (data != null) {
-                            Crane.openLinkInBrowser("https://github.com/HvyIndustries/crane/releases");
+                            Crane.openLinkInBrowser("https://github.com/HvyIndustries/crane/wiki/end-user-guide#getting-started");
                         }
                     });
-                    cranefs.createOrUpdateVersionFile(true);
-                    cranefs.deleteAllCaches(function(data) {
-                        if (data && data.code == "ENOTEMPTY") {
-                            Debug.error(data);
-                            debugger;
-                        }
-                    });
+                    cranefs.createOrUpdateVersionFile(false);
+
+                    // Try to delete caches anyway as this might be an upgrade from an older version
+                    // without a 'verion' file
+                    cranefs.deleteAllCaches();
+                    // cranefs.deleteAllCaches(function(data) {
+                    //     if (data && data.code == "ENOTEMPTY") {
+                    //         Debug.error(data);
+                    //         debugger;
+                    //     }
+                    // });
+                } else {
+                    // Strip newlines from data
+                    result.data = result.data.replace("\n", "");
+                    result.data = result.data.replace("\r", "");
+                    if (result.data && result.data != Config.version) {
+                        // Updated install
+                        window.showInformationMessage(`You're been upgraded to Crane v${Config.version}. We've made a few changes...`, "View Release Notes").then(data => {
+                            if (data != null) {
+                                Crane.openLinkInBrowser("https://github.com/HvyIndustries/crane/releases");
+                            }
+                        });
+                        cranefs.createOrUpdateVersionFile(true);
+                        cranefs.deleteAllCaches();
+                        // cranefs.deleteAllCaches(function(data) {
+                        //     if (data && data.code == "ENOTEMPTY") {
+                        //         Debug.error(data);
+                        //         debugger;
+                        //     }
+                        // });
+                    }
                 }
-            }
+                resolve(true);
+            });
         });
     }
 
@@ -178,9 +186,11 @@ export default class Crane
     }
 
     public deleteCaches() {
-        cranefs.deleteAllCaches(data => {
-            debugger;
-        });
+        cranefs.deleteAllCaches();
+        // cranefs.deleteAllCaches(data => {
+        //     console.log(data);
+        //     // debugger;
+        // });
     }
 
     public handleFileSave() {

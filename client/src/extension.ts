@@ -48,24 +48,6 @@ export function activate(context: ExtensionContext)
 
     let crane: Crane = new Crane(langClient);
 
-    var requestType: RequestType<any, any, any> = { method: "workDone" };
-    langClient.onRequest(requestType, (tree) => {
-        Crane.statusBarItem.text = '$(check) PHP File Indexing Complete';
-        // Load settings
-        let craneSettings = workspace.getConfiguration("crane");
-        Debug.info("Processing complete!");
-        if (Config.showBugReport) {
-            setTimeout(() => {
-                Crane.statusBarItem.tooltip = "Found a problem with the PHP Intellisense provided by Crane? Click here to file a bug report on Github";
-                Crane.statusBarItem.text = "$(bug) Found a PHP Intellisense Bug?";
-                Crane.statusBarItem.command = "crane.reportBug";
-                Crane.statusBarItem.show();
-            }, 5000);
-        } else {
-            Crane.statusBarItem.hide();
-        }
-    });
-
     context.subscriptions.push(commands.registerCommand("crane.reportBug", crane.reportBug));
     context.subscriptions.push(commands.registerCommand('crane.rebuildSources', () => {
         Debug.clear();

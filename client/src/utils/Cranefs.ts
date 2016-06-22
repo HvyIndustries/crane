@@ -195,7 +195,9 @@ export class Cranefs {
                         fs.createReadStream(tmp)
                             .pipe(unzip.Parse())
                             .pipe(fstream.Writer(this.getStubsDir()));
-                        window.showInformationMessage('PHP Library Stubs downloaded and installed. You may need to re-index the workspace for them to work correctly.');
+                        window.showInformationMessage('PHP Library Stubs downloaded and installed. You may need to re-index the workspace for them to work correctly.', 'Rebuild Now').then(item => {
+                            this.rebuildProject();
+                        });
                     });
                 });
             }

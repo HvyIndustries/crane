@@ -32,6 +32,7 @@ export default class Crane
     private delayers: { [key: string]: ThrottledDelayer<void> };
 
     public static statusBarItem: StatusBarItem;
+    private projectBuilding: boolean = false;
 
     constructor(languageClient: LanguageClient) {
         Crane.langClient = languageClient;
@@ -128,6 +129,25 @@ export default class Crane
             }
         });
 
+        var requestType: RequestType<any, any, any> = { method: "workDone" };
+        Crane.langClient.onRequest(requestType, (tree) => {
+            this.projectBuilding = false;
+            Crane.statusBarItem.text = '$(check) PHP File Indexing Complete';
+            // Load settings
+            let craneSettings = workspace.getConfiguration("crane");
+            Debug.info("Processing complete!");
+            if (Config.showBugReport) {
+                setTimeout(() => {
+                    Crane.statusBarItem.tooltip = "Found a problem with the PHP Intellisense provided by Crane? Click here to file a bug report on Github";
+                    Crane.statusBarItem.text = "$(bug) Found a PHP Intellisense Bug?";
+                    Crane.statusBarItem.command = "crane.reportBug";
+                    Crane.statusBarItem.show();
+                }, 5000);
+            } else {
+                Crane.statusBarItem.hide();
+            }
+        });
+
         var types = Config.phpFileTypes;
         Debug.info(`Watching these files: {${types.include.join(',')}}`);
 
@@ -185,14 +205,6 @@ export default class Crane
         exec(openCommand + link);
     }
 
-    public deleteCaches() {
-        cranefs.deleteAllCaches();
-        // cranefs.deleteAllCaches(data => {
-        //     console.log(data);
-        //     // debugger;
-        // });
-    }
-
     public handleFileSave() {
         var editor = window.activeTextEditor;
         if (editor == null) return;
@@ -228,7 +240,26 @@ export default class Crane
         });
     }
 
+
+    public deleteCaches() {
+        if (this.projectBuilding) {
+            window.showInformationMessage('Project is currently building please wait until it completes.');
+            return;
+        }
+        this.projectBuilding = true;
+        cranefs.deleteAllCaches();
+        // cranefs.deleteAllCaches(data => {
+        //     console.log(data);
+        //     // debugger;
+        // });
+    }
+
     public rebuildProject() {
+        if (this.projectBuilding) {
+            window.showInformationMessage('Project is currently building please wait until it completes.');
+            return;
+        }
+        this.projectBuilding = true;
         cranefs.rebuildProject();
     }
 
@@ -237,6 +268,11 @@ export default class Crane
     }
 
     public processWorkspaceFiles() {
+        if (this.projectBuilding) {
+            window.showInformationMessage('Project is currently building please wait until it completes.');
+            return;
+        }
+        this.projectBuilding = true;
         cranefs.processWorkspaceFiles();
     }
 

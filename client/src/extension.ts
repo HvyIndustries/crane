@@ -50,7 +50,7 @@ export function activate(context: ExtensionContext)
 
     var requestType: RequestType<any, any, any> = { method: "workDone" };
     langClient.onRequest(requestType, (tree) => {
-        Crane.statusBarItem.text = '$(check) PHP Project Ready';
+        Crane.statusBarItem.text = '$(check) PHP File Indexing Complete';
         // Load settings
         let craneSettings = workspace.getConfiguration("crane");
         Debug.info("Processing complete!");
@@ -66,16 +66,15 @@ export function activate(context: ExtensionContext)
         }
     });
 
-    // Register commands for QoL improvements
     context.subscriptions.push(commands.registerCommand("crane.reportBug", crane.reportBug));
     context.subscriptions.push(commands.registerCommand('crane.rebuildSources', () => {
         Debug.clear();
-        Debug.info('Rebuilding project sources');
+        Debug.info('Re-indexing PHP files in the workspace...');
         crane.rebuildProject();
     }));
     context.subscriptions.push(commands.registerCommand('crane.downloadPHPLibraries', () => {
         Debug.clear();
-        Debug.info('Downloading PHP Libraries');
+        Debug.info('Downloading PHP Library Stubs...');
         crane.downloadPHPLibraries();
     }));
 

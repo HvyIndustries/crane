@@ -106,8 +106,8 @@ export class Cranefs {
         var fileProcessed: NotificationType<any> = { method: "fileProcessed" };
         Crane.langClient.onNotification(fileProcessed, data => {
             // Get the percent complete
-            var percent: string = ((data.total / fileProcessCount) * 100).toFixed(2);
-            Crane.statusBarItem.text = `$(zap) Processing source files (${data.total} of ${fileProcessCount} / ${percent}%)`;
+            var percent: string = ((data.total / fileProcessCount) * 100).toFixed(1);
+            Crane.statusBarItem.text = `$(zap) Indexing PHP files (${data.total} of ${fileProcessCount} / ${percent}%)`;
             if (data.error) {
                 Debug.error("There was a problem parsing PHP file: " + data.filename);
                 Debug.error(`${data.error}`);
@@ -147,7 +147,7 @@ export class Cranefs {
                         fs.createReadStream(tmp)
                             .pipe(unzip.Parse())
                             .pipe(fstream.Writer(this.getStubsDir()));
-                        window.showInformationMessage('PHP Library Stubs downloaded and installed. You might need to rebuild the PHP sources for them to work correctly.');
+                        window.showInformationMessage('PHP Library Stubs downloaded and installed. You may need to re-index the workspace for them to work correctly.');
                     });
                 });
             }

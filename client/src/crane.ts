@@ -57,8 +57,8 @@ export default class Crane
     public doInit() {
         console.log("Crane Initialised...");
 
-        Crane.statusBarItem.text = "$(zap) Processing PHP source files...";
-        Crane.statusBarItem.tooltip = "Crane is processing the PHP source files in your workspace to build code completion suggestions";
+        Crane.statusBarItem.text = "$(zap) Indexing PHP source files...";
+        Crane.statusBarItem.tooltip = "Crane is processing the PHP source files in the workspace to build code completion suggestions";
         Crane.statusBarItem.show();
 
         var statusBarItem: StatusBarItem = window.createStatusBarItem(StatusBarAlignment.Right);

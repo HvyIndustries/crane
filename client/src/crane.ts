@@ -51,7 +51,42 @@ export default class Crane
             Crane.statusBarItem.hide();
         }
 
+        this.checkVersion();
         this.doInit();
+    }
+
+    private checkVersion()
+    {
+        cranefs.getVersionFile().then(result => {
+            if (result.err && result.err.code == "ENOENT") {
+                // New install
+                window.showInformationMessage(`Welcome to Crane v${Config.version}. Click the button to the right to get started!`, "Getting Started Guide").then(data => {
+                    if (data != null) {
+                        Crane.openLinkInBrowser("https://github.com/HvyIndustries/crane/wiki/end-user-guide#getting-started");
+                    }
+                });
+                cranefs.createOrUpdateVersionFile(false);
+            } else {
+                // Strip newlines from data
+                result.data = result.data.replace("\n", "");
+                result.data = result.data.replace("\r", "");
+                if (result.data && result.data != Config.version) {
+                    // Updated install
+                    window.showInformationMessage(`You're been upgraded to Crane v${Config.version}. We've made a few changes...`, "View Release Notes").then(data => {
+                        if (data != null) {
+                            Crane.openLinkInBrowser("https://github.com/HvyIndustries/crane/releases");
+                        }
+                    });
+                    cranefs.createOrUpdateVersionFile(true);
+                    cranefs.deleteAllCaches(function(data) {
+                        if (data && data.code == "ENOTEMPTY") {
+                            Debug.error(data);
+                            debugger;
+                        }
+                    });
+                }
+            }
+        });
     }
 
     public doInit() {
@@ -112,10 +147,15 @@ export default class Crane
     }
 
     public reportBug() {
-        let openCommand: string;
+        Crane.openLinkInBrowser("https://github.com/HvyIndustries/crane/issues");
+    }
+
+    public static openLinkInBrowser(link: string) {
+        var openCommand: string = "";
 
         switch (process.platform) {
             case 'darwin':
+            case 'linux':
                 openCommand = 'open ';
                 break;
             case 'win32':
@@ -125,7 +165,13 @@ export default class Crane
                 return;
         }
 
-        exec(openCommand + "https://github.com/HvyIndustries/crane/issues");
+        exec(openCommand + link);
+    }
+
+    public deleteCaches() {
+        cranefs.deleteAllCaches(data => {
+            debugger;
+        });
     }
 
     public handleFileSave() {

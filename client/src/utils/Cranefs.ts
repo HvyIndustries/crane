@@ -14,6 +14,11 @@ const mkdirp  = require('mkdirp');
 
 let craneSettings = workspace.getConfiguration("crane");
 
+interface result {
+    err;
+    data;
+}
+
 export class Cranefs {
 
     public isCacheable(): boolean {
@@ -29,6 +34,80 @@ export class Cranefs {
         }
         if (process.platform == 'linux') {
             return process.env.HOME + '/Crane';
+        }
+    }
+
+    public getVersionFile(): Thenable<result> {
+        return new Promise((resolve, reject) => {
+            var filePath = this.getCraneDir() + "/version";
+            fs.readFile(filePath, "utf-8", (err, data) => {
+                resolve({ err, data });
+            });
+        });
+    }
+
+    public createOrUpdateVersionFile(fileExists: boolean) {
+        var filePath = this.getCraneDir() + "/version";
+
+        if (fileExists) {
+            // Delete the file
+            fs.unlinkSync(filePath);
+        }
+
+        // Create the file + write Config.version into it
+        fs.writeFile(filePath, Config.version, "utf-8", err => {
+            if (err != null) {
+                Debug.error(err);
+            }
+        });
+    }
+
+    public deleteAllCaches(callback) {
+        Cranefs.rmdirAsync(this.getCraneDir() + "/projects", callback);
+    }
+
+    private static rmdirAsync (path, callback) {
+        fs.readdir(path, function(err, files) {
+            if (err) {
+                // Pass the error on to callback
+                callback(err, []);
+                return;
+            }
+
+            var wait = files.length,
+                count = 0;
+
+            // Empty directory to bail early
+            if (!wait) {
+                Cranefs.folderDone(err, count, wait, path, callback);
+                return;
+            }
+
+            // Remove one or more trailing slash to keep from doubling up
+            path = path.replace(/\/+$/,"");
+            files.forEach(function(file) {
+                var curPath = path + "/" + file;
+                fs.lstat(curPath, function(err, stats) {
+                    if (err) {
+                        callback(err, []);
+                        return;
+                    }
+
+                    if (stats.isDirectory()) {
+                        Cranefs.rmdirAsync(curPath, Cranefs.folderDone(err, count, wait, path, callback));
+                    } else {
+                        fs.unlink(curPath, Cranefs.folderDone(err, count, wait, path, callback));
+                    }
+                });
+            });
+        });
+    }
+
+    private static folderDone(err, count, wait, path, callback) {
+        count++;
+        // If we cleaned out all the files, continue
+        if (count >= wait || err) {
+            fs.rmdir(path, callback);
         }
     }
 

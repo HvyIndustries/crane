@@ -66,6 +66,15 @@ export default class Crane
                     }
                 });
                 cranefs.createOrUpdateVersionFile(false);
+
+                // Try to delete caches anyway as this might be an upgrade from an older version
+                // without a 'verion' file
+                cranefs.deleteAllCaches(function(data) {
+                    if (data && data.code == "ENOTEMPTY") {
+                        Debug.error(data);
+                        debugger;
+                    }
+                });
             } else {
                 // Strip newlines from data
                 result.data = result.data.replace("\n", "");

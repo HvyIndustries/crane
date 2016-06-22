@@ -57,6 +57,10 @@ export class Cranefs {
 
         // Create the file + write Config.version into it
         mkdirp(this.getCraneDir(), err => {
+            if (err) {
+                Debug.error(err);
+                return;
+            }
             fs.writeFile(filePath, Config.version, "utf-8", err => {
                 if (err != null) {
                     Debug.error(err);

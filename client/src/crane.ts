@@ -236,6 +236,7 @@ export default class Crane
         }
         this.projectBuilding = true;
         cranefs.deleteAllCaches().then(success => {
+            this.projectBuilding = false;
             window.showInformationMessage('Projects were deleted.', 'Rebuild Current Project').then(item => {
                 this.rebuildProject();
             });

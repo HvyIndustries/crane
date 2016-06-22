@@ -85,6 +85,10 @@
                 "title": "Crane - Reindex PHP files in the workspace"
             },
             {
+                "command": "crane.deleteCaches",
+                "title": "Crane - Delete all PHP file caches"
+            },
+            {
                 "command": "crane.downloadPHPLibraries",
                 "title": "Crane - Download PHP Library Stubs"
             }

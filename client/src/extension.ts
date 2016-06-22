@@ -72,6 +72,11 @@ export function activate(context: ExtensionContext)
         Debug.info('Re-indexing PHP files in the workspace...');
         crane.rebuildProject();
     }));
+    context.subscriptions.push(commands.registerCommand('crane.deleteCaches', () => {
+        Debug.clear();
+        Debug.info('Deleting all PHP caches....');
+        crane.deleteCaches();
+    }));
     context.subscriptions.push(commands.registerCommand('crane.downloadPHPLibraries', () => {
         Debug.clear();
         Debug.info('Downloading PHP Library Stubs...');

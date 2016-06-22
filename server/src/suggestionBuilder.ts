@@ -365,6 +365,7 @@ export class SuggestionBuilder
         // Handle Windows and Unix paths
         switch (process.platform) {
             case 'darwin':
+            case 'linux':
                 path = "/" + path;
                 break;
             case 'win32':

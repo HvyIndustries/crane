@@ -56,11 +56,14 @@ export class Cranefs {
         }
 
         // Create the file + write Config.version into it
-        fs.writeFile(filePath, Config.version, "utf-8", err => {
-            if (err != null) {
-                Debug.error(err);
-            }
+        mkdirp(this.getCraneDir(), err => {
+            fs.writeFile(filePath, Config.version, "utf-8", err => {
+                if (err != null) {
+                    Debug.error(err);
+                }
+            });
         });
+
     }
 
     public deleteAllCaches(): Promise<boolean> {

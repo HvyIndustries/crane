@@ -26,6 +26,11 @@
         "Snippets",
         "Other"
     ],
+    "keywords": [
+        "php",
+        "code-completion",
+        "intellisense"
+    ],
     "galleryBanner": {
         "theme": "dark",
         "color": "#232d33"
@@ -77,7 +82,7 @@
             },
             {
                 "command": "crane.rebuildSources",
-                "title": "Crane - Rebuild PHP Source Caches"
+                "title": "Crane - Reindex PHP files in the workspace"
             },
             {
                 "command": "crane.downloadPHPLibraries",

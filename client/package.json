@@ -74,8 +74,8 @@
                 "command": "crane.rebuildSources",
                 "when": "editorTextFocus && editorLangId == 'php'"
             }
-            ],
-            "commands": [
+        ],
+        "commands": [
             {
                 "command": "crane.reportBug",
                 "title": "Crane - Report PHP Intellisense Bug"

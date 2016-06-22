@@ -75,12 +75,6 @@ export default class Crane
                     // Try to delete caches anyway as this might be an upgrade from an older version
                     // without a 'verion' file
                     cranefs.deleteAllCaches();
-                    // cranefs.deleteAllCaches(function(data) {
-                    //     if (data && data.code == "ENOTEMPTY") {
-                    //         Debug.error(data);
-                    //         debugger;
-                    //     }
-                    // });
                 } else {
                     // Strip newlines from data
                     result.data = result.data.replace("\n", "");
@@ -94,12 +88,6 @@ export default class Crane
                         });
                         cranefs.createOrUpdateVersionFile(true);
                         cranefs.deleteAllCaches();
-                        // cranefs.deleteAllCaches(function(data) {
-                        //     if (data && data.code == "ENOTEMPTY") {
-                        //         Debug.error(data);
-                        //         debugger;
-                        //     }
-                        // });
                     }
                 }
                 resolve(true);
@@ -243,20 +231,20 @@ export default class Crane
 
     public deleteCaches() {
         if (this.projectBuilding) {
-            window.showInformationMessage('Project is currently building please wait until it completes.');
+            window.showWarningMessage('Project is currently building please wait until it completes.');
             return;
         }
         this.projectBuilding = true;
-        cranefs.deleteAllCaches();
-        // cranefs.deleteAllCaches(data => {
-        //     console.log(data);
-        //     // debugger;
-        // });
+        cranefs.deleteAllCaches().then(success => {
+            window.showInformationMessage('Projects were deleted.', 'Rebuild Current Project').then(item => {
+                this.rebuildProject();
+            });
+        });
     }
 
     public rebuildProject() {
         if (this.projectBuilding) {
-            window.showInformationMessage('Project is currently building please wait until it completes.');
+            window.showWarningMessage('Project is currently building please wait until it completes.');
             return;
         }
         this.projectBuilding = true;
@@ -269,7 +257,7 @@ export default class Crane
 
     public processWorkspaceFiles() {
         if (this.projectBuilding) {
-            window.showInformationMessage('Project is currently building please wait until it completes.');
+            window.showWarningMessage('Project is currently building please wait until it completes.');
             return;
         }
         this.projectBuilding = true;
@@ -278,7 +266,7 @@ export default class Crane
 
     public processProject() {
         if (this.projectBuilding) {
-            window.showInformationMessage('Project is currently building please wait until it completes.');
+            window.showWarningMessage('Project is currently building please wait until it completes.');
             return;
         }
         this.projectBuilding = true;

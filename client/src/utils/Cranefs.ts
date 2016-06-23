@@ -11,6 +11,7 @@ const http    = require('https');
 const unzip   = require('unzip');
 const util    = require('util');
 const mkdirp  = require('mkdirp');
+const rmrf    = require('rimraf');
 
 let craneSettings = workspace.getConfiguration("crane");
 
@@ -55,60 +56,31 @@ export class Cranefs {
         }
 
         // Create the file + write Config.version into it
-        fs.writeFile(filePath, Config.version, "utf-8", err => {
-            if (err != null) {
-                Debug.error(err);
-            }
-        });
-    }
-
-    public deleteAllCaches(callback) {
-        Cranefs.rmdirAsync(this.getCraneDir() + "/projects", callback);
-    }
-
-    private static rmdirAsync (path, callback) {
-        fs.readdir(path, function(err, files) {
+        mkdirp(this.getCraneDir(), err => {
             if (err) {
-                // Pass the error on to callback
-                callback(err, []);
+                Debug.error(err);
                 return;
             }
-
-            var wait = files.length,
-                count = 0;
-
-            // Empty directory to bail early
-            if (!wait) {
-                Cranefs.folderDone(err, count, wait, path, callback);
-                return;
-            }
-
-            // Remove one or more trailing slash to keep from doubling up
-            path = path.replace(/\/+$/,"");
-            files.forEach(function(file) {
-                var curPath = path + "/" + file;
-                fs.lstat(curPath, function(err, stats) {
-                    if (err) {
-                        callback(err, []);
-                        return;
-                    }
-
-                    if (stats.isDirectory()) {
-                        Cranefs.rmdirAsync(curPath, Cranefs.folderDone(err, count, wait, path, callback));
-                    } else {
-                        fs.unlink(curPath, Cranefs.folderDone(err, count, wait, path, callback));
-                    }
-                });
+            fs.writeFile(filePath, Config.version, "utf-8", err => {
+                if (err != null) {
+                    Debug.error(err);
+                }
             });
         });
+
     }
 
-    private static folderDone(err, count, wait, path, callback) {
-        count++;
-        // If we cleaned out all the files, continue
-        if (count >= wait || err) {
-            fs.rmdir(path, callback);
-        }
+    public deleteAllCaches(): Promise<boolean> {
+        return new Promise((resolve, reject) => {
+            rmrf(this.getCraneDir() + '/projects/*', err => {
+                if (!err) {
+                    Debug.info('Project caches were deleted');
+                    return resolve(true);
+                }
+                Debug.info('Project caches were not deleted');
+                return resolve(false);
+            });
+        });
     }
 
     public getProjectDir(): string {
@@ -207,7 +179,11 @@ export class Cranefs {
     public rebuildProject(): void {
         Debug.info('Rebuilding the project files');
         fs.unlink(this.getTreePath(), (err) => {
-            this.processWorkspaceFiles(true);
+            this.createProjectFolder().then(success => {
+                if (success) {
+                    this.processWorkspaceFiles(true);
+                }
+            });
         });
     }
 
@@ -226,7 +202,9 @@ export class Cranefs {
                         fs.createReadStream(tmp)
                             .pipe(unzip.Parse())
                             .pipe(fstream.Writer(this.getStubsDir()));
-                        window.showInformationMessage('PHP Library Stubs downloaded and installed. You may need to re-index the workspace for them to work correctly.');
+                        window.showInformationMessage('PHP Library Stubs downloaded and installed. You may need to re-index the workspace for them to work correctly.', 'Rebuild Now').then(item => {
+                            this.rebuildProject();
+                        });
                     });
                 });
             }

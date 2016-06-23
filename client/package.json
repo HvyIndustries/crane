@@ -12,7 +12,7 @@
     "version": "0.1.7",
     "publisher": "HvyIndustries",
     "engines": {
-        "vscode": "^0.11.10"
+        "vscode": "^0.10.x"
     },
     "bugs": {
         "url": "https://github.com/HvyIndustries/crane/issues"
@@ -25,6 +25,11 @@
         "Languages",
         "Snippets",
         "Other"
+    ],
+    "keywords": [
+        "php",
+        "code-completion",
+        "intellisense"
     ],
     "galleryBanner": {
         "theme": "dark",
@@ -46,17 +51,28 @@
                     "default": true,
                     "description": "Show or hide the status bar item asking you to report any PHP Intellisense bugs"
                 },
+                "crane.enableCache": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable caching to allow Crane to start faster after the workspace has been indexed"
+                },
                 "crane.debugMode": {
                     "type": "boolean",
                     "default": false,
                     "description": "Enable or disable debug mode. WARNING: may cause performance slowdowns on large projects!"
+                },
+                "crane.phpstubsZipFile": {
+                    "type": "string",
+                    "default": "https://codeload.github.com/HvyIndustries/crane-php-stubs/zip/master",
+                    "description": "The location of the PHP Stubs zip file that can be downloaded and unzipped for 3rd party library autocompletion"
                 }
             }
         },
         "keybindings": [
             {
-                "key": "ctrl+d",
-                "command": "crane.duplicateLine",
+                "key": "ctrl+shift+r",
+                "mac": "cmd+shift+r",
+                "command": "crane.rebuildSources",
                 "when": "editorTextFocus && editorLangId == 'php'"
             }
         ],
@@ -64,6 +80,18 @@
             {
                 "command": "crane.reportBug",
                 "title": "Crane - Report PHP Intellisense Bug"
+            },
+            {
+                "command": "crane.rebuildSources",
+                "title": "Crane - Reindex PHP files in the workspace"
+            },
+            {
+                "command": "crane.deleteCaches",
+                "title": "Crane - Delete all PHP file caches"
+            },
+            {
+                "command": "crane.downloadPHPLibraries",
+                "title": "Crane - Download PHP Library Stubs"
             }
         ],
         "snippets": [
@@ -75,14 +103,19 @@
     },
     "scripts": {
         "vscode:prepublish": "node ./node_modules/vscode/bin/compile",
-        "compile": "node ./node_modules/vscode/bin/compile -watch -p ./"
+        "compile": "node ./node_modules/vscode/bin/compile -watch -p ./",
+        "postinstall": "node ./node_modules/vscode/bin/install"
     },
     "devDependencies": {
         "typescript": "^1.6.2",
-        "vscode": "0.11.x"
+        "vscode": "^0.11.13"
     },
     "dependencies": {
-        "vscode-languageclient": "^1.1.0",
-        "php-parser": "glayzzle/php-parser#6131b11"
+        "fstream": "^1.0.9",
+        "mkdirp": "^0.5.1",
+        "php-parser": "HvyIndustries/php-parser#bde9c58",
+        "rimraf": "^2.5.2",
+        "unzip": "^0.1.11",
+        "vscode-languageclient": "^1.1.0"
     }
 }

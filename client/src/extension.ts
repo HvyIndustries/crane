@@ -8,11 +8,13 @@
 
 import * as path from "path";
 
-import { workspace, Disposable, ExtensionContext, commands } from "vscode";
+import { workspace, Disposable, ExtensionContext, commands, FileSystemWatcher, TextDocument } from "vscode";
 import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions, TransportKind, RequestType } from "vscode-languageclient";
 
 import Crane from "./crane";
 import QualityOfLife from "./features/qualityOfLife";
+import { Debug } from './utils/Debug';
+import { Config } from './utils/Config';
 
 export function activate(context: ExtensionContext)
 {
@@ -46,31 +48,23 @@ export function activate(context: ExtensionContext)
 
     let crane: Crane = new Crane(langClient);
 
-    var requestType: RequestType<any, any, any> = { method: "workDone" };
-    langClient.onRequest(requestType, () => {
-        // Load settings
-        let craneSettings = workspace.getConfiguration("crane");
-        if (craneSettings) {
-            var showStatusBarItem = craneSettings.get<boolean>("showStatusBarBugReportLink", true);
-            if (showStatusBarItem) {
-                setTimeout(() => {
-                    crane.statusBarItem.text = "$(bug) Report PHP Intellisense Bug";
-                    crane.statusBarItem.tooltip = "Found a problem with the PHP Intellisense provided by Crane? Click here to file a bug report on Github";
-                    crane.statusBarItem.command = "crane.reportBug";
-                    crane.statusBarItem.show();
-                }, 5000);
-            } else {
-                crane.statusBarItem.hide();
-            }
-        } else {
-            crane.statusBarItem.hide();
-        }
-    });
-
-    // Register commands for QoL improvements
-    let duplicateLineCommand = commands.registerCommand("crane.duplicateLine", qol.duplicateLineOrSelection);
-    let reportBugCommand = commands.registerCommand("crane.reportBug", crane.reportBug);
+    context.subscriptions.push(commands.registerCommand("crane.reportBug", crane.reportBug));
+    context.subscriptions.push(commands.registerCommand('crane.rebuildSources', () => {
+        Debug.clear();
+        Debug.info('Re-indexing PHP files in the workspace...');
+        crane.rebuildProject();
+    }));
+    context.subscriptions.push(commands.registerCommand('crane.deleteCaches', () => {
+        Debug.clear();
+        Debug.info('Deleting all PHP caches....');
+        crane.deleteCaches();
+    }));
+    context.subscriptions.push(commands.registerCommand('crane.downloadPHPLibraries', () => {
+        Debug.clear();
+        Debug.info('Downloading PHP Library Stubs...');
+        crane.downloadPHPLibraries();
+    }));
 
     context.subscriptions.push(disposable);
-    context.subscriptions.push(duplicateLineCommand);
+
 }

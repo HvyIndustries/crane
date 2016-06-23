@@ -12,7 +12,7 @@ namespace myNamespace\otherNamespace
 
     class otherNamespaceClass extends myNamespaceClass
     {
-        use MyTrait;
+        use otherTrait;
 
         function __construct()
         {
@@ -23,7 +23,8 @@ namespace myNamespace\otherNamespace
     }
 
     interface myInterface { }
-    trait myTrait { 
+    trait otherTrait
+    {
         public $testprop = "";
     }
 }

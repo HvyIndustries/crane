@@ -23,7 +23,7 @@ interface result {
 export class Cranefs {
 
     public isCacheable(): boolean {
-        return Config.saveCache;
+        return Config.enableCache;
     }
 
     public getCraneDir(): string {
@@ -150,7 +150,7 @@ export class Cranefs {
                 craneRoot: this.getCraneDir(),
                 projectPath: this.getProjectDir(),
                 treePath: this.getTreePath(),
-                saveCache: this.isCacheable(),
+                enableCache: this.isCacheable(),
                 rebuild: rebuild
             });
 
@@ -174,7 +174,7 @@ export class Cranefs {
         Debug.info('Building project from cache file: ' + this.getTreePath());
         Crane.langClient.sendRequest({ method: "buildFromProject" }, {
             treePath: this.getTreePath(),
-            saveCache: this.isCacheable()
+            enableCache: this.isCacheable()
         });
     }
 

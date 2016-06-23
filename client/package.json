@@ -51,10 +51,10 @@
                     "default": true,
                     "description": "Show or hide the status bar item asking you to report any PHP Intellisense bugs"
                 },
-                "crane.saveCache": {
+                "crane.enableCache": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Turning on caching will allow Crane to start faster after the initial startup"
+                    "description": "Enable caching to allow Crane to start faster after the workspace has been indexed"
                 },
                 "crane.debugMode": {
                     "type": "boolean",
@@ -64,13 +64,14 @@
                 "crane.phpstubsZipFile": {
                     "type": "string",
                     "default": "https://codeload.github.com/HvyIndustries/crane-php-stubs/zip/master",
-                    "description": "The location to the PHP Stubs zip file that can be downloaded and unzipped for 3rd party library autocompletion."
+                    "description": "The location of the PHP Stubs zip file that can be downloaded and unzipped for 3rd party library autocompletion"
                 }
             }
         },
         "keybindings": [
             {
                 "key": "ctrl+shift+r",
+                "mac": "cmd+shift+r",
                 "command": "crane.rebuildSources",
                 "when": "editorTextFocus && editorLangId == 'php'"
             }

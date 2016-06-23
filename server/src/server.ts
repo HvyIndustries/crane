@@ -41,7 +41,7 @@ let workspaceTree: FileNode[] = [];
 
 let workspaceRoot: string;
 var craneProjectDir: string;
-let saveCache: boolean = true;
+let enableCache: boolean = true;
 connection.onInitialize((params): InitializeResult =>
 {
     workspaceRoot = params.rootPath;
@@ -168,7 +168,7 @@ var buildFromFiles: RequestType<{
     craneRoot: string,
     projectPath: string,
     treePath: string,
-    saveCache: boolean,
+    enableCache: boolean,
     rebuild: boolean
 }, any, any> = { method: "buildFromFiles" };
 connection.onRequest(buildFromFiles, (project) => {
@@ -176,7 +176,7 @@ connection.onRequest(buildFromFiles, (project) => {
         workspaceTree = [];
         treeBuilder = new TreeBuilder();
     }
-    saveCache = project.saveCache;
+    enableCache = project.enableCache;
     docsToDo = project.files;
     docsDoneCount = 0;
     connection.console.log('starting work!');
@@ -200,9 +200,9 @@ connection.onRequest(buildFromFiles, (project) => {
     }, 100);
 });
 
-var buildFromProject: RequestType<{treePath:string, saveCache:boolean}, any, any> = { method: "buildFromProject" };
+var buildFromProject: RequestType<{treePath:string, enableCache:boolean}, any, any> = { method: "buildFromProject" };
 connection.onRequest(buildFromProject, (data) => {
-    saveCache = data.saveCache;
+    enableCache = data.enableCache;
     fs.readFile(data.treePath, (err, data) => {
         if (err) {
             Debug.error('Could not read cache file');
@@ -372,7 +372,7 @@ function notifyClientOfWorkComplete()
 
 function saveProjectTree(projectPath: string, treeFile: string): Promise<boolean> {
     return new Promise((resolve, reject) => {
-        if (!saveCache) {
+        if (!enableCache) {
             resolve(false);
         } else {
             Debug.info('Packing tree file: ' + treeFile);

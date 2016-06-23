@@ -32,7 +32,6 @@ export default class Crane
     private delayers: { [key: string]: ThrottledDelayer<void> };
 
     public static statusBarItem: StatusBarItem;
-    private projectBuilding: boolean = false;
 
     constructor(languageClient: LanguageClient) {
         Crane.langClient = languageClient;
@@ -52,55 +51,57 @@ export default class Crane
             Crane.statusBarItem.hide();
         }
 
-        this.checkVersion().then(result => {
-            this.doInit();
+        this.checkVersion().then(indexTriggered => {
+            this.doInit(indexTriggered);
         });
-        // this.doInit();
     }
 
     private checkVersion(): Thenable<boolean>
     {
+        var self = this;
         Debug.info('Checking the current version of Crane');
         return new Promise((resolve, reject) => {
             cranefs.getVersionFile().then(result => {
                 if (result.err && result.err.code == "ENOENT") {
                     // New install
-                    window.showInformationMessage(`Welcome to Crane v${Config.version}. Click the button to the right to get started!`, "Getting Started Guide").then(data => {
+                    window.showInformationMessage(`Welcome to Crane v${Config.version}.`, "Getting Started Guide").then(data => {
                         if (data != null) {
                             Crane.openLinkInBrowser("https://github.com/HvyIndustries/crane/wiki/end-user-guide#getting-started");
                         }
                     });
                     cranefs.createOrUpdateVersionFile(false);
-
-                    // Try to delete caches anyway as this might be an upgrade from an older version
-                    // without a 'verion' file
-                    cranefs.deleteAllCaches();
+                    cranefs.deleteAllCaches().then(item => {
+                        self.processAllFilesInWorkspace();
+                        resolve(true);
+                    });
                 } else {
                     // Strip newlines from data
                     result.data = result.data.replace("\n", "");
                     result.data = result.data.replace("\r", "");
                     if (result.data && result.data != Config.version) {
                         // Updated install
-                        window.showInformationMessage(`You're been upgraded to Crane v${Config.version}. We've made a few changes...`, "View Release Notes").then(data => {
-                            if (data != null) {
+                        window.showInformationMessage(`You're been upgraded to Crane v${Config.version}.`, "View Release Notes").then(data => {
+                            if (data == "View Release Notes") {
                                 Crane.openLinkInBrowser("https://github.com/HvyIndustries/crane/releases");
                             }
                         });
                         cranefs.createOrUpdateVersionFile(true);
-                        cranefs.deleteAllCaches();
+                        cranefs.deleteAllCaches().then(item => {
+                            self.processAllFilesInWorkspace();
+                            resolve(true);
+                        });
+                    } else {
+                        resolve(false);
                     }
                 }
-                resolve(true);
             });
         });
     }
 
-    public doInit() {
+    public doInit(indexInProgress: boolean) {
         console.log("Crane Initialised...");
 
-        Crane.statusBarItem.text = "$(zap) Indexing PHP source files...";
-        Crane.statusBarItem.tooltip = "Crane is processing the PHP source files in the workspace to build code completion suggestions";
-        Crane.statusBarItem.show();
+        this.showIndexingStatusBarMessage();
 
         var statusBarItem: StatusBarItem = window.createStatusBarItem(StatusBarAlignment.Right);
         statusBarItem.text = Config.version;
@@ -119,8 +120,8 @@ export default class Crane
 
         var requestType: RequestType<any, any, any> = { method: "workDone" };
         Crane.langClient.onRequest(requestType, (tree) => {
-            this.projectBuilding = false;
-            Crane.statusBarItem.text = '$(check) PHP File Indexing Complete';
+            // this.projectBuilding = false;
+            Crane.statusBarItem.text = '$(check) PHP File Indexing Complete!';
             // Load settings
             let craneSettings = workspace.getConfiguration("crane");
             Debug.info("Processing complete!");
@@ -167,8 +168,16 @@ export default class Crane
             });
         });
 
-        // Send request to server to build object tree for all workspace files
-        this.processAllFilesInWorkspace();
+        if (!indexInProgress) {
+            // Send request to server to build object tree for all workspace files
+            this.processAllFilesInWorkspace();
+        }
+    }
+
+    private showIndexingStatusBarMessage() {
+        Crane.statusBarItem.text = "$(zap) Indexing PHP source files...";
+        Crane.statusBarItem.tooltip = "Crane is processing the PHP source files in the workspace to build code completion suggestions";
+        Crane.statusBarItem.show();
     }
 
     public reportBug() {
@@ -230,25 +239,14 @@ export default class Crane
 
 
     public deleteCaches() {
-        if (this.projectBuilding) {
-            window.showWarningMessage('Project is currently building please wait until it completes.');
-            return;
-        }
-        this.projectBuilding = true;
+        var self = this;
         cranefs.deleteAllCaches().then(success => {
-            this.projectBuilding = false;
-            window.showInformationMessage('Projects were deleted.', 'Rebuild Current Project').then(item => {
-                this.rebuildProject();
-            });
+            window.showInformationMessage('All PHP file caches were successfully deleted');
+            self.processAllFilesInWorkspace();
         });
     }
 
     public rebuildProject() {
-        if (this.projectBuilding) {
-            window.showWarningMessage('Project is currently building please wait until it completes.');
-            return;
-        }
-        this.projectBuilding = true;
         cranefs.rebuildProject();
     }
 
@@ -257,20 +255,10 @@ export default class Crane
     }
 
     public processWorkspaceFiles() {
-        if (this.projectBuilding) {
-            window.showWarningMessage('Project is currently building please wait until it completes.');
-            return;
-        }
-        this.projectBuilding = true;
         cranefs.processWorkspaceFiles();
     }
 
     public processProject() {
-        if (this.projectBuilding) {
-            window.showWarningMessage('Project is currently building please wait until it completes.');
-            return;
-        }
-        this.projectBuilding = true;
         cranefs.processProject();
     }
 

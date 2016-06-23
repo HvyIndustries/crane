@@ -1,6 +1,8 @@
 import { workspace } from 'vscode';
 import { Debug } from './Debug';
 
+var pkg = require('../../../package.json');
+
 export class Config {
 
     public static craneSettings = workspace.getConfiguration("crane");
@@ -29,6 +31,10 @@ export class Config {
         return Config.craneSettings ? Config.craneSettings.get<string>("phpstubsZipFile", "https://codeload.github.com/HvyIndustries/crane-php-stubs/zip/master") : "https://codeload.github.com/HvyIndustries/crane-php-stubs/zip/master";
     }
 
+    public static get version(): string {
+        return pkg.version.toString();
+    }
+
     public static get phpFileTypes() {
         var fileSettings = workspace.getConfiguration("files");
         var obj: Object = fileSettings.get<Object>("associations", new Object());
@@ -41,6 +47,9 @@ export class Config {
             } else {
                 extentions.exclude.push(value);
             }
+        }
+        if (extentions.include.indexOf('**/*.php') == -1) {
+            extentions.include.push('**/*.php');
         }
         return extentions;
     }

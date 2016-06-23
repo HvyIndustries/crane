@@ -8,7 +8,7 @@
 
 import * as path from "path";
 
-import { workspace, Disposable, ExtensionContext, commands } from "vscode";
+import { workspace, Disposable, ExtensionContext, commands, FileSystemWatcher, TextDocument } from "vscode";
 import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions, TransportKind, RequestType } from "vscode-languageclient";
 
 import Crane from "./crane";
@@ -48,38 +48,23 @@ export function activate(context: ExtensionContext)
 
     let crane: Crane = new Crane(langClient);
 
-    var requestType: RequestType<any, any, any> = { method: "workDone" };
-    langClient.onRequest(requestType, (tree) => {
-        Crane.statusBarItem.text = '$(check) PHP Project Ready';
-        // Load settings
-        let craneSettings = workspace.getConfiguration("crane");
-        Debug.info("Processing complete!");
-        if (Config.showBugReport) {
-            setTimeout(() => {
-                Crane.statusBarItem.tooltip = "Found a problem with the PHP Intellisense provided by Crane? Click here to file a bug report on Github";
-                Crane.statusBarItem.text = "$(bug) Found a PHP Intellisense Bug?";
-                Crane.statusBarItem.command = "crane.reportBug";
-                Crane.statusBarItem.show();
-            }, 5000);
-        } else {
-            Crane.statusBarItem.hide();
-        }
-    });
-
-    // Register commands for QoL improvements
-    let reportBugCommand = commands.registerCommand("crane.reportBug", crane.reportBug);
-    let rebuildSources = commands.registerCommand('crane.rebuildSources', () => {
+    context.subscriptions.push(commands.registerCommand("crane.reportBug", crane.reportBug));
+    context.subscriptions.push(commands.registerCommand('crane.rebuildSources', () => {
         Debug.clear();
-        Debug.info('Rebuilding project sources');
+        Debug.info('Re-indexing PHP files in the workspace...');
         crane.rebuildProject();
-    });
-    let downloadPHPLibraries = commands.registerCommand('crane.downloadPHPLibraries', () => {
+    }));
+    context.subscriptions.push(commands.registerCommand('crane.deleteCaches', () => {
         Debug.clear();
-        Debug.info('Downloading PHP Libraries');
+        Debug.info('Deleting all PHP caches....');
+        crane.deleteCaches();
+    }));
+    context.subscriptions.push(commands.registerCommand('crane.downloadPHPLibraries', () => {
+        Debug.clear();
+        Debug.info('Downloading PHP Library Stubs...');
         crane.downloadPHPLibraries();
-    });
+    }));
 
-    context.subscriptions.push(rebuildSources);
     context.subscriptions.push(disposable);
-    context.subscriptions.push(downloadPHPLibraries);
+
 }

@@ -11,8 +11,14 @@ const http    = require('https');
 const unzip   = require('unzip');
 const util    = require('util');
 const mkdirp  = require('mkdirp');
+const rmrf    = require('rimraf');
 
 let craneSettings = workspace.getConfiguration("crane");
+
+interface result {
+    err;
+    data;
+}
 
 export class Cranefs {
 
@@ -30,6 +36,51 @@ export class Cranefs {
         if (process.platform == 'linux') {
             return process.env.HOME + '/Crane';
         }
+    }
+
+    public getVersionFile(): Thenable<result> {
+        return new Promise((resolve, reject) => {
+            var filePath = this.getCraneDir() + "/version";
+            fs.readFile(filePath, "utf-8", (err, data) => {
+                resolve({ err, data });
+            });
+        });
+    }
+
+    public createOrUpdateVersionFile(fileExists: boolean) {
+        var filePath = this.getCraneDir() + "/version";
+
+        if (fileExists) {
+            // Delete the file
+            fs.unlinkSync(filePath);
+        }
+
+        // Create the file + write Config.version into it
+        mkdirp(this.getCraneDir(), err => {
+            if (err) {
+                Debug.error(err);
+                return;
+            }
+            fs.writeFile(filePath, Config.version, "utf-8", err => {
+                if (err != null) {
+                    Debug.error(err);
+                }
+            });
+        });
+
+    }
+
+    public deleteAllCaches(): Promise<boolean> {
+        return new Promise((resolve, reject) => {
+            rmrf(this.getCraneDir() + '/projects/*', err => {
+                if (!err) {
+                    Debug.info('Project caches were deleted');
+                    return resolve(true);
+                }
+                Debug.info('Project caches were not deleted');
+                return resolve(false);
+            });
+        });
     }
 
     public getProjectDir(): string {
@@ -51,6 +102,8 @@ export class Cranefs {
             if (this.isCacheable()) {
                 this.createProjectFolder().then(projectCreated => {
                     resolve(projectCreated);
+                }).catch(error => {
+                    Debug.error(util.inspect(error, false, null));
                 });
             } else {
                 resolve({folderExists: false, folderCreated: false, path: null})
@@ -76,9 +129,6 @@ export class Cranefs {
 
         // Get PHP files from 'files.associations' to be processed
         var files = Config.phpFileTypes;
-        if (files.include.indexOf('**/*.php') == -1) {
-            files.include.push('**/*.php');
-        }
 
         // Find all the php files to process
         workspace.findFiles(`{${files.include.join(',')}}`, `{${files.exclude.join(',')}}`).then(files => {
@@ -92,6 +142,8 @@ export class Cranefs {
                 filePaths.push(file.fsPath);
             });
 
+            Crane.statusBarItem.text = "$(zap) Indexing PHP files";
+
             // Send the array of paths to the language server
             Crane.langClient.sendRequest({ method: "buildFromFiles" }, {
                 files: filePaths,
@@ -101,20 +153,20 @@ export class Cranefs {
                 saveCache: this.isCacheable(),
                 rebuild: rebuild
             });
-        });
 
-        // Update the UI so the user knows the processing status
-        var fileProcessed: NotificationType<any> = { method: "fileProcessed" };
-        Crane.langClient.onNotification(fileProcessed, data => {
-            // Get the percent complete
-            var percent: string = ((data.total / fileProcessCount) * 100).toFixed(2);
-            Crane.statusBarItem.text = `$(zap) Processing source files (${data.total} of ${fileProcessCount} / ${percent}%)`;
-            if (data.error) {
-                Debug.error("There was a problem parsing PHP file: " + data.filename);
-                Debug.error(`${data.error}`);
-            } else {
-                Debug.info(`Parsed file ${data.total} of ${fileProcessCount} : ${data.filename}`);
-            }
+            // Update the UI so the user knows the processing status
+            var fileProcessed: NotificationType<any> = { method: "fileProcessed" };
+            Crane.langClient.onNotification(fileProcessed, data => {
+                // Get the percent complete
+                var percent: string = ((data.total / fileProcessCount) * 100).toFixed(1);
+                Crane.statusBarItem.text = `$(zap) Indexing PHP files (${data.total} of ${fileProcessCount} / ${percent}%)`;
+                if (data.error) {
+                    Debug.error("There was a problem parsing PHP file: " + data.filename);
+                    Debug.error(`${data.error}`);
+                } else {
+                    Debug.info(`Parsed file ${data.total} of ${fileProcessCount} : ${data.filename}`);
+                }
+            });
         });
     }
 
@@ -129,7 +181,11 @@ export class Cranefs {
     public rebuildProject(): void {
         Debug.info('Rebuilding the project files');
         fs.unlink(this.getTreePath(), (err) => {
-            this.processWorkspaceFiles(true);
+            this.createProjectFolder().then(success => {
+                if (success) {
+                    this.processWorkspaceFiles(true);
+                }
+            });
         });
     }
 
@@ -148,10 +204,14 @@ export class Cranefs {
                         fs.createReadStream(tmp)
                             .pipe(unzip.Parse())
                             .pipe(fstream.Writer(this.getStubsDir()));
-                        window.showInformationMessage('PHP Library Stubs downloaded and installed. You might need to rebuild the PHP sources for them to work correctly.');
+                        window.showInformationMessage('PHP Library Stubs downloaded and installed. You may need to re-index the workspace for them to work correctly.', 'Rebuild Now').then(item => {
+                            this.rebuildProject();
+                        });
                     });
                 });
             }
+        }).catch(error => {
+            Debug.error(util.inspect(error, false, null));
         });
     }
 

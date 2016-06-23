@@ -18,6 +18,8 @@ function isset(value) {
 
 export class TreeBuilder
 {
+    // v1.5 - added extra types for variables
+    // v1.4 - added lineCache
     // v1.3 - support for namespaces + use recursion
     // v1.2 - added option to suppress errors
     // v1.1
@@ -82,7 +84,7 @@ export class TreeBuilder
         {
             // Only foreach if branch is an array of arrays
             branch.forEach(element => {
-                if (element !== null) {
+                if (element != null) {
                     this.ProcessBranch(element, parentBranches, tree);
                 }
             });
@@ -122,10 +124,10 @@ export class TreeBuilder
                     let constantNode: ConstantNode = new ConstantNode();
                     if (isset(branch[1][0][0] || false) && isset(branch[1][0][1][0] || false)) {
                         constantNode.name = branch[1][0][0];
+
                         constantNode.type = branch[1][0][1][0];
-                        if (constantNode.type == "string" || constantNode.type == "number") {
-                            constantNode.value = branch[1][0][1][1];
-                        }
+                        constantNode.value = branch[1][0][1][1];
+
                         // TODO -- Add location
                         tree.constants.push(constantNode);
                     }
@@ -147,7 +149,7 @@ export class TreeBuilder
                     // branch[1] is array of namespace parts
                     // branch[2] is array of classes/interfaces/traits inside namespace
                     branch[2].forEach(item => {
-                        if (item !== null) {
+                        if (item != null) {
                             this.ProcessBranch(item, branch[1], tree);
                         }
                     });
@@ -158,21 +160,17 @@ export class TreeBuilder
                     break;
 
                 case "set":
-                    switch (branch[1][0]) {
-                        case "var":
-                            let variableNode: VariableNode = new VariableNode();
+                    let variable = this.BuildVariableOrProp(branch);
+                    if (variable != null) {
+                        tree.topLevelVariables.push(variable.variableNode);
+                        if (variable.lineCache != null) {
+                            tree.lineCache.push(variable.lineCache);
+                        }
 
-                            variableNode.name = branch[1][1];
-                            variableNode.type = branch[2][0];
-                            if (variableNode.type == "string" || variableNode.type == "number") {
-                                variableNode.value = branch[2][1];
-                            }
-                            tree.topLevelVariables.push(variableNode);
-
-                            // if (branch[2][0] == "call") {
-                            //     let calls = this.BuildFunctionCallsToOtherFunctions(branch[2]);
-                            // }
-                            break;
+                        var symbolCache = new FileSymbolCache();
+                        symbolCache.name = variable.name;
+                        symbolCache.type = SymbolType.TopLevelVariable;
+                        tree.symbolCache.push(symbolCache);
                     }
                     break;
 
@@ -186,19 +184,22 @@ export class TreeBuilder
 
                             methodNode.name = branch[3][1];
 
-                            methodNode.params = this.BuildFunctionParams(branch[3][2]);
-                            if (branch[3][5] != null && Array.isArray(branch[3][5]))
-                            {
+                            // Build return type
+                            if (branch[3][5] != null && Array.isArray(branch[3][5]) && branch[3][5][0] != null) {
                                 methodNode.returns = branch[3][5][0];
                             }
+
+                            methodNode.params = this.BuildFunctionParams(branch[3][2], tree.lineCache, methodNode.startPos);
 
                             branch[3][6].forEach(codeLevel =>
                             {
                                 // Build local scope variable setters
-                                let scopeVar = this.BuildFunctionScopeVariables(codeLevel);
-                                if (scopeVar != null)
-                                {
-                                    methodNode.scopeVariables.push(scopeVar);
+                                let scopeVar = this.BuildVariableOrProp(codeLevel);
+                                if (scopeVar != null) {
+                                    methodNode.scopeVariables.push(scopeVar.variableNode);
+                                    if (scopeVar.lineCache != null) {
+                                        tree.lineCache.push(scopeVar.lineCache);
+                                    }
                                 }
 
                                 // Build function calls
@@ -219,6 +220,11 @@ export class TreeBuilder
                                     });
                                 }
                             });
+
+                            var symbolCache = new FileSymbolCache();
+                            symbolCache.name = methodNode.name;
+                            symbolCache.type = SymbolType.TopLevelFunction;
+                            tree.symbolCache.push(symbolCache);
 
                             tree.functions.push(methodNode);
                             break;
@@ -244,8 +250,9 @@ export class TreeBuilder
                             {
                                 let constantNode: ConstantNode = new ConstantNode();
                                 constantNode.name = constant[3][0][3][0];
-                                constantNode.type = constant[3][0][3][1][0];
-                                if (constantNode.type == "string" || constantNode.type == "number") {
+
+                                if (constant[3][0][3][1] != null) {
+                                    constantNode.type = constant[3][0][3][1][0];
                                     constantNode.value = constant[3][0][3][1][1];
                                 }
 
@@ -264,20 +271,26 @@ export class TreeBuilder
                                 methodNode.startPos = this.BuildStartLocation(method[1]);
                                 methodNode.endPos = this.BuildEndLocation(method[2]);
 
-                                methodNode.params = this.BuildFunctionParams(method[3][2]);
-                                if (method[3][5] != null && Array.isArray(method[3][5]))
-                                {
+                                // Build return type
+                                if (method[3][5] != null && Array.isArray(method[3][5]) && method[3][5][0] != null) {
                                     methodNode.returns = method[3][5][0];
                                 }
 
+                                methodNode.params = this.BuildFunctionParams(method[3][2], tree.lineCache, methodNode.startPos);
+
                                 interfaceNode.methods.push(methodNode);
                             });
+
+                            var symbolCache = new FileSymbolCache();
+                            symbolCache.name = interfaceNode.name;
+                            symbolCache.type = SymbolType.Interface;
+                            tree.symbolCache.push(symbolCache);
 
                             tree.interfaces.push(interfaceNode);
                             break;
 
                         case "trait":
-                            let traitNode: TraitNode = new TraitNode();
+                            var traitNode: TraitNode = new TraitNode();
 
                             traitNode.name = branch[3][1];
 
@@ -317,6 +330,12 @@ export class TreeBuilder
                                     propNode.type = propLevel[3][1][0];
                                 }
 
+                                var symbolCache = new FileSymbolCache();
+                                symbolCache.name = propNode.name;
+                                symbolCache.type = SymbolType.Property;
+                                symbolCache.parentName = traitNode.name;
+                                tree.symbolCache.push(symbolCache);
+
                                 traitNode.properties.push(propNode);
                             });
 
@@ -325,10 +344,20 @@ export class TreeBuilder
                             {
                                 let constantNode: ConstantNode = new ConstantNode();
                                 constantNode.name = constant[3][0][3][0];
-                                constantNode.type = constant[3][0][3][1][0];
+
+                                if (constant[3][0][3][1] != null) {
+                                    constantNode.type = constant[3][0][3][1][0];
+                                    constantNode.value = constant[3][0][3][1][1];
+                                }
 
                                 constantNode.startPos = this.BuildStartLocation(constant[3][0][1]);
                                 constantNode.endPos = this.BuildEndLocation(constant[3][0][2]);
+
+                                var symbolCache = new FileSymbolCache();
+                                symbolCache.name = constantNode.name;
+                                symbolCache.type = SymbolType.Constant;
+                                symbolCache.parentName = traitNode.name;
+                                tree.symbolCache.push(symbolCache);
 
                                 traitNode.constants.push(constantNode);
                             });
@@ -342,9 +371,20 @@ export class TreeBuilder
                                 methodNode.startPos = this.BuildStartLocation(method[1]);
                                 methodNode.endPos = this.BuildEndLocation(method[2]);
 
-                                methodNode.params = this.BuildFunctionParams(method[3][2]);
+                                // Build return type
+                                if (method[3][5] != null && Array.isArray(method[3][5]) && method[3][5][0] != null) {
+                                    methodNode.returns = method[3][5][0];
+                                }
+
+                                methodNode.params = this.BuildFunctionParams(method[3][2], tree.lineCache, methodNode.startPos);
 
                                 methodNode.isAbstract = false;
+
+                                var symbolCache = new FileSymbolCache();
+                                symbolCache.name = methodNode.name;
+                                symbolCache.type = SymbolType.Method;
+                                symbolCache.parentName = traitNode.name;
+                                tree.symbolCache.push(symbolCache);
 
                                 traitNode.methods.push(methodNode);
                             });
@@ -353,6 +393,11 @@ export class TreeBuilder
                             {
                                 traitNode.traits.push(traitLevel[0]);
                             });
+
+                            var symbolCache = new FileSymbolCache();
+                            symbolCache.name = traitNode.name;
+                            symbolCache.type = SymbolType.Trait;
+                            tree.symbolCache.push(symbolCache);
 
                             tree.traits.push(traitNode);
                             break;
@@ -364,6 +409,7 @@ export class TreeBuilder
                             classNode.endPos = this.BuildEndLocation(branch[2]);
 
                             classNode.name = branch[3][1];
+
                             if (branch[3][3] != false) {
                                 classNode.extends = branch[3][3][0];
                             }
@@ -421,8 +467,21 @@ export class TreeBuilder
                                 propNode.name = propLevel[3][0];
 
                                 if (propLevel[3][1] != null) {
-                                    propNode.type = propLevel[3][1][0];
+                                    let type = propLevel[3][1][0];
+                                    if (type == "string" || type == "number") {
+                                        propNode.type = type;
+                                        //propNode.value = codeLevel[3][1][1];
+                                    } else if (type == "const") {
+                                        propNode.type = "boolean";
+                                        //propNode.value = codeLevel[2][1];
+                                    }
                                 }
+
+                                var symbolCache = new FileSymbolCache();
+                                symbolCache.name = propNode.name;
+                                symbolCache.type = SymbolType.Property;
+                                symbolCache.parentName = classNode.name;
+                                tree.symbolCache.push(symbolCache);
 
                                 classNode.properties.push(propNode);
                             });
@@ -439,7 +498,14 @@ export class TreeBuilder
 
                                 if (constLevel[3][0][3][1] != null) {
                                     constNode.type = constLevel[3][0][3][1][0];
+                                    constNode.value = constLevel[3][0][3][1][1];
                                 }
+
+                                var symbolCache = new FileSymbolCache();
+                                symbolCache.name = constNode.name;
+                                symbolCache.type = SymbolType.Constant;
+                                symbolCache.parentName = classNode.name;
+                                tree.symbolCache.push(symbolCache);
 
                                 classNode.constants.push(constNode);
                             });
@@ -461,17 +527,19 @@ export class TreeBuilder
                                         constructorNode.isDeprecated = true;
                                     }
 
-                                    constructorNode.params = this.BuildFunctionParams(methodLevel[3][2]);
+                                    constructorNode.params = this.BuildFunctionParams(methodLevel[3][2], tree.lineCache, constructorNode.startPos);
 
                                     if (methodLevel[3][6] != null)
                                     {
                                         methodLevel[3][6].forEach(codeLevel =>
                                         {
                                             // Build local scope variable setters
-                                            let scopeVar = this.BuildFunctionScopeVariables(codeLevel);
-                                            if (scopeVar != null)
-                                            {
-                                                constructorNode.scopeVariables.push(scopeVar);
+                                            let scopeVar = this.BuildVariableOrProp(codeLevel);
+                                            if (scopeVar != null) {
+                                                constructorNode.scopeVariables.push(scopeVar.variableNode);
+                                                if (scopeVar.lineCache != null) {
+                                                    tree.lineCache.push(scopeVar.lineCache);
+                                                }
                                             }
 
                                             // Build function calls
@@ -526,38 +594,53 @@ export class TreeBuilder
                                         methodNode.isAbstract = true;
                                     }
 
-                                    methodNode.params = this.BuildFunctionParams(methodLevel[3][2]);
+                                    // Build return type
+                                    if (methodLevel[3][5] != null && Array.isArray(methodLevel[3][5]) && methodLevel[3][5][0] != null) {
+                                        methodNode.returns = methodLevel[3][5][0];
+                                    }
+
+                                    methodNode.params = this.BuildFunctionParams(methodLevel[3][2], tree.lineCache, methodNode.startPos);
 
                                     if (methodLevel[3][6] != null)
                                     {
                                         methodLevel[3][6].forEach(codeLevel =>
                                         {
-                                            // Build local scope variable setters
-                                            let scopeVar = this.BuildFunctionScopeVariables(codeLevel);
-                                            if (scopeVar != null)
-                                            {
-                                                methodNode.scopeVariables.push(scopeVar);
-                                            }
-
-                                            // Build function calls
-                                            let functionCalls = this.BuildFunctionCallsToOtherFunctions(codeLevel);
-                                            functionCalls.forEach(element => {
-                                                methodNode.functionCalls.push(element);
-                                            });
-
-                                            // Build imported global variables
-                                            if (codeLevel[0] == "global")
-                                            {
-                                                codeLevel[1].forEach(importGlobalLevel =>
-                                                {
-                                                    if (importGlobalLevel[0] == "var")
-                                                    {
-                                                        methodNode.globalVariables.push(importGlobalLevel[1]);
+                                            if (codeLevel != null) {
+                                                // Build local scope variable setters
+                                                let scopeVar = this.BuildVariableOrProp(codeLevel);
+                                                if (scopeVar != null) {
+                                                    methodNode.scopeVariables.push(scopeVar.variableNode);
+                                                    if (scopeVar.lineCache != null) {
+                                                        tree.lineCache.push(scopeVar.lineCache);
                                                     }
+                                                }
+
+                                                // Build function calls
+                                                let functionCalls = this.BuildFunctionCallsToOtherFunctions(codeLevel);
+                                                functionCalls.forEach(element => {
+                                                    methodNode.functionCalls.push(element);
                                                 });
+
+                                                // Build imported global variables
+                                                if (codeLevel[0] == "global")
+                                                {
+                                                    codeLevel[1].forEach(importGlobalLevel =>
+                                                    {
+                                                        if (importGlobalLevel[0] == "var")
+                                                        {
+                                                            methodNode.globalVariables.push(importGlobalLevel[1]);
+                                                        }
+                                                    });
+                                                }
                                             }
                                         });
                                     }
+
+                                    var symbolCache = new FileSymbolCache();
+                                    symbolCache.name = methodNode.name;
+                                    symbolCache.type = SymbolType.Method;
+                                    symbolCache.parentName = classNode.name;
+                                    tree.symbolCache.push(symbolCache);
 
                                     classNode.methods.push(methodNode);
                                 }
@@ -568,6 +651,11 @@ export class TreeBuilder
                             {
                                 classNode.traits.push(traitLevel[0]);
                             });
+
+                            var symbolCache = new FileSymbolCache();
+                            symbolCache.name = classNode.name;
+                            symbolCache.type = SymbolType.Class;
+                            tree.symbolCache.push(symbolCache);
 
                             tree.classes.push(classNode);
                             break;
@@ -599,7 +687,7 @@ export class TreeBuilder
     }
 
     // paramsArray == methodLevel[3][2]
-    private BuildFunctionParams(paramsArray): ParameterNode[]
+    private BuildFunctionParams(paramsArray, lineCache, methodStartPos): ParameterNode[]
     {
         var params: ParameterNode[] = [];
 
@@ -610,12 +698,22 @@ export class TreeBuilder
             {
                 let paramNode: ParameterNode = new ParameterNode();
                 paramNode.name = paramLevel[0];
+                paramNode.startPos = methodStartPos;
+
+                if (Array.isArray(paramLevel[1])) {
+                    paramNode.type = paramLevel[1][paramLevel[1].length - 1];
+                    var lineCacheItem = new LineCache();
+                    lineCacheItem.name = paramNode.name;
+                    lineCacheItem.value = paramNode.type;
+                    lineCacheItem.line = paramNode.startPos.line;
+                    lineCache.push(lineCacheItem);
+                } else {
+                    paramNode.type = paramLevel[1];
+                }
 
                 if (paramLevel[2] != null && paramLevel[2].length != 0) {
                     paramNode.optional = true;
                     paramNode.type = paramLevel[2][0];
-                } else {
-                    paramNode.type = paramLevel[1];
                 }
 
                 params.push(paramNode);
@@ -625,25 +723,82 @@ export class TreeBuilder
         return params;
     }
 
-    // codeLevel == codeLevel
-    private BuildFunctionScopeVariables(codeLevel): VariableNode
+    private BuildVariableOrProp(codeLevel): any
     {
         if (codeLevel[0] == "set")
         {
             if (codeLevel[1][0] == "var")
             {
                 let variableNode: VariableNode = new VariableNode();
+                let lineCache: LineCache = null;
+
                 variableNode.name = codeLevel[1][1];
-                variableNode.type = codeLevel[2][0];
-                if (variableNode.type == "string" || variableNode.type == "number") {
+
+                var type = codeLevel[2][0];
+                if (type == "string" || type == "number") {
+                    variableNode.type = type;
                     variableNode.value = codeLevel[2][1];
+                } else if (type == "const") {
+                    variableNode.type = "boolean";
+                    variableNode.value = codeLevel[2][1];
+                } else if (type == "position") {
+                    if (codeLevel[2][3] != null && Array.isArray(codeLevel[2][3]) && codeLevel[2][3][0] == "new") {
+
+                        if (codeLevel[2][3][1][0] == "ns") {
+                            variableNode.type = codeLevel[2][3][1][1][0];
+                        } else {
+                            variableNode.type = codeLevel[2][3][1][0];
+                            //variableNode.value = codeLevel[2][3][1][0];
+                        }
+
+                        variableNode.startPos = this.BuildStartLocation(codeLevel[2][1]);
+                        variableNode.endPos = this.BuildEndLocation(codeLevel[2][2]);
+
+                        lineCache = new LineCache();
+                        lineCache.line = variableNode.startPos.line;
+                        lineCache.name = variableNode.name;
+                        lineCache.value = variableNode.value;
+                    }
+                } else if (type == "call") {
+                    // TODO -- handle function return params
+                    // TODO -- check if it's a namespaced class (?)
                 }
 
-                if (codeLevel[2][0] == "call") {
-                    let calls = this.BuildFunctionCallsToOtherFunctions(codeLevel[2]);
+                return { variableNode: variableNode, lineCache: lineCache };
+            }
+            else if (codeLevel[1][0] == "prop")
+            {
+                let propSetNode: VariableNode = new VariableNode();
+                let lineCache: LineCache = null;
+
+                if (codeLevel[1][1][1] == "$this") {
+                    propSetNode.name = codeLevel[1][2][1];
+
+                    let type = codeLevel[2][0];
+                    if (type == "string" || type == "number") {
+                        propSetNode.type = type;
+                        propSetNode.value = codeLevel[2][1];
+                    } else if (type == "const") {
+                        propSetNode.type = "boolean";
+                        propSetNode.value = codeLevel[2][1];
+                    } else if (type == "position") {
+                        if (codeLevel[2][3] != null && Array.isArray(codeLevel[2][3]) && codeLevel[2][3][0] == "new") {
+                            propSetNode.type = codeLevel[2][3][1][0];
+                            //propSetNode.value = codeLevel[2][3][1][0];
+                            propSetNode.variableType = "property";
+
+                            propSetNode.startPos = this.BuildStartLocation(codeLevel[2][1]);
+                            propSetNode.endPos = this.BuildEndLocation(codeLevel[2][2]);
+
+                            lineCache = new LineCache();
+                            lineCache.line = propSetNode.startPos.line;
+                            lineCache.name = propSetNode.name;
+                            lineCache.value = propSetNode.value;
+                        }
+                    }
                 }
 
-                return variableNode;
+                return { variableNode: propSetNode, lineCache: lineCache };
             }
         }
 
@@ -785,6 +940,36 @@ export class FileNode
 
     // Any files that we're referencing with include(), require(), include_once() or require_once()
     public fileReferences: string[] = [];
+
+    public symbolCache: FileSymbolCache[] = [];
+    public lineCache: LineCache[] = [];
+}
+
+export class FileSymbolCache
+{
+    public name: string;
+    public type: SymbolType;
+    public parentName: string;
+}
+
+export class LineCache
+{
+    public line: number;
+    public name: string;
+    public value: string;
+}
+
+export enum SymbolType
+{
+    Unknown,
+    Class,
+    Interface,
+    Trait,
+    Property,
+    Method,
+    Constant,
+    TopLevelVariable,
+    TopLevelFunction
 }
 
 export class NamespaceUsingNode extends BaseNode
@@ -821,7 +1006,7 @@ export class InterfaceNode extends BaseNode
 export class MethodNode extends BaseNode
 {
     public params: ParameterNode[] = [];
-    public returns: string;
+    public returns: string = "unknown";
     public accessModifier: AccessModifierNode = AccessModifierNode.public;
     public isStatic: boolean = false;
     public isAbstract: boolean = false;
@@ -843,8 +1028,9 @@ export class FunctionCallNode extends BaseNode
 
 export class VariableNode extends BaseNode
 {
-    public type: string;
+    public type: string = "unknown";
     public value: string;
+    public variableType: string = "variable"; // "variable" or "property"
 }
 
 export class ParameterNode extends VariableNode
@@ -855,7 +1041,7 @@ export class ParameterNode extends VariableNode
 
 export class PropertyNode extends BaseNode
 {
-    public type: string;
+    public type: string = "unknown";
     public accessModifier: AccessModifierNode;
     public isStatic: boolean = false;
 }
@@ -864,7 +1050,7 @@ export class ConstantNode extends BaseNode
 {
     // Constants are always public
     // Constants (should) only be basic types
-    public type: string;
+    public type: string = "unknown";
     public value: string;
 }
 

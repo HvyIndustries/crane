@@ -85,6 +85,10 @@
                 "title": "Crane - Reindex PHP files in the workspace"
             },
             {
+                "command": "crane.deleteCaches",
+                "title": "Crane - Delete all PHP file caches"
+            },
+            {
                 "command": "crane.downloadPHPLibraries",
                 "title": "Crane - Download PHP Library Stubs"
             }
@@ -109,6 +113,7 @@
         "fstream": "^1.0.9",
         "mkdirp": "^0.5.1",
         "php-parser": "HvyIndustries/php-parser#bde9c58",
+        "rimraf": "^2.5.2",
         "unzip": "^0.1.11",
         "vscode-languageclient": "^1.1.0"
     }

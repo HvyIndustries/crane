@@ -51,15 +51,57 @@ export default class Crane
             Crane.statusBarItem.hide();
         }
 
-        this.doInit();
+        this.checkVersion().then(indexTriggered => {
+            this.doInit(indexTriggered);
+        });
     }
 
-    public doInit() {
+    private checkVersion(): Thenable<boolean>
+    {
+        var self = this;
+        Debug.info('Checking the current version of Crane');
+        return new Promise((resolve, reject) => {
+            cranefs.getVersionFile().then(result => {
+                if (result.err && result.err.code == "ENOENT") {
+                    // New install
+                    window.showInformationMessage(`Welcome to Crane v${Config.version}.`, "Getting Started Guide").then(data => {
+                        if (data != null) {
+                            Crane.openLinkInBrowser("https://github.com/HvyIndustries/crane/wiki/end-user-guide#getting-started");
+                        }
+                    });
+                    cranefs.createOrUpdateVersionFile(false);
+                    cranefs.deleteAllCaches().then(item => {
+                        self.processAllFilesInWorkspace();
+                        resolve(true);
+                    });
+                } else {
+                    // Strip newlines from data
+                    result.data = result.data.replace("\n", "");
+                    result.data = result.data.replace("\r", "");
+                    if (result.data && result.data != Config.version) {
+                        // Updated install
+                        window.showInformationMessage(`You're been upgraded to Crane v${Config.version}.`, "View Release Notes").then(data => {
+                            if (data == "View Release Notes") {
+                                Crane.openLinkInBrowser("https://github.com/HvyIndustries/crane/releases");
+                            }
+                        });
+                        cranefs.createOrUpdateVersionFile(true);
+                        cranefs.deleteAllCaches().then(item => {
+                            self.processAllFilesInWorkspace();
+                            resolve(true);
+                        });
+                    } else {
+                        resolve(false);
+                    }
+                }
+            });
+        });
+    }
+
+    public doInit(indexInProgress: boolean) {
         console.log("Crane Initialised...");
 
-        Crane.statusBarItem.text = "$(zap) Processing PHP source files...";
-        Crane.statusBarItem.tooltip = "Crane is processing the PHP source files in your workspace to build code completion suggestions";
-        Crane.statusBarItem.show();
+        this.showIndexingStatusBarMessage();
 
         var statusBarItem: StatusBarItem = window.createStatusBarItem(StatusBarAlignment.Right);
         statusBarItem.text = Config.version;
@@ -73,6 +115,25 @@ export default class Crane
                 case 'error': Debug.error(message.message); break;
                 case 'warning': Debug.warning(message.message); break;
                 default: Debug.info(message.message); break;
+            }
+        });
+
+        var requestType: RequestType<any, any, any> = { method: "workDone" };
+        Crane.langClient.onRequest(requestType, (tree) => {
+            // this.projectBuilding = false;
+            Crane.statusBarItem.text = '$(check) PHP File Indexing Complete!';
+            // Load settings
+            let craneSettings = workspace.getConfiguration("crane");
+            Debug.info("Processing complete!");
+            if (Config.showBugReport) {
+                setTimeout(() => {
+                    Crane.statusBarItem.tooltip = "Found a problem with the PHP Intellisense provided by Crane? Click here to file a bug report on Github";
+                    Crane.statusBarItem.text = "$(bug) Found a PHP Intellisense Bug?";
+                    Crane.statusBarItem.command = "crane.reportBug";
+                    Crane.statusBarItem.show();
+                }, 5000);
+            } else {
+                Crane.statusBarItem.hide();
             }
         });
 
@@ -107,15 +168,28 @@ export default class Crane
             });
         });
 
-        // Send request to server to build object tree for all workspace files
-        this.processAllFilesInWorkspace();
+        if (!indexInProgress) {
+            // Send request to server to build object tree for all workspace files
+            this.processAllFilesInWorkspace();
+        }
+    }
+
+    private showIndexingStatusBarMessage() {
+        Crane.statusBarItem.text = "$(zap) Indexing PHP source files...";
+        Crane.statusBarItem.tooltip = "Crane is processing the PHP source files in the workspace to build code completion suggestions";
+        Crane.statusBarItem.show();
     }
 
     public reportBug() {
-        let openCommand: string;
+        Crane.openLinkInBrowser("https://github.com/HvyIndustries/crane/issues");
+    }
+
+    public static openLinkInBrowser(link: string) {
+        var openCommand: string = "";
 
         switch (process.platform) {
             case 'darwin':
+            case 'linux':
                 openCommand = 'open ';
                 break;
             case 'win32':
@@ -125,7 +199,7 @@ export default class Crane
                 return;
         }
 
-        exec(openCommand + "https://github.com/HvyIndustries/crane/issues");
+        exec(openCommand + link);
     }
 
     public handleFileSave() {
@@ -160,6 +234,15 @@ export default class Crane
             }
         }).catch(error => {
             Debug.error(util.inspect(error, false, null));
+        });
+    }
+
+
+    public deleteCaches() {
+        var self = this;
+        cranefs.deleteAllCaches().then(success => {
+            window.showInformationMessage('All PHP file caches were successfully deleted');
+            self.processAllFilesInWorkspace();
         });
     }
 

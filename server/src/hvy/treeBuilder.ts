@@ -659,6 +659,9 @@ export class TreeBuilder
 
                             tree.classes.push(classNode);
                             break;
+                        case "if":
+                            // TODO -- if the "if" block is a "set", add to the code analysis array
+                            break;
                     }
                     break;
             }
@@ -943,6 +946,8 @@ export class FileNode
 
     public symbolCache: FileSymbolCache[] = [];
     public lineCache: LineCache[] = [];
+
+    public codeAnalysis: CodeAnalysis[] = [];
 }
 
 export class FileSymbolCache
@@ -1086,4 +1091,23 @@ export class SymbolCache
     public name: string;
     public file: string;
     public line: number;
+}
+
+export class CodeAnalysis
+{
+    // Warning, error, info, etc
+    public type: AnalysisType;
+    public message: string;
+
+    public startPos: PositionInfo;
+    public endPos: PositionInfo;
+}
+
+// TODO -- replace this with the built-in enum values
+enum AnalysisType
+{
+    Error,
+    Warning,
+    Info,
+    Suggestion
 }

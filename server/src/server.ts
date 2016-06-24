@@ -141,6 +141,22 @@ connection.onRequest(buildObjectTreeForDocument, (requestObj) =>
     });
 });
 
+var deleteFile: RequestType<{path:string}, any, any> = { method: "findNode" };
+connection.onRequest(deleteFile, (requestObj) =>
+{
+    var node = getFileNodeFromPath(requestObj.path);
+
+    connection.console.log(node);
+
+});
+
+var deleteFile: RequestType<{path:string}, any, any> = { method: "findDocumentSymbols" };
+connection.onRequest(deleteFile, (requestObj) =>
+{
+    var node = getFileNodeFromPath(requestObj.path);
+    connection.sendNotification({ method: 'documentSymbols' }, { symbols: node.symbolCache });
+});
+
 var deleteFile: RequestType<{path:string}, any, any> = { method: "deleteFile" };
 connection.onRequest(deleteFile, (requestObj) =>
 {

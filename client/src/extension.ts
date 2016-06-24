@@ -8,13 +8,15 @@
 
 import * as path from "path";
 
-import { workspace, Disposable, ExtensionContext, commands, FileSystemWatcher, TextDocument } from "vscode";
+import { workspace, Disposable, ExtensionContext, commands, FileSystemWatcher, TextDocument, languages } from "vscode";
 import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions, TransportKind, RequestType } from "vscode-languageclient";
 
 import Crane from "./crane";
 import QualityOfLife from "./features/qualityOfLife";
 import { Debug } from './utils/Debug';
 import { Config } from './utils/Config';
+import { PHPReferenceProvider } from './providers/ReferenceProvider';
+import { PHPDocumentSymbolProvider } from './providers/SymbolProvider';
 
 export function activate(context: ExtensionContext)
 {
@@ -48,6 +50,7 @@ export function activate(context: ExtensionContext)
 
     let crane: Crane = new Crane(langClient);
 
+    // Register commands
     context.subscriptions.push(commands.registerCommand("crane.reportBug", crane.reportBug));
     context.subscriptions.push(commands.registerCommand('crane.rebuildSources', () => {
         Debug.clear();
@@ -66,5 +69,9 @@ export function activate(context: ExtensionContext)
     }));
 
     context.subscriptions.push(disposable);
+
+    // Register providers
+    // context.subscriptions.push(languages.registerReferenceProvider('php', new PHPReferenceProvider()));
+    context.subscriptions.push(languages.registerDocumentSymbolProvider('php', new PHPDocumentSymbolProvider()));
 
 }

@@ -222,8 +222,12 @@ export class TreeBuilder
                             });
 
                             var symbolCache = new FileSymbolCache();
-                            symbolCache.name = methodNode.name;
-                            symbolCache.type = SymbolType.TopLevelFunction;
+                            symbolCache.name      = methodNode.name;
+                            symbolCache.type      = SymbolType.TopLevelFunction;
+                            symbolCache.startLine = methodNode.startPos.line;
+                            symbolCache.startChar = methodNode.startPos.col;
+                            symbolCache.endLine   = methodNode.endPos.line;
+                            symbolCache.endChar   = methodNode.endPos.col;
                             tree.symbolCache.push(symbolCache);
 
                             tree.functions.push(methodNode);
@@ -282,8 +286,12 @@ export class TreeBuilder
                             });
 
                             var symbolCache = new FileSymbolCache();
-                            symbolCache.name = interfaceNode.name;
-                            symbolCache.type = SymbolType.Interface;
+                            symbolCache.name      = interfaceNode.name;
+                            symbolCache.type      = SymbolType.Interface;
+                            symbolCache.startLine = interfaceNode.startPos.line;
+                            symbolCache.startChar = interfaceNode.startPos.col;
+                            symbolCache.endLine   = interfaceNode.endPos.line;
+                            symbolCache.endChar   = interfaceNode.endPos.col;
                             tree.symbolCache.push(symbolCache);
 
                             tree.interfaces.push(interfaceNode);
@@ -331,9 +339,13 @@ export class TreeBuilder
                                 }
 
                                 var symbolCache = new FileSymbolCache();
-                                symbolCache.name = propNode.name;
-                                symbolCache.type = SymbolType.Property;
+                                symbolCache.name       = propNode.name;
+                                symbolCache.type       = SymbolType.Property;
                                 symbolCache.parentName = traitNode.name;
+                                symbolCache.startLine  = propNode.startPos.line;
+                                symbolCache.startChar  = propNode.startPos.col;
+                                symbolCache.endLine    = propNode.endPos.line;
+                                symbolCache.endChar    = propNode.endPos.col;
                                 tree.symbolCache.push(symbolCache);
 
                                 traitNode.properties.push(propNode);
@@ -354,9 +366,13 @@ export class TreeBuilder
                                 constantNode.endPos = this.BuildEndLocation(constant[3][0][2]);
 
                                 var symbolCache = new FileSymbolCache();
-                                symbolCache.name = constantNode.name;
-                                symbolCache.type = SymbolType.Constant;
+                                symbolCache.name       = constantNode.name;
+                                symbolCache.type       = SymbolType.Constant;
                                 symbolCache.parentName = traitNode.name;
+                                symbolCache.startLine  = traitNode.startPos.line;
+                                symbolCache.startChar  = traitNode.startPos.col;
+                                symbolCache.endLine    = traitNode.endPos.line;
+                                symbolCache.endChar    = traitNode.endPos.col;
                                 tree.symbolCache.push(symbolCache);
 
                                 traitNode.constants.push(constantNode);
@@ -381,9 +397,13 @@ export class TreeBuilder
                                 methodNode.isAbstract = false;
 
                                 var symbolCache = new FileSymbolCache();
-                                symbolCache.name = methodNode.name;
-                                symbolCache.type = SymbolType.Method;
+                                symbolCache.name       = methodNode.name;
+                                symbolCache.type       = SymbolType.Method;
                                 symbolCache.parentName = traitNode.name;
+                                symbolCache.startLine  = methodNode.startPos.line;
+                                symbolCache.startChar  = methodNode.startPos.col;
+                                symbolCache.endLine    = methodNode.endPos.line;
+                                symbolCache.endChar    = methodNode.endPos.col;
                                 tree.symbolCache.push(symbolCache);
 
                                 traitNode.methods.push(methodNode);
@@ -395,8 +415,12 @@ export class TreeBuilder
                             });
 
                             var symbolCache = new FileSymbolCache();
-                            symbolCache.name = traitNode.name;
-                            symbolCache.type = SymbolType.Trait;
+                            symbolCache.name          = traitNode.name;
+                            symbolCache.type          = SymbolType.Trait;
+                                symbolCache.startLine = traitNode.startPos.line;
+                                symbolCache.startChar = traitNode.startPos.col;
+                                symbolCache.endLine   = traitNode.endPos.line;
+                                symbolCache.endChar   = traitNode.endPos.col;
                             tree.symbolCache.push(symbolCache);
 
                             tree.traits.push(traitNode);
@@ -478,9 +502,13 @@ export class TreeBuilder
                                 }
 
                                 var symbolCache = new FileSymbolCache();
-                                symbolCache.name = propNode.name;
-                                symbolCache.type = SymbolType.Property;
+                                symbolCache.name       = propNode.name;
+                                symbolCache.type       = SymbolType.Property;
                                 symbolCache.parentName = classNode.name;
+                                symbolCache.startLine  = classNode.startPos.line;
+                                symbolCache.startChar  = classNode.startPos.col;
+                                symbolCache.endLine    = classNode.endPos.line;
+                                symbolCache.endChar    = classNode.endPos.col;
                                 tree.symbolCache.push(symbolCache);
 
                                 classNode.properties.push(propNode);
@@ -502,9 +530,13 @@ export class TreeBuilder
                                 }
 
                                 var symbolCache = new FileSymbolCache();
-                                symbolCache.name = constNode.name;
-                                symbolCache.type = SymbolType.Constant;
-                                symbolCache.parentName = classNode.name;
+                                symbolCache.name       = constNode.name;
+                                symbolCache.type       = SymbolType.Constant;
+                                symbolCache.parentName = constNode.name;
+                                symbolCache.startLine  = constNode.startPos.line;
+                                symbolCache.startChar  = constNode.startPos.col;
+                                symbolCache.endLine    = constNode.endPos.line;
+                                symbolCache.endChar    = constNode.endPos.col;
                                 tree.symbolCache.push(symbolCache);
 
                                 classNode.constants.push(constNode);
@@ -637,9 +669,13 @@ export class TreeBuilder
                                     }
 
                                     var symbolCache = new FileSymbolCache();
-                                    symbolCache.name = methodNode.name;
-                                    symbolCache.type = SymbolType.Method;
+                                    symbolCache.name       = methodNode.name;
+                                    symbolCache.type       = SymbolType.Method;
                                     symbolCache.parentName = classNode.name;
+                                    symbolCache.startLine  = methodNode.startPos.line;
+                                    symbolCache.startChar  = methodNode.startPos.col;
+                                    symbolCache.endLine    = methodNode.endPos.line;
+                                    symbolCache.endChar    = methodNode.endPos.col;
                                     tree.symbolCache.push(symbolCache);
 
                                     classNode.methods.push(methodNode);
@@ -653,8 +689,12 @@ export class TreeBuilder
                             });
 
                             var symbolCache = new FileSymbolCache();
-                            symbolCache.name = classNode.name;
-                            symbolCache.type = SymbolType.Class;
+                            symbolCache.name      = classNode.name;
+                            symbolCache.type      = SymbolType.Class;
+                            symbolCache.startLine = classNode.startPos.line;
+                            symbolCache.startChar = classNode.startPos.col;
+                            symbolCache.endLine   = classNode.endPos.line;
+                            symbolCache.endChar   = classNode.endPos.col;
                             tree.symbolCache.push(symbolCache);
 
                             tree.classes.push(classNode);
@@ -950,6 +990,10 @@ export class FileSymbolCache
     public name: string;
     public type: SymbolType;
     public parentName: string;
+    public startLine: number = 1;
+    public endLine: number = 1;
+    public startChar: number = 1;
+    public endChar: number = 1;
 }
 
 export class LineCache

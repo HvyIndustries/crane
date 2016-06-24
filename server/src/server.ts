@@ -146,15 +146,72 @@ connection.onRequest(deleteFile, (requestObj) =>
 {
     var node = getFileNodeFromPath(requestObj.path);
 
-    connection.console.log(node);
+    // connection.console.log(node);
 
 });
 
-var deleteFile: RequestType<{path:string}, any, any> = { method: "findDocumentSymbols" };
-connection.onRequest(deleteFile, (requestObj) =>
+/**
+ * Finds all the symbols in a particular file
+ */
+var findFileDocumentSymbols: RequestType<{path:string}, any, any> = { method: "findFileDocumentSymbols" };
+connection.onRequest(findFileDocumentSymbols, (requestObj) =>
 {
     var node = getFileNodeFromPath(requestObj.path);
     connection.sendNotification({ method: 'documentSymbols' }, { symbols: node.symbolCache });
+});
+
+/**
+ * Finds the Usings in a file
+ */
+var findFileUsings: RequestType<{path:string}, any, any> = { method: "findFileUsings" };
+connection.onRequest(findFileUsings, (requestObj) =>
+{
+    var node = getFileNodeFromPath(requestObj.path);
+    connection.sendNotification({ method: 'foundFileUsings' }, { usings: node.namespaceUsings });
+});
+
+/**
+ * Finds the location to a symbol definition
+ */
+var findDefinition: RequestType<{word:string,namespaces:string[],kind:SymbolType}, any, any> = { method: "findDefinition" };
+connection.onRequest(findDefinition, (requestObj) =>
+{
+    var word: string = requestObj.word;
+    var kind: SymbolType = requestObj.kind;
+    var namespaces: string[] = requestObj.namespaces;
+    var BreakException = {};
+
+    var path: string;
+    var position = {
+        startLine: 1,
+        startChar: 1,
+        endLine: 1,
+        endChar: 1
+    };
+
+    try {
+        for (var item = 0; item < workspaceTree.length; item++) {
+            var element = workspaceTree[item];
+            if (kind == SymbolType.Class) {
+                for (var i = 0; i < element.classes.length; i++) {
+                    var classNode = element.classes[i];
+                    var ns: string = classNode.namespaceParts.join('\\');
+                    if (namespaces.indexOf(ns) > -1 && word == classNode.name) {
+                        path = element.path;
+                        position.startLine = classNode.startPos.line;
+                        position.startChar = classNode.startPos.col;
+                        position.endLine = classNode.endPos.line;
+                        position.endChar = classNode.endPos.col;
+                        throw BreakException;
+                    }
+                }
+            }
+        }
+    } catch (e) {}
+
+
+    // var node = getFileNodeFromPath(requestObj.path);
+    connection.sendNotification({ method: 'definitionInformation' }, { path: path, position: position });
 });
 
 var deleteFile: RequestType<{path:string}, any, any> = { method: "deleteFile" };

@@ -20,14 +20,14 @@ export class PHPDocumentSymbolProvider implements DocumentSymbolProvider {
 
             let results: SymbolInformation[] = [];
 
-            Crane.langClient.sendRequest({ method: "findDocumentSymbols" }, {
+            Crane.langClient.sendRequest({ method: "findFileDocumentSymbols" }, {
                 path: filename
             });
 
             var documentSymbols: NotificationType<{ symbols:any }> = { method: "documentSymbols" };
             Crane.langClient.onNotification(documentSymbols, result => {
                 result.symbols.forEach((item) => {
-                    var symbol = new SymbolInformation(item.name, item.type, new Range(item.startLine-1, item.startChar, item.endLine-1, item.endChar));
+                    var symbol = new SymbolInformation(item.name, item.type, new Range(item.startLine - 1, item.startChar, item.endLine - 1, item.endChar));
                     results.push(symbol);
                 });
                 resolve(results);

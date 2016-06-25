@@ -19,31 +19,41 @@ export class PHPDefinitionProvider implements DefinitionProvider {
 
             let wordAtPosition = document.getWordRangeAtPosition(position);
             let word: string = document.getText(wordAtPosition);
-            let namespaces: string[] = [];
+            let namespaceList: string[] = [];
 
             Crane.langClient.sendRequest({ method: 'findFileUsings' }, {
                 path: document.uri.fsPath
             });
 
-            var foundFileUsings: NotificationType<{ usings:Array<any> }> = { method: 'foundFileUsings' };
+            var foundFileUsings: NotificationType<{ usings:Array<any>, namespaces:Array<string> }> = { method: 'foundFileUsings' };
             Crane.langClient.onNotification(foundFileUsings, result => {
 
-                // Get a list of namespaces to search
+                // Get a list of namespaces to search from the Usings
                 result.usings.forEach(item => {
-                    namespaces.push(item.parents.join('\\'));
+                    var ns: string = item.parents.join('\\');
+                    if (ns.length > 0 && namespaceList.indexOf(ns) == -1) {
+                        namespaceList.push(ns);
+                    }
+                });
+
+                // Add The current namespace to the list
+                result.namespaces.forEach(ns => {
+                    if (ns.length > 0 && namespaceList.indexOf(ns) == -1) {
+                        namespaceList.push(ns);
+                    }
                 });
 
                 // Find the definition
                 Crane.langClient.sendRequest({ method: 'findDefinition' }, {
                     word: word,
-                    namespaces: namespaces,
+                    namespaces: namespaceList,
                     kind: 1
                 });
             });
 
             var definitionInformation: NotificationType<{ path:string, position:any }> = { method: 'definitionInformation' };
             Crane.langClient.onNotification(definitionInformation, result => {
-                var uri: Uri = Uri.parse('file:///' + result.path);
+                var uri: Uri = Uri.parse('file://' + result.path);
                 var location = new Location(uri, new Range(result.position.startLine - 1, result.position.startChar, result.position.endLine - 1, result.position.endChar));
                 resolve(location);
             });
@@ -51,4 +61,18 @@ export class PHPDefinitionProvider implements DefinitionProvider {
         });
     }
 
+    private buildDocumentPath(uri: string) : string {
+        var path = uri;
+        path = path.replace("file:///", "");
+        path = path.replace("%3A", ":");
+
+        // Handle Windows and Unix paths
+        switch (process.platform) {
+            case 'darwin':
+            case 'linux':
+                return path = "/" + path;
+            case 'win32':
+                return path.replace(/\//g, "\\");
+        }
+    }
 }

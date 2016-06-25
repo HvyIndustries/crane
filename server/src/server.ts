@@ -167,7 +167,16 @@ var findFileUsings: RequestType<{path:string}, any, any> = { method: "findFileUs
 connection.onRequest(findFileUsings, (requestObj) =>
 {
     var node = getFileNodeFromPath(requestObj.path);
-    connection.sendNotification({ method: 'foundFileUsings' }, { usings: node.namespaceUsings });
+
+    var namespaces: string[] = [];
+
+    node.classes.forEach(item => {
+        namespaces.push(item.namespaceParts.join('\\'));
+    })
+
+    // connection.console.log(namespaces);
+
+    connection.sendNotification({ method: 'foundFileUsings' }, { usings: node.namespaceUsings, namespaces: namespaces });
 });
 
 /**
@@ -196,7 +205,7 @@ connection.onRequest(findDefinition, (requestObj) =>
                 for (var i = 0; i < element.classes.length; i++) {
                     var classNode = element.classes[i];
                     var ns: string = classNode.namespaceParts.join('\\');
-                    if (namespaces.indexOf(ns) > -1 && word == classNode.name) {
+                    if ((namespaces.indexOf(ns) > -1 || namespaces.length == 0) && word == classNode.name) {
                         path = element.path;
                         position.startLine = classNode.startPos.line;
                         position.startChar = classNode.startPos.col;

@@ -15,7 +15,7 @@ import Crane from "./crane";
 import QualityOfLife from "./features/qualityOfLife";
 import { Debug } from './utils/Debug';
 import { Config } from './utils/Config';
-import { PHPReferenceProvider } from './providers/ReferenceProvider';
+// import { PHPReferenceProvider } from './providers/ReferenceProvider';
 import { PHPDocumentSymbolProvider } from './providers/SymbolProvider';
 import { PHPDefinitionProvider } from './providers/DefinitionProvider';
 

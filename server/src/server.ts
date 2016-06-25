@@ -7,7 +7,7 @@
 'use strict';
 
 import {
-    IPCMessageReader, IPCMessageWriter,
+    IPCMessageReader, IPCMessageWriter, SymbolKind,
     createConnection, IConnection, TextDocumentSyncKind,
     TextDocuments, ITextDocument, Diagnostic, DiagnosticSeverity,
     InitializeParams, InitializeResult, TextDocumentIdentifier, TextDocumentPosition,
@@ -154,73 +154,121 @@ connection.onRequest(deleteFile, (requestObj) =>
  * Finds all the symbols in a particular file
  */
 var findFileDocumentSymbols: RequestType<{path:string}, any, any> = { method: "findFileDocumentSymbols" };
-connection.onRequest(findFileDocumentSymbols, (requestObj) =>
-{
+connection.onRequest(findFileDocumentSymbols, (requestObj) => {
     var node = getFileNodeFromPath(requestObj.path);
-    connection.sendNotification({ method: 'documentSymbols' }, { symbols: node.symbolCache });
+    return { symbols: node.symbolCache };
 });
 
 /**
  * Finds the Usings in a file
  */
-var findFileUsings: RequestType<{path:string}, any, any> = { method: "findFileUsings" };
-connection.onRequest(findFileUsings, (requestObj) =>
-{
-    var node = getFileNodeFromPath(requestObj.path);
+function getFileUsings(path: string): string[] {
+    var node = getFileNodeFromPath(path);
 
     var namespaces: string[] = [];
-
     node.classes.forEach(item => {
-        namespaces.push(item.namespaceParts.join('\\'));
-    })
+        let ns: string = item.namespaceParts.join('\\');
+        if (ns.length > 0 && namespaces.indexOf(ns) == -1) {
+            namespaces.push(ns);
+        }
+    });
 
-    // connection.console.log(namespaces);
+    node.namespaceUsings.forEach(item => {
+        let ns: string = item.parents.join('\\');
+        if (ns.length > 0 && namespaces.indexOf(ns) == -1) {
+            namespaces.push();
+        }
+    });
 
-    connection.sendNotification({ method: 'foundFileUsings' }, { usings: node.namespaceUsings, namespaces: namespaces });
-});
+    return namespaces;
+};
 
 /**
  * Finds the location to a symbol definition
  */
-var findDefinition: RequestType<{word:string,namespaces:string[],kind:SymbolType}, any, any> = { method: "findDefinition" };
-connection.onRequest(findDefinition, (requestObj) =>
-{
+var findDefinition: RequestType<{ path: string, word: string }, any, any> = { method: "findDefinition" };
+connection.onRequest(findDefinition, (requestObj) => {
+
+    // TODO: Only search based on symbol kind. Currently it searches till it finds something
+    // If two items are named the same, such as a class and a method it is unknown which will be chosen
+
     var word: string = requestObj.word;
-    var kind: SymbolType = requestObj.kind;
-    var namespaces: string[] = requestObj.namespaces;
+    var kind: SymbolKind = SymbolKind.Class;
+    var namespaces: string[] = getFileUsings(requestObj.path);
     var BreakException = {};
 
     var path: string;
-    var position = {
-        startLine: 1,
-        startChar: 1,
-        endLine: 1,
-        endChar: 1
-    };
+    var position = { startLine: 1, startChar: 1, endLine: 1, endChar: 1 };
 
     try {
-        for (var item = 0; item < workspaceTree.length; item++) {
-            var element = workspaceTree[item];
-            if (kind == SymbolType.Class) {
-                for (var i = 0; i < element.classes.length; i++) {
-                    var classNode = element.classes[i];
-                    var ns: string = classNode.namespaceParts.join('\\');
-                    if ((namespaces.indexOf(ns) > -1 || namespaces.length == 0) && word == classNode.name) {
+        for (let item = 0; item < workspaceTree.length; item++) {
+            let element = workspaceTree[item];
+            // Search through the list of classes
+            for (let i = 0; i < element.classes.length; i++) {
+                let classNode = element.classes[i];
+                let ns: string = classNode.namespaceParts.join('\\');
+                if ((namespaces.indexOf(ns) > -1 || namespaces.length == 0) && word == classNode.name) {
+                    path = element.path;
+                    position.startLine = classNode.startPos.line;
+                    position.startChar = classNode.startPos.col;
+                    position.endLine = classNode.endPos.line;
+                    position.endChar = classNode.endPos.col;
+                    throw BreakException;
+                }
+                // Search the list of methods
+                for (let j = 0; j < classNode.methods.length; j++) {
+                    let methodNode = classNode.methods[j];
+                    if ((namespaces.indexOf(ns) > -1 || namespaces.length == 0) && word == methodNode.name) {
                         path = element.path;
-                        position.startLine = classNode.startPos.line;
-                        position.startChar = classNode.startPos.col;
-                        position.endLine = classNode.endPos.line;
-                        position.endChar = classNode.endPos.col;
+                        position.startLine = methodNode.startPos.line;
+                        position.startChar = methodNode.startPos.col;
+                        position.endLine = methodNode.endPos.line;
+                        position.endChar = methodNode.endPos.col;
                         throw BreakException;
                     }
+                }
+            }
+            // Search the list of traits
+            for (let i = 0; i < element.traits.length; i++) {
+                let traitNode = element.traits[i];
+                let ns: string = traitNode.namespaceParts.join('\\');
+                if ((namespaces.indexOf(ns) > -1 || namespaces.length == 0) && word == traitNode.name) {
+                    path = element.path;
+                    position.startLine = traitNode.startPos.line;
+                    position.startChar = traitNode.startPos.col;
+                    position.endLine = traitNode.endPos.line;
+                    position.endChar = traitNode.endPos.col;
+                    throw BreakException;
+                }
+                // Search the list of trait methods
+                for (let j = 0; j < traitNode.methods.length; j++) {
+                    let methodNode = traitNode.methods[j];
+                    if ((namespaces.indexOf(ns) > -1 || namespaces.length == 0) && word == methodNode.name) {
+                        path = element.path;
+                        position.startLine = methodNode.startPos.line;
+                        position.startChar = methodNode.startPos.col;
+                        position.endLine = methodNode.endPos.line;
+                        position.endChar = methodNode.endPos.col;
+                        throw BreakException;
+                    }
+                }
+            }
+            // Search through the list of functions
+            for (let i = 0; i < element.functions.length; i++) {
+                let funcNode = element.functions[i];
+                if (word == funcNode.name) {
+                    path = element.path;
+                    position.startLine = funcNode.startPos.line;
+                    position.startChar = funcNode.startPos.col;
+                    position.endLine = funcNode.endPos.line;
+                    position.endChar = funcNode.endPos.col;
+                    throw BreakException;
                 }
             }
         }
     } catch (e) {}
 
-
-    // var node = getFileNodeFromPath(requestObj.path);
-    connection.sendNotification({ method: 'definitionInformation' }, { path: path, position: position });
+    return { path: path, position: position };
 });
 
 var deleteFile: RequestType<{path:string}, any, any> = { method: "deleteFile" };

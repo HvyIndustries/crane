@@ -313,6 +313,14 @@ export class TreeBuilder
                                 traitNode.extends = branch[3][2][0];
                             }
 
+                            if (parentBranches != null && parentBranches.length > 0)
+                            {
+                                // Add namespaces
+                                parentBranches.forEach(item => {
+                                    traitNode.namespaceParts.push(item);
+                                });
+                            }
+
                             branch[3][4].properties.forEach(propLevel =>
                             {
                                 let propNode: PropertyNode = new PropertyNode();

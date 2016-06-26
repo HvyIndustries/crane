@@ -195,7 +195,11 @@ connection.onRequest(findDefinition, (requestObj) => {
     var word: string = requestObj.word;
     var kind: SymbolKind = SymbolKind.Class;
     var namespaces: string[] = getFileUsings(requestObj.path);
+    var searchableNS: string[] = [];
+
     var BreakException = {};
+
+    connection.console.log(getFileNodeFromPath(requestObj.path));
 
     var path: string;
     var position = { startLine: 1, startChar: 1, endLine: 1, endChar: 1 };

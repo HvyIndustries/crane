@@ -135,8 +135,14 @@ export class TreeBuilder
 
                 case "use":
                     let namespaceUsingNode = new NamespaceUsingNode();
-                    namespaceUsingNode.name = branch[2];
+                    if (branch[1][branch[1].length - 1] != branch[2]) {
+                        namespaceUsingNode.name = branch[1][branch[1].length - 1];
+                        namespaceUsingNode.refName = branch[2];
+                    } else {
+                        namespaceUsingNode.name = branch[2];
+                    }
                     branch[1].forEach(item => {
+                        connection.console.log(branch[2]);
                         if (item != namespaceUsingNode.name) {
                             namespaceUsingNode.parents.push(item);
                         }
@@ -982,6 +988,7 @@ export class TreeBuilder
 class BaseNode
 {
     public name: string;
+    public refName: string;
     public startPos: PositionInfo;
     public endPos: PositionInfo;
 }

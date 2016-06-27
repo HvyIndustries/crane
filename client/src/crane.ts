@@ -197,6 +197,8 @@ export default class Crane
 
         window.activeTextEditor.edit(editBuilder => {
             editBuilder.insert(caretPosition, EOL);
+            // TODO -- apply correct indentation
+            editBuilder.insert(caretPosition, "* ");
         });
     }
 

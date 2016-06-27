@@ -16,7 +16,7 @@ import QualityOfLife from "./features/qualityOfLife";
 import { Debug } from './utils/Debug';
 import { Config } from './utils/Config';
 // import { PHPReferenceProvider } from './providers/ReferenceProvider';
-import { PHPDocumentSymbolProvider } from './providers/SymbolProvider';
+import { PHPDocumentSymbolProvider, PHPWorkspaceSymbolProvider } from './providers/SymbolProvider';
 import { PHPDefinitionProvider } from './providers/DefinitionProvider';
 
 export function activate(context: ExtensionContext)
@@ -74,6 +74,7 @@ export function activate(context: ExtensionContext)
     // Register providers
     // context.subscriptions.push(languages.registerReferenceProvider('php', new PHPReferenceProvider()));
     context.subscriptions.push(languages.registerDocumentSymbolProvider('php', new PHPDocumentSymbolProvider()));
+    context.subscriptions.push(languages.registerWorkspaceSymbolProvider(new PHPWorkspaceSymbolProvider()));
     context.subscriptions.push(languages.registerDefinitionProvider('php', new PHPDefinitionProvider()));
 
 }

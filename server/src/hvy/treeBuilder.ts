@@ -142,7 +142,6 @@ export class TreeBuilder
                         namespaceUsingNode.name = branch[2];
                     }
                     branch[1].forEach(item => {
-                        connection.console.log(branch[2]);
                         if (item != namespaceUsingNode.name) {
                             namespaceUsingNode.parents.push(item);
                         }
@@ -235,7 +234,7 @@ export class TreeBuilder
                             symbolCache.startLine = methodNode.startPos.line;
                             symbolCache.startChar = methodNode.startPos.col;
                             symbolCache.endLine   = methodNode.endPos.line;
-                            symbolCache.endChar   = methodNode.endPos.col;
+                            symbolCache.endChar = methodNode.endPos.col;
                             tree.symbolCache.push(symbolCache);
 
                             tree.functions.push(methodNode);
@@ -1021,6 +1020,7 @@ export class FileSymbolCache
     public endLine: number = 1;
     public startChar: number = 1;
     public endChar: number = 1;
+    public path: string = '';
 }
 
 export class LineCache

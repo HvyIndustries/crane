@@ -67,7 +67,6 @@ export class Cranefs {
                 }
             });
         });
-
     }
 
     public deleteAllCaches(): Promise<boolean> {

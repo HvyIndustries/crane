@@ -209,15 +209,18 @@ export class TreeBuilder
                                 });
 
                                 // Build imported global variables
-                                if (codeLevel[0] == "global")
-                                {
-                                    codeLevel[1].forEach(importGlobalLevel =>
-                                    {
-                                        if (importGlobalLevel[0] == "var")
-                                        {
+                                if (codeLevel[0] == "global") {
+                                    codeLevel[1].forEach(importGlobalLevel => {
+                                        if (importGlobalLevel[0] == "var") {
                                             methodNode.globalVariables.push(importGlobalLevel[1]);
                                         }
                                     });
+                                }
+
+                                // Add first return statement
+                                if (codeLevel[0] == "return") {
+                                    // TODO -- add position to return statement
+                                    // TODO -- mark everything after return to end of scope (end of if, function, etc) as unreachable
                                 }
                             });
 
@@ -661,6 +664,15 @@ export class TreeBuilder
                             break;
                         case "if":
                             // TODO -- if the "if" block is a "set", add to the code analysis array
+                            if (branch[3][1][0] == "set") {
+                                // Probably don't want to be doing that...
+                                var issue = new CodeAnalysis();
+                                issue.message = "Warning: assignment of variable instead of comparison";
+                                issue.type = AnalysisType.Warning;
+                                issue.startPos = this.BuildStartLocation(branch[1]);
+                                issue.endPos = this.BuildEndLocation(branch[2]);
+                                tree.codeAnalysis.push(issue);
+                            }
                             break;
                     }
                     break;

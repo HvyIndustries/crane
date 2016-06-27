@@ -170,7 +170,46 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
     let symbols: FileSymbolCache[] = [];
 
     workspaceTree.forEach(item => {
-        // Search The traits
+        // Search The interfaces
+        item.interfaces.forEach(interfaceNode => {
+            if (interfaceNode.name == query) {
+                let symbol: FileSymbolCache = new FileSymbolCache();
+                symbol.kind = SymbolKind.Class;
+                symbol.startLine = interfaceNode.startPos.line;
+                symbol.startChar = interfaceNode.startPos.col;
+                symbol.endLine = interfaceNode.endPos.line;
+                symbol.endChar = interfaceNode.endPos.col;
+                symbol.path = item.path;
+                symbols.push(symbol);
+            }
+            // Search the methods within the interface
+            interfaceNode.methods.forEach(methodNode => {
+                if (methodNode.name == query) {
+                    let symbol: FileSymbolCache = new FileSymbolCache();
+                    symbol.kind = SymbolKind.Method;
+                    symbol.startLine = methodNode.startPos.line;
+                    symbol.startChar = methodNode.startPos.col;
+                    symbol.endLine = methodNode.endPos.line;
+                    symbol.endChar = methodNode.endPos.col;
+                    symbol.path = item.path;
+                    symbols.push(symbol);
+                }
+            });
+            // Search the constants within the interface
+            interfaceNode.constants.forEach(constNode => {
+                if (constNode.name == query) {
+                    let symbol: FileSymbolCache = new FileSymbolCache();
+                    symbol.kind = SymbolKind.Constant;
+                    symbol.startLine = constNode.startPos.line;
+                    symbol.startChar = constNode.startPos.col;
+                    symbol.endLine = constNode.endPos.line;
+                    symbol.endChar = constNode.endPos.col;
+                    symbol.path = item.path;
+                    symbols.push(symbol);
+                }
+            });
+        });
+        // Search the traits
         item.traits.forEach(traitNode => {
             if (traitNode.name == query) {
                 let symbol: FileSymbolCache = new FileSymbolCache();

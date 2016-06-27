@@ -27,6 +27,8 @@ function globalFunction()
     otherFunc($param);
 }
 
+/**
+*/
 function secondFunc($param1, $param2 = "test")
 {
 }

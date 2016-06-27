@@ -9,9 +9,10 @@
 import {
     Disposable, workspace, window, TextDocument,
     TextEditor, StatusBarAlignment, StatusBarItem,
-    FileSystemWatcher
+    FileSystemWatcher, Position
 } from 'vscode';
 import { LanguageClient, RequestType, NotificationType } from 'vscode-languageclient';
+import { EOL } from 'os';
 import { ThrottledDelayer } from './utils/async';
 import { Cranefs } from './utils/Cranefs';
 import { Debug } from './utils/Debug';
@@ -182,6 +183,21 @@ export default class Crane
 
     public reportBug() {
         Crane.openLinkInBrowser("https://github.com/HvyIndustries/crane/issues");
+    }
+
+    public handleEnterKeyPress(e) {
+        if (!window.activeTextEditor) {
+            return;
+        }
+
+        var doc = window.activeTextEditor.document;
+        var caretPosition = window.activeTextEditor.selection.start;
+
+        // TODO -- work out if we're inside a comment or not
+
+        window.activeTextEditor.edit(editBuilder => {
+            editBuilder.insert(caretPosition, EOL);
+        });
     }
 
     public static openLinkInBrowser(link: string) {

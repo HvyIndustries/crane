@@ -79,6 +79,15 @@ export class SuggestionBuilder
                     }
                 }
             }
+        } else if (this.lastChar == "@") {
+            // TODO -- check we're inside a comment block
+            // TODO -- Show phpDoc items (check Atom's suggestions):
+            //   @params [boolean  $name  Some information text]
+            //   @return [array<string>]
+            //   @return [map<string, SomeClass>]
+            //   @author [Ioan CHIRIAC <me@domain.com>]
+            //   @throws [Exception]
+            //   @deprecated
         } else {
             switch (scope.level) {
                 case ScopeLevel.Root:

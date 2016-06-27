@@ -50,10 +50,9 @@ connection.onInitialize((params): InitializeResult =>
         capabilities:
         {
             textDocumentSync: documents.syncKind,
-            completionProvider:
-            {
+            completionProvider: {
                 resolveProvider: true,
-                triggerCharacters: ['.', ':', '$', '>']
+                triggerCharacters: ['.', ':', '$', '>', "@"]
             }
         }
     }

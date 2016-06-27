@@ -74,6 +74,11 @@
                 "mac": "cmd+shift+r",
                 "command": "crane.rebuildSources",
                 "when": "editorTextFocus && editorLangId == 'php'"
+            },
+            {
+                "key": "enter",
+                "command": "crane.handleEnterKeyPress",
+                "when": "editorTextFocus && editorLangId == 'php'"
             }
         ],
         "commands": [

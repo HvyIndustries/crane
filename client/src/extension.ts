@@ -64,6 +64,7 @@ export function activate(context: ExtensionContext)
         Debug.info('Downloading PHP Library Stubs...');
         crane.downloadPHPLibraries();
     }));
+    context.subscriptions.push(commands.registerCommand("crane.handleEnterKeyPress", crane.handleEnterKeyPress));
 
     context.subscriptions.push(disposable);
 

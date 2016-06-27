@@ -191,6 +191,7 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
                     symbol.startChar = methodNode.startPos.col;
                     symbol.endLine = methodNode.endPos.line;
                     symbol.endChar = methodNode.endPos.col;
+                    symbol.parentName = interfaceNode.name;
                     symbol.path = item.path;
                     symbols.push(symbol);
                 }
@@ -204,6 +205,7 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
                     symbol.startChar = constNode.startPos.col;
                     symbol.endLine = constNode.endPos.line;
                     symbol.endChar = constNode.endPos.col;
+                    symbol.parentName = interfaceNode.name;
                     symbol.path = item.path;
                     symbols.push(symbol);
                 }
@@ -230,6 +232,7 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
                     symbol.startChar = methodNode.startPos.col;
                     symbol.endLine = methodNode.endPos.line;
                     symbol.endChar = methodNode.endPos.col;
+                    symbol.parentName = traitNode.name;
                     symbol.path = item.path;
                     symbols.push(symbol);
                 }
@@ -243,6 +246,7 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
                     symbol.startChar = propertyNode.startPos.col;
                     symbol.endLine = propertyNode.endPos.line;
                     symbol.endChar = propertyNode.endPos.col;
+                    symbol.parentName = traitNode.name;
                     symbol.path = item.path;
                     symbols.push(symbol);
                 }
@@ -256,6 +260,7 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
                     symbol.startChar = constNode.startPos.col;
                     symbol.endLine = constNode.endPos.line;
                     symbol.endChar = constNode.endPos.col;
+                    symbol.parentName = traitNode.name;
                     symbol.path = item.path;
                     symbols.push(symbol);
                 }
@@ -282,6 +287,7 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
                     symbol.startChar = methodNode.startPos.col;
                     symbol.endLine = methodNode.endPos.line;
                     symbol.endChar = methodNode.endPos.col;
+                    symbol.parentName = classNode.name;
                     symbol.path = item.path;
                     symbols.push(symbol);
                 }
@@ -295,6 +301,7 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
                     symbol.startChar = propertyNode.startPos.col;
                     symbol.endLine = propertyNode.endPos.line;
                     symbol.endChar = propertyNode.endPos.col;
+                    symbol.parentName = classNode.name;
                     symbol.path = item.path;
                     symbols.push(symbol);
                 }
@@ -308,6 +315,7 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
                     symbol.startChar = constNode.startPos.col;
                     symbol.endLine = constNode.endPos.line;
                     symbol.endChar = constNode.endPos.col;
+                    symbol.parentName = classNode.name;
                     symbol.path = item.path;
                     symbols.push(symbol);
                 }

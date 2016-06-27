@@ -55,7 +55,12 @@ export class PHPWorkspaceSymbolProvider implements WorkspaceSymbolProvider {
                 result.symbols.forEach((item) => {
                     let uri: Uri = this.getUri(item.path);
                     if (uri == null) { return; }
-                    let symbol = new SymbolInformation(item.name, item.kind - 1, new Range(item.startLine - 1, item.startChar, item.endLine - 1, item.endChar), uri);
+                    let symbol = new SymbolInformation(
+                        item.name, item.kind - 1,
+                        new Range(item.startLine - 1, item.startChar, item.endLine - 1, item.endChar),
+                        uri,
+                        item.parentName
+                    );
                     results.push(symbol);
                 });
                 resolve(results);

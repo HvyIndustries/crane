@@ -170,6 +170,59 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
     let symbols: FileSymbolCache[] = [];
 
     workspaceTree.forEach(item => {
+        // Search The traits
+        item.traits.forEach(traitNode => {
+            if (traitNode.name == query) {
+                let symbol: FileSymbolCache = new FileSymbolCache();
+                symbol.kind = SymbolKind.Class;
+                symbol.startLine = traitNode.startPos.line;
+                symbol.startChar = traitNode.startPos.col;
+                symbol.endLine = traitNode.endPos.line;
+                symbol.endChar = traitNode.endPos.col;
+                symbol.path = item.path;
+                symbols.push(symbol);
+            }
+            // Search the methods within the traits
+            traitNode.methods.forEach(methodNode => {
+                if (methodNode.name == query) {
+                    let symbol: FileSymbolCache = new FileSymbolCache();
+                    symbol.kind = SymbolKind.Method;
+                    symbol.startLine = methodNode.startPos.line;
+                    symbol.startChar = methodNode.startPos.col;
+                    symbol.endLine = methodNode.endPos.line;
+                    symbol.endChar = methodNode.endPos.col;
+                    symbol.path = item.path;
+                    symbols.push(symbol);
+                }
+            });
+            // Search the properties within the traits
+            traitNode.properties.forEach(propertyNode => {
+                if (propertyNode.name == query) {
+                    let symbol: FileSymbolCache = new FileSymbolCache();
+                    symbol.kind = SymbolKind.Property;
+                    symbol.startLine = propertyNode.startPos.line;
+                    symbol.startChar = propertyNode.startPos.col;
+                    symbol.endLine = propertyNode.endPos.line;
+                    symbol.endChar = propertyNode.endPos.col;
+                    symbol.path = item.path;
+                    symbols.push(symbol);
+                }
+            });
+            // Search the constants within the trait
+            traitNode.constants.forEach(constNode => {
+                if (constNode.name == query) {
+                    let symbol: FileSymbolCache = new FileSymbolCache();
+                    symbol.kind = SymbolKind.Constant;
+                    symbol.startLine = constNode.startPos.line;
+                    symbol.startChar = constNode.startPos.col;
+                    symbol.endLine = constNode.endPos.line;
+                    symbol.endChar = constNode.endPos.col;
+                    symbol.path = item.path;
+                    symbols.push(symbol);
+                }
+            });
+        });
+        // Search the classes
         item.classes.forEach(classNode => {
             if (classNode.name == query) {
                 let symbol: FileSymbolCache = new FileSymbolCache();
@@ -181,10 +234,11 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
                 symbol.path = item.path;
                 symbols.push(symbol);
             }
+            // Search the methods within the classes
             classNode.methods.forEach(methodNode => {
                 if (methodNode.name == query) {
                     let symbol: FileSymbolCache = new FileSymbolCache();
-                    symbol.kind = SymbolKind.Class;
+                    symbol.kind = SymbolKind.Method;
                     symbol.startLine = methodNode.startPos.line;
                     symbol.startChar = methodNode.startPos.col;
                     symbol.endLine = methodNode.endPos.line;
@@ -193,10 +247,11 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
                     symbols.push(symbol);
                 }
             });
+            // Search the properties within the classes
             classNode.properties.forEach(propertyNode => {
                 if (propertyNode.name == query) {
                     let symbol: FileSymbolCache = new FileSymbolCache();
-                    symbol.kind = SymbolKind.Class;
+                    symbol.kind = SymbolKind.Property;
                     symbol.startLine = propertyNode.startPos.line;
                     symbol.startChar = propertyNode.startPos.col;
                     symbol.endLine = propertyNode.endPos.line;
@@ -205,6 +260,31 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
                     symbols.push(symbol);
                 }
             });
+            // Search the constants within the class
+            classNode.constants.forEach(constNode => {
+                if (constNode.name == query) {
+                    let symbol: FileSymbolCache = new FileSymbolCache();
+                    symbol.kind = SymbolKind.Constant;
+                    symbol.startLine = constNode.startPos.line;
+                    symbol.startChar = constNode.startPos.col;
+                    symbol.endLine = constNode.endPos.line;
+                    symbol.endChar = constNode.endPos.col;
+                    symbol.path = item.path;
+                    symbols.push(symbol);
+                }
+            });
+        });
+        item.functions.forEach(funcNode => {
+            if (funcNode.name == query) {
+                let symbol: FileSymbolCache = new FileSymbolCache();
+                symbol.kind = SymbolKind.Function;
+                symbol.startLine = funcNode.startPos.line;
+                symbol.startChar = funcNode.startPos.col;
+                symbol.endLine = funcNode.endPos.line;
+                symbol.endChar = funcNode.endPos.col;
+                symbol.path = item.path;
+                symbols.push(symbol);
+            }
         });
     });
 

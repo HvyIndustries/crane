@@ -158,21 +158,46 @@ connection.onRequest(findFileDocumentSymbols, (requestObj) => {
     var node = getFileNodeFromPath(requestObj.path);
     return { symbols: node.symbolCache };
 });
-
+// function getSymbolObject(node: any, query: string, path: string, usings: string[], parent: any = null): FileSymbolCache {
+//     let symbol = null;
+//     if (node.name == query) {
+//         connection.console.log(usings);
+//         if(parent !== null)
+//             connection.console.log(parent.namespaceParts);
+//         if (parent !== null && usings.indexOf(parent.namespaceParts.join('\\')) == -1) {
+//             return null;
+//         }
+//         symbol = new FileSymbolCache();
+//         symbol.kind = SymbolKind.Class;
+//         symbol.startLine = node.startPos.line;
+//         symbol.startChar = node.startPos.col;
+//         symbol.endLine = node.endPos.line;
+//         symbol.endChar = node.endPos.col;
+//         symbol.path = path;
+//         if (parent !== null) {
+//             symbol.parentName = parent.name;
+//         }
+//     }
+//     return symbol;
+// }
 /**
  * Finds all the symbols in the workspace
  */
-var findWorkspaceSymbols: RequestType<{query:string}, any, any> = { method: "findWorkspaceSymbols" };
+var findWorkspaceSymbols: RequestType<{query:string,path:string}, any, any> = { method: "findWorkspaceSymbols" };
 connection.onRequest(findWorkspaceSymbols, (requestObj) => {
 
     let query: string = requestObj.query;
 
     let symbols: FileSymbolCache[] = [];
+    let usings: string[] = getFileUsings(requestObj.path);
+
+    connection.console.log(query);
 
     workspaceTree.forEach(item => {
         // Search The interfaces
         item.interfaces.forEach(interfaceNode => {
-            if (interfaceNode.name == query) {
+            let ns: string = interfaceNode.namespaceParts.join('\\');
+            if (interfaceNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
                 let symbol: FileSymbolCache = new FileSymbolCache();
                 symbol.kind = SymbolKind.Class;
                 symbol.startLine = interfaceNode.startPos.line;
@@ -184,7 +209,7 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
             }
             // Search the methods within the interface
             interfaceNode.methods.forEach(methodNode => {
-                if (methodNode.name == query) {
+                if (methodNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
                     let symbol: FileSymbolCache = new FileSymbolCache();
                     symbol.kind = SymbolKind.Method;
                     symbol.startLine = methodNode.startPos.line;
@@ -198,7 +223,7 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
             });
             // Search the constants within the interface
             interfaceNode.constants.forEach(constNode => {
-                if (constNode.name == query) {
+                if (constNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
                     let symbol: FileSymbolCache = new FileSymbolCache();
                     symbol.kind = SymbolKind.Constant;
                     symbol.startLine = constNode.startPos.line;
@@ -213,7 +238,8 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
         });
         // Search the traits
         item.traits.forEach(traitNode => {
-            if (traitNode.name == query) {
+            let ns: string = traitNode.namespaceParts.join('\\');
+            if (traitNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
                 let symbol: FileSymbolCache = new FileSymbolCache();
                 symbol.kind = SymbolKind.Class;
                 symbol.startLine = traitNode.startPos.line;
@@ -225,7 +251,7 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
             }
             // Search the methods within the traits
             traitNode.methods.forEach(methodNode => {
-                if (methodNode.name == query) {
+                if (methodNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
                     let symbol: FileSymbolCache = new FileSymbolCache();
                     symbol.kind = SymbolKind.Method;
                     symbol.startLine = methodNode.startPos.line;
@@ -239,7 +265,7 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
             });
             // Search the properties within the traits
             traitNode.properties.forEach(propertyNode => {
-                if (propertyNode.name == query) {
+                if (propertyNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
                     let symbol: FileSymbolCache = new FileSymbolCache();
                     symbol.kind = SymbolKind.Property;
                     symbol.startLine = propertyNode.startPos.line;
@@ -253,7 +279,7 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
             });
             // Search the constants within the trait
             traitNode.constants.forEach(constNode => {
-                if (constNode.name == query) {
+                if (constNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
                     let symbol: FileSymbolCache = new FileSymbolCache();
                     symbol.kind = SymbolKind.Constant;
                     symbol.startLine = constNode.startPos.line;
@@ -268,7 +294,8 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
         });
         // Search the classes
         item.classes.forEach(classNode => {
-            if (classNode.name == query) {
+            let ns: string = classNode.namespaceParts.join('\\');
+            if (classNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
                 let symbol: FileSymbolCache = new FileSymbolCache();
                 symbol.kind = SymbolKind.Class;
                 symbol.startLine = classNode.startPos.line;
@@ -280,7 +307,7 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
             }
             // Search the methods within the classes
             classNode.methods.forEach(methodNode => {
-                if (methodNode.name == query) {
+                if (methodNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
                     let symbol: FileSymbolCache = new FileSymbolCache();
                     symbol.kind = SymbolKind.Method;
                     symbol.startLine = methodNode.startPos.line;
@@ -294,7 +321,7 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
             });
             // Search the properties within the classes
             classNode.properties.forEach(propertyNode => {
-                if (propertyNode.name == query) {
+                if (propertyNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
                     let symbol: FileSymbolCache = new FileSymbolCache();
                     symbol.kind = SymbolKind.Property;
                     symbol.startLine = propertyNode.startPos.line;
@@ -308,7 +335,7 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
             });
             // Search the constants within the class
             classNode.constants.forEach(constNode => {
-                if (constNode.name == query) {
+                if (constNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
                     let symbol: FileSymbolCache = new FileSymbolCache();
                     symbol.kind = SymbolKind.Constant;
                     symbol.startLine = constNode.startPos.line;
@@ -354,10 +381,17 @@ function getFileUsings(path: string): string[] {
         }
     });
 
+    node.traits.forEach(item => {
+        let ns: string = item.namespaceParts.join('\\');
+        if (ns.length > 0 && namespaces.indexOf(ns) == -1) {
+            namespaces.push(ns);
+        }
+    });
+
     node.namespaceUsings.forEach(item => {
         let ns: string = item.parents.join('\\');
         if (ns.length > 0 && namespaces.indexOf(ns) == -1) {
-            namespaces.push();
+            namespaces.push(ns);
         }
     });
 

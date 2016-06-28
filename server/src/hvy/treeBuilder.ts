@@ -256,6 +256,14 @@ export class TreeBuilder
                                 });
                             }
 
+                            if (parentBranches != null && parentBranches.length > 0)
+                            {
+                                // Add namespaces
+                                parentBranches.forEach(item => {
+                                    interfaceNode.namespaceParts.push(item);
+                                });
+                            }
+
                             // Build constants
                             branch[3][4].constants.forEach(constant =>
                             {
@@ -1071,7 +1079,7 @@ export class InterfaceNode extends BaseNode
     public extends: string[] = [];
     public constants: ConstantNode[] = [];
     public methods: MethodNode[] = [];
-    public namespace: string[] = [];
+    public namespaceParts: string[] = [];
 }
 
 export class MethodNode extends BaseNode

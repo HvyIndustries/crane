@@ -1,5 +1,5 @@
 import {
-    workspace, Range, SymbolInformation, WorkspaceSymbolProvider,
+    workspace, window, Range, SymbolInformation, WorkspaceSymbolProvider,
     DocumentSymbolProvider, TextDocument, CancellationToken, Uri
 } from 'vscode';
 import { RequestType } from 'vscode-languageclient';
@@ -48,9 +48,10 @@ export class PHPWorkspaceSymbolProvider implements WorkspaceSymbolProvider {
 
             let results: SymbolInformation[] = [];
 
-            let findFileDocumentSymbols: RequestType<{query:string}, {symbols:any}, any> = {method: 'findWorkspaceSymbols'};
+            let findFileDocumentSymbols: RequestType<{query:string,path:string}, {symbols:any}, any> = {method: 'findWorkspaceSymbols'};
             Crane.langClient.sendRequest(findFileDocumentSymbols, {
-                query: query
+                query: query,
+                path: window.activeTextEditor.document.uri.fsPath
             }).then(result => {
                 result.symbols.forEach((item) => {
                     let uri: Uri = this.getUri(item.path);

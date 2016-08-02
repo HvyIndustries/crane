@@ -7,7 +7,7 @@
 'use strict';
 
 import {
-    IPCMessageReader, IPCMessageWriter,
+    IPCMessageReader, IPCMessageWriter, SymbolKind,
     createConnection, IConnection, TextDocumentSyncKind,
     TextDocuments, ITextDocument, Diagnostic, DiagnosticSeverity,
     InitializeParams, InitializeResult, TextDocumentIdentifier, TextDocumentPosition,
@@ -140,6 +140,263 @@ connection.onRequest(buildObjectTreeForDocument, (requestObj) =>
         return false;
     });
 });
+
+var deleteFile: RequestType<{path:string}, any, any> = { method: "findNode" };
+connection.onRequest(deleteFile, (requestObj) =>
+{
+    var node = getFileNodeFromPath(requestObj.path);
+
+    // connection.console.log(node);
+
+});
+
+/**
+ * Finds all the symbols in a particular file
+ */
+var findFileDocumentSymbols: RequestType<{path:string}, any, any> = { method: "findFileDocumentSymbols" };
+connection.onRequest(findFileDocumentSymbols, (requestObj) => {
+    var node = getFileNodeFromPath(requestObj.path);
+    return { symbols: node.symbolCache };
+});
+// function getSymbolObject(node: any, query: string, path: string, usings: string[], parent: any = null): FileSymbolCache {
+//     let symbol = null;
+//     if (node.name == query) {
+//         connection.console.log(usings);
+//         if(parent !== null)
+//             connection.console.log(parent.namespaceParts);
+//         if (parent !== null && usings.indexOf(parent.namespaceParts.join('\\')) == -1) {
+//             return null;
+//         }
+//         symbol = new FileSymbolCache();
+//         symbol.kind = SymbolKind.Class;
+//         symbol.startLine = node.startPos.line;
+//         symbol.startChar = node.startPos.col;
+//         symbol.endLine = node.endPos.line;
+//         symbol.endChar = node.endPos.col;
+//         symbol.path = path;
+//         if (parent !== null) {
+//             symbol.parentName = parent.name;
+//         }
+//     }
+//     return symbol;
+// }
+/**
+ * Finds all the symbols in the workspace
+ */
+var findWorkspaceSymbols: RequestType<{query:string,path:string}, any, any> = { method: "findWorkspaceSymbols" };
+connection.onRequest(findWorkspaceSymbols, (requestObj) => {
+
+    let query: string = requestObj.query;
+
+    let symbols: FileSymbolCache[] = [];
+    let usings: string[] = getFileUsings(requestObj.path);
+
+    connection.console.log(query);
+
+    workspaceTree.forEach(item => {
+        // Search The interfaces
+        item.interfaces.forEach(interfaceNode => {
+            let ns: string = interfaceNode.namespaceParts.join('\\');
+            if (interfaceNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
+                let symbol: FileSymbolCache = new FileSymbolCache();
+                symbol.kind = SymbolKind.Class;
+                symbol.startLine = interfaceNode.startPos.line;
+                symbol.startChar = interfaceNode.startPos.col;
+                symbol.endLine = interfaceNode.endPos.line;
+                symbol.endChar = interfaceNode.endPos.col;
+                symbol.path = item.path;
+                symbols.push(symbol);
+            }
+            // Search the methods within the interface
+            interfaceNode.methods.forEach(methodNode => {
+                if (methodNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
+                    let symbol: FileSymbolCache = new FileSymbolCache();
+                    symbol.kind = SymbolKind.Method;
+                    symbol.startLine = methodNode.startPos.line;
+                    symbol.startChar = methodNode.startPos.col;
+                    symbol.endLine = methodNode.endPos.line;
+                    symbol.endChar = methodNode.endPos.col;
+                    symbol.parentName = interfaceNode.name;
+                    symbol.path = item.path;
+                    symbols.push(symbol);
+                }
+            });
+            // Search the constants within the interface
+            interfaceNode.constants.forEach(constNode => {
+                if (constNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
+                    let symbol: FileSymbolCache = new FileSymbolCache();
+                    symbol.kind = SymbolKind.Constant;
+                    symbol.startLine = constNode.startPos.line;
+                    symbol.startChar = constNode.startPos.col;
+                    symbol.endLine = constNode.endPos.line;
+                    symbol.endChar = constNode.endPos.col;
+                    symbol.parentName = interfaceNode.name;
+                    symbol.path = item.path;
+                    symbols.push(symbol);
+                }
+            });
+        });
+        // Search the traits
+        item.traits.forEach(traitNode => {
+            let ns: string = traitNode.namespaceParts.join('\\');
+            if (traitNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
+                let symbol: FileSymbolCache = new FileSymbolCache();
+                symbol.kind = SymbolKind.Class;
+                symbol.startLine = traitNode.startPos.line;
+                symbol.startChar = traitNode.startPos.col;
+                symbol.endLine = traitNode.endPos.line;
+                symbol.endChar = traitNode.endPos.col;
+                symbol.path = item.path;
+                symbols.push(symbol);
+            }
+            // Search the methods within the traits
+            traitNode.methods.forEach(methodNode => {
+                if (methodNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
+                    let symbol: FileSymbolCache = new FileSymbolCache();
+                    symbol.kind = SymbolKind.Method;
+                    symbol.startLine = methodNode.startPos.line;
+                    symbol.startChar = methodNode.startPos.col;
+                    symbol.endLine = methodNode.endPos.line;
+                    symbol.endChar = methodNode.endPos.col;
+                    symbol.parentName = traitNode.name;
+                    symbol.path = item.path;
+                    symbols.push(symbol);
+                }
+            });
+            // Search the properties within the traits
+            traitNode.properties.forEach(propertyNode => {
+                if (propertyNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
+                    let symbol: FileSymbolCache = new FileSymbolCache();
+                    symbol.kind = SymbolKind.Property;
+                    symbol.startLine = propertyNode.startPos.line;
+                    symbol.startChar = propertyNode.startPos.col;
+                    symbol.endLine = propertyNode.endPos.line;
+                    symbol.endChar = propertyNode.endPos.col;
+                    symbol.parentName = traitNode.name;
+                    symbol.path = item.path;
+                    symbols.push(symbol);
+                }
+            });
+            // Search the constants within the trait
+            traitNode.constants.forEach(constNode => {
+                if (constNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
+                    let symbol: FileSymbolCache = new FileSymbolCache();
+                    symbol.kind = SymbolKind.Constant;
+                    symbol.startLine = constNode.startPos.line;
+                    symbol.startChar = constNode.startPos.col;
+                    symbol.endLine = constNode.endPos.line;
+                    symbol.endChar = constNode.endPos.col;
+                    symbol.parentName = traitNode.name;
+                    symbol.path = item.path;
+                    symbols.push(symbol);
+                }
+            });
+        });
+        // Search the classes
+        item.classes.forEach(classNode => {
+            let ns: string = classNode.namespaceParts.join('\\');
+            if (classNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
+                let symbol: FileSymbolCache = new FileSymbolCache();
+                symbol.kind = SymbolKind.Class;
+                symbol.startLine = classNode.startPos.line;
+                symbol.startChar = classNode.startPos.col;
+                symbol.endLine = classNode.endPos.line;
+                symbol.endChar = classNode.endPos.col;
+                symbol.path = item.path;
+                symbols.push(symbol);
+            }
+            // Search the methods within the classes
+            classNode.methods.forEach(methodNode => {
+                if (methodNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
+                    let symbol: FileSymbolCache = new FileSymbolCache();
+                    symbol.kind = SymbolKind.Method;
+                    symbol.startLine = methodNode.startPos.line;
+                    symbol.startChar = methodNode.startPos.col;
+                    symbol.endLine = methodNode.endPos.line;
+                    symbol.endChar = methodNode.endPos.col;
+                    symbol.parentName = classNode.name;
+                    symbol.path = item.path;
+                    symbols.push(symbol);
+                }
+            });
+            // Search the properties within the classes
+            classNode.properties.forEach(propertyNode => {
+                if (propertyNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
+                    let symbol: FileSymbolCache = new FileSymbolCache();
+                    symbol.kind = SymbolKind.Property;
+                    symbol.startLine = propertyNode.startPos.line;
+                    symbol.startChar = propertyNode.startPos.col;
+                    symbol.endLine = propertyNode.endPos.line;
+                    symbol.endChar = propertyNode.endPos.col;
+                    symbol.parentName = classNode.name;
+                    symbol.path = item.path;
+                    symbols.push(symbol);
+                }
+            });
+            // Search the constants within the class
+            classNode.constants.forEach(constNode => {
+                if (constNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
+                    let symbol: FileSymbolCache = new FileSymbolCache();
+                    symbol.kind = SymbolKind.Constant;
+                    symbol.startLine = constNode.startPos.line;
+                    symbol.startChar = constNode.startPos.col;
+                    symbol.endLine = constNode.endPos.line;
+                    symbol.endChar = constNode.endPos.col;
+                    symbol.parentName = classNode.name;
+                    symbol.path = item.path;
+                    symbols.push(symbol);
+                }
+            });
+        });
+        item.functions.forEach(funcNode => {
+            if (funcNode.name == query) {
+                let symbol: FileSymbolCache = new FileSymbolCache();
+                symbol.kind = SymbolKind.Function;
+                symbol.startLine = funcNode.startPos.line;
+                symbol.startChar = funcNode.startPos.col;
+                symbol.endLine = funcNode.endPos.line;
+                symbol.endChar = funcNode.endPos.col;
+                symbol.path = item.path;
+                symbols.push(symbol);
+            }
+        });
+    });
+
+
+    // var node = getFileNodeFromPath(requestObj.path);
+    return { symbols: symbols };
+});
+
+/**
+ * Finds the Usings in a file
+ */
+function getFileUsings(path: string): string[] {
+    var node = getFileNodeFromPath(path);
+
+    var namespaces: string[] = [];
+    node.classes.forEach(item => {
+        let ns: string = item.namespaceParts.join('\\');
+        if (ns.length > 0 && namespaces.indexOf(ns) == -1) {
+            namespaces.push(ns);
+        }
+    });
+
+    node.traits.forEach(item => {
+        let ns: string = item.namespaceParts.join('\\');
+        if (ns.length > 0 && namespaces.indexOf(ns) == -1) {
+            namespaces.push(ns);
+        }
+    });
+
+    node.namespaceUsings.forEach(item => {
+        let ns: string = item.parents.join('\\');
+        if (ns.length > 0 && namespaces.indexOf(ns) == -1) {
+            namespaces.push(ns);
+        }
+    });
+
+    return namespaces;
+};
 
 var deleteFile: RequestType<{path:string}, any, any> = { method: "deleteFile" };
 connection.onRequest(deleteFile, (requestObj) =>

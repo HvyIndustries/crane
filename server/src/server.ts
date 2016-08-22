@@ -9,9 +9,9 @@
 import {
     IPCMessageReader, IPCMessageWriter, SymbolKind,
     createConnection, IConnection, TextDocumentSyncKind,
-    TextDocuments, ITextDocument, Diagnostic, DiagnosticSeverity,
-    InitializeParams, InitializeResult, TextDocumentIdentifier, TextDocumentPosition,
-    CompletionItem, CompletionItemKind, RequestType, Position,
+    TextDocuments, Diagnostic, DiagnosticSeverity,
+    InitializeParams, InitializeResult, TextDocumentIdentifier, TextDocumentPositionParams,
+    CompletionList, CompletionItem, CompletionItemKind, RequestType, Position,
     SignatureHelp, SignatureInformation, ParameterInformation
 } from 'vscode-languageserver';
 
@@ -94,16 +94,14 @@ connection.onDidChangeWatchedFiles((change) =>
 });
 
 // This handler provides the initial list of the completion items.
-connection.onCompletion((textDocumentPosition: TextDocumentPosition): CompletionItem[] =>
+connection.onCompletion((textDocumentPosition: TextDocumentPositionParams): CompletionList =>
 {
-    if (textDocumentPosition.languageId != "php") return;
-
-    var doc = documents.get(textDocumentPosition.uri);
+    var doc = documents.get(textDocumentPosition.textDocument.uri);
     var suggestionBuilder = new SuggestionBuilder();
 
     suggestionBuilder.prepare(textDocumentPosition, doc, workspaceTree);
 
-    var toReturn: CompletionItem[] = suggestionBuilder.build();
+    var toReturn: CompletionList = { isIncomplete: false, items: suggestionBuilder.build() };
 
     return toReturn;
 });

@@ -6,7 +6,7 @@
 
 'use strict';
 
-import { TextDocumentPosition, ITextDocument, CompletionItem, CompletionItemKind } from 'vscode-languageserver';
+import { TextDocumentPositionParams, TextDocument, CompletionItem, CompletionItemKind } from 'vscode-languageserver';
 import {
     TreeBuilder, FileNode, FileSymbolCache,
     SymbolType, AccessModifierNode, ClassNode, TraitNode
@@ -23,15 +23,15 @@ export class SuggestionBuilder
     private lineIndex: number;
     private charIndex: number;
 
-    private doc: ITextDocument;
+    private doc: TextDocument;
     private currentLine: string;
     private lastChar: string;
 
-    public prepare(textDocumentPosition: TextDocumentPosition, document: ITextDocument, workspaceTree: FileNode[])
+    public prepare(textDocumentPosition: TextDocumentPositionParams, document: TextDocument, workspaceTree: FileNode[])
     {
         this.workspaceTree = workspaceTree;
 
-        this.filePath = this.buildDocumentPath(textDocumentPosition.uri);
+        this.filePath = this.buildDocumentPath(textDocumentPosition.textDocument.uri);
         this.lineIndex = textDocumentPosition.position.line;
         this.charIndex = textDocumentPosition.position.character;
 

@@ -40,7 +40,7 @@ export function activate(context: ExtensionContext)
     }
 
     // Create the language client and start the client.
-    var langClient: LanguageClient = new LanguageClient("Crane Language Server", serverOptions, clientOptions);
+    var langClient: LanguageClient = new LanguageClient("crane", "Crane Language Server", serverOptions, clientOptions);
 
     // Use this to handle a request sent from the server
     // https://github.com/Microsoft/vscode/blob/80bd73b5132268f68f624a86a7c3e56d2bbac662/extensions/json/client/src/jsonMain.ts

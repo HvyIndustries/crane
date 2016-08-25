@@ -116,6 +116,7 @@
         "php-parser": "HvyIndustries/php-parser#bde9c58",
         "rimraf": "^2.5.2",
         "unzip": "^0.1.11",
+        "open": "^0.0.5",
         "vscode-languageclient": "^2.4.2"
     }
 }

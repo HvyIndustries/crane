@@ -17,7 +17,7 @@ import { Cranefs } from './utils/Cranefs';
 import { Debug } from './utils/Debug';
 import { Config } from './utils/Config';
 
-const exec = require('child_process').exec;
+var open = require("open");
 const util = require('util');
 
 let craneSettings = workspace.getConfiguration("crane");
@@ -66,7 +66,7 @@ export default class Crane
                     // New install
                     window.showInformationMessage(`Welcome to Crane v${Config.version}.`, "Getting Started Guide").then(data => {
                         if (data != null) {
-                            Crane.openLinkInBrowser("https://github.com/HvyIndustries/crane/wiki/end-user-guide#getting-started");
+                            open("https://github.com/HvyIndustries/crane/wiki/end-user-guide#getting-started");
                         }
                     });
                     cranefs.createOrUpdateVersionFile(false);
@@ -82,7 +82,7 @@ export default class Crane
                         // Updated install
                         window.showInformationMessage(`You're been upgraded to Crane v${Config.version}.`, "View Release Notes").then(data => {
                             if (data == "View Release Notes") {
-                                Crane.openLinkInBrowser("https://github.com/HvyIndustries/crane/releases");
+                                open("https://github.com/HvyIndustries/crane/releases");
                             }
                         });
                         cranefs.createOrUpdateVersionFile(true);
@@ -181,25 +181,7 @@ export default class Crane
     }
 
     public reportBug() {
-        Crane.openLinkInBrowser("https://github.com/HvyIndustries/crane/issues");
-    }
-
-    public static openLinkInBrowser(link: string) {
-        var openCommand: string = "";
-
-        switch (process.platform) {
-            case 'darwin':
-            case 'linux':
-                openCommand = 'open ';
-                break;
-            case 'win32':
-                openCommand = 'start ';
-                break;
-            default:
-                return;
-        }
-
-        exec(openCommand + link);
+        open("https://github.com/HvyIndustries/crane/issues");
     }
 
     public handleFileSave() {

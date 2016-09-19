@@ -25,7 +25,10 @@ class Awesome
 
 }
 
-interface myInterface {}
+interface myInterface
+{
+    public function ha(Awesome $a);
+}
 
 class Awesome2 implements myInterface
 {

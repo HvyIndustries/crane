@@ -172,11 +172,17 @@ export class TreeBuilder
                             tree.lineCache.push(variable.lineCache);
                         }
 
-                        var symbolCache = new FileSymbolCache();
-                        symbolCache.name = variable.name;
-                        symbolCache.type = SymbolType.TopLevelVariable;
-                        symbolCache.kind = SymbolKind.Variable;
-                        tree.symbolCache.push(symbolCache);
+                        if (variable.variableNode.startPos && variable.variableNode.endPos) {
+                            var symbolCache = new FileSymbolCache();
+                            symbolCache.name = variable.variableNode.name;
+                            symbolCache.type = SymbolType.TopLevelVariable;
+                            symbolCache.kind = SymbolKind.Variable;
+                            symbolCache.startLine = variable.variableNode.startPos.line;
+                            symbolCache.endLine = variable.variableNode.endPos.line;
+                            symbolCache.startChar = 0
+                            symbolCache.endChar = 999;
+                            tree.symbolCache.push(symbolCache);
+                        }
                     }
                     break;
 

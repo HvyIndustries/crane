@@ -13,6 +13,7 @@ class Awesome
      */
     public static function test($param1, Awesome $param2, $p2 = 'cat')
     {
+        self::test();
         return new Awesome2();
     }
 

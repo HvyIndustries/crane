@@ -11,8 +11,8 @@ import {
     TreeBuilder, FileNode, FileSymbolCache,
     SymbolType, AccessModifierNode, ClassNode, TraitNode
 } from "./hvy/treeBuilder";
-
-const fs = require('fs');
+import { Debug } from './utils/Debug';
+import { Path } from './utils/Path';
 
 export class SuggestionBuilder
 {
@@ -31,7 +31,7 @@ export class SuggestionBuilder
     {
         this.workspaceTree = workspaceTree;
 
-        this.filePath = this.buildDocumentPath(textDocumentPosition.textDocument.uri);
+        this.filePath = Path.fromURI(textDocumentPosition.textDocument.uri);
         this.lineIndex = textDocumentPosition.position.line;
         this.charIndex = textDocumentPosition.position.character;
 
@@ -354,26 +354,6 @@ export class SuggestionBuilder
         }
 
         return false;
-    }
-
-    private buildDocumentPath(uri: string) : string
-    {
-        var path = uri;
-        path = path.replace("file:///", "");
-        path = path.replace("%3A", ":");
-
-        // Handle Windows and Unix paths
-        switch (process.platform) {
-            case 'darwin':
-            case 'linux':
-                path = "/" + path;
-                break;
-            case 'win32':
-                path = path.replace(/\//g, "\\");
-                break;
-        }
-
-        return path;
     }
 
     private getClassNodeFromTree(className: string) : ClassNode

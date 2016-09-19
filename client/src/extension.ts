@@ -36,6 +36,9 @@ export function activate(context: ExtensionContext)
         synchronize: {
             configurationSection: "languageServerExample",
             fileEvents: workspace.createFileSystemWatcher("**/.clientrc")
+        },
+        initializationOptions: {
+            enableCache: Config.enableCache
         }
     }
 

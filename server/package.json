@@ -1,7 +1,7 @@
 {
     "name": "crane-lang-server",
     "description": "The language server for Crane",
-    "version": "1.0.1",
+    "version": "0.2.0",
     "author": "HVY Industries",
     "license": "MIT",
     "engines": {
@@ -9,8 +9,12 @@
     },
     "dependencies": {
         "filequeue": "^0.5.0",
+        "fstream": "^1.0.9",
         "glob": "7.0.3",
+        "mkdirp": "^0.5.1",
         "php-parser": "HvyIndustries/php-parser#bde9c58",
+        "rimraf": "^2.5.2",
+        "unzip": "^0.1.11",
         "vscode-languageserver": "^2.2.1"
     },
     "devDependencies": {

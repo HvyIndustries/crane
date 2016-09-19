@@ -9,25 +9,20 @@
 import {
     IPCMessageReader, IPCMessageWriter, SymbolKind,
     createConnection, IConnection, TextDocumentSyncKind,
-    TextDocuments, Diagnostic, DiagnosticSeverity,
-    InitializeParams, InitializeResult, TextDocumentIdentifier, TextDocumentPositionParams,
-    CompletionList, CompletionItem, CompletionItemKind, RequestType, Position,
-    SignatureHelp, SignatureInformation, ParameterInformation
+    TextDocuments, InitializeResult, TextDocumentPositionParams,
+    CompletionList, CompletionItem, CompletionItemKind, RequestType, FileChangeType
 } from 'vscode-languageserver';
 
-import { TreeBuilder, FileNode, FileSymbolCache, SymbolType, AccessModifierNode, ClassNode } from "./hvy/treeBuilder";
-import { Debug } from './util/Debug';
+import { FileSymbolCache } from "./hvy/treeBuilder";
+import { Debug } from './utils/Debug';
+import { Path } from './utils/Path';
+import { Index } from './index';
 import { SuggestionBuilder } from './suggestionBuilder';
 
 const fs = require("fs");
-const util = require('util');
-const zlib = require('zlib');
+const mkdirp = require('mkdirp');
 
-// Glob for file searching
-const glob = require("glob");
-// FileQueue for queuing files so we don't open too many
-const FileQueue = require('filequeue');
-const fq = new FileQueue(200);
+var pkg = require('./package.json');
 
 let connection: IConnection = createConnection(new IPCMessageReader(process), new IPCMessageWriter(process));
 
@@ -35,16 +30,27 @@ let documents: TextDocuments = new TextDocuments();
 documents.listen(connection);
 Debug.SetConnection(connection);
 
-let treeBuilder: TreeBuilder = new TreeBuilder();
-treeBuilder.SetConnection(connection);
-let workspaceTree: FileNode[] = [];
+let index: Index = new Index(connection);
 
-let workspaceRoot: string;
-var craneProjectDir: string;
-let enableCache: boolean = true;
+export let workspaceRoot: string;
+export let enableCache: boolean = true;
+
 connection.onInitialize((params): InitializeResult =>
 {
     workspaceRoot = params.rootPath;
+
+    // Read initialization options if provided by client
+    var opts = params.initializationOptions;
+    if (opts && opts.enableCache) {
+        enableCache = opts.enableCache;
+    }
+
+    checkVersion().then(indexTriggered => {
+        if (!indexTriggered) {
+            // Send request to server to build object tree for all workspace files
+            index.build();
+        }
+    });
 
     return {
         capabilities:
@@ -58,6 +64,101 @@ connection.onInitialize((params): InitializeResult =>
         }
     }
 });
+
+function checkVersion(): Thenable<boolean>
+{
+    Debug.info('Checking the current version of Crane');
+    return new Promise((resolve, reject) => {
+        getVersionFile().then(result => {
+            if (result.err && result.err.code == "ENOENT") {
+                // New install
+                connection.window.showInformationMessage(`Welcome to Crane v${pkg.version}.`, { title: "Getting Started Guide" }).then(data => {
+                    if (data != null) {
+                        connection.sendNotification({ method: "window/openBrowser" },
+                            { url: "https://github.com/HvyIndustries/crane/wiki/end-user-guide#getting-started" });
+                    }
+                });
+                createOrUpdateVersionFile(false);
+                index.deleteAllCaches().then(item => {
+                    index.build();
+                    resolve(true);
+                });
+            } else {
+                // Strip newlines from data
+                result.data = result.data.replace("\n", "");
+                result.data = result.data.replace("\r", "");
+                if (result.data && result.data != pkg.version) {
+                    // Updated install
+                    connection.window.showInformationMessage(`You're been upgraded to Crane v${pkg.version}.`, { title: "View Release Notes" }).then(data => {
+                        if (data != null) {
+                            connection.sendNotification({ method: "window/openBrowser" },
+                                { url: "https://github.com/HvyIndustries/crane/releases" });
+                        }
+                    });
+                    createOrUpdateVersionFile(true);
+                    index.deleteAllCaches().then(item => {
+                        index.build();
+                        resolve(true);
+                    });
+                } else {
+                    resolve(false);
+                }
+            }
+        });
+    });
+}
+
+export function getCraneDir(): string {
+    if (process.env.APPDATA) {
+        return process.env.APPDATA + '/Crane';
+    }
+    if (process.env.XDG_CONFIG_HOME) {
+        return process.env.XDG_CONFIG_HOME + '/Crane';
+    }
+    if (process.platform == 'darwin') {
+        return process.env.HOME + '/Library/Preferences/Crane';
+    }
+    if (process.platform == 'linux') {
+        return process.env.HOME + '/.config/Crane';
+    }
+}
+
+interface result {
+    err;
+    data;
+}
+
+function getVersionFile(): Thenable<result> {
+    return new Promise((resolve, reject) => {
+        var filePath = getCraneDir() + "/version";
+        fs.readFile(filePath, "utf-8", (err, data) => {
+            resolve({ err, data });
+        });
+    });
+}
+
+function createOrUpdateVersionFile(fileExists: boolean) {
+    var filePath = getCraneDir() + "/version";
+
+    if (fileExists) {
+        // Delete the file
+        fs.unlinkSync(filePath);
+    }
+
+    // Create the file + write Config.version into it
+    mkdirp(getCraneDir(), err => {
+        if (err) {
+            Debug.error(err);
+            return;
+        }
+        fs.writeFile(filePath, pkg.version, "utf-8", err => {
+            if (err != null) {
+                Debug.error(err);
+            }
+        });
+    });
+
+}
 
 // The settings interface describe the server relevant settings part
 interface Settings {
@@ -87,10 +188,35 @@ connection.onDidChangeConfiguration((change) =>
 // https://github.com/Microsoft/vscode/blob/580d19ab2e1fd6488c3e515e27fe03dceaefb819/extensions/json/server/src/server.ts
 //connection.sendRequest()
 
+documents.onDidChangeContent((event) => {
+    Debug.info('Document Changed: ' + event.document.uri);
+    index.updateFile(Path.fromURI(event.document.uri), event.document.getText());
+});
+
 connection.onDidChangeWatchedFiles((change) =>
 {
-    // Monitored files have change in VSCode
-    connection.console.log('We recevied an file change event');
+    change.changes.forEach(event => {
+        switch (event.type) {
+            case FileChangeType.Created:
+                Debug.info('File Created: ' + event.uri);
+                index.addFile(Path.fromURI(event.uri));
+                break;
+        
+            case FileChangeType.Changed:
+                Debug.info('File Changed: ' + event.uri);
+                index.addFile(Path.fromURI(event.uri));
+                break;
+
+            case FileChangeType.Deleted:
+                Debug.info('File Deleted: ' + event.uri);
+                index.removeFile(Path.fromURI(event.uri));
+                break;
+
+            default:
+                Debug.error('Unknown FileChangeType: ' + event.type);
+                break;
+        }
+    });
 });
 
 // This handler provides the initial list of the completion items.
@@ -99,7 +225,7 @@ connection.onCompletion((textDocumentPosition: TextDocumentPositionParams): Comp
     var doc = documents.get(textDocumentPosition.textDocument.uri);
     var suggestionBuilder = new SuggestionBuilder();
 
-    suggestionBuilder.prepare(textDocumentPosition, doc, workspaceTree);
+    suggestionBuilder.prepare(textDocumentPosition, doc, index.tree);
 
     var toReturn: CompletionList = { isIncomplete: false, items: suggestionBuilder.build() };
 
@@ -121,28 +247,10 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem =>
     return item;
 });
 
-var buildObjectTreeForDocument: RequestType<{path:string,text:string}, any, any> = { method: "buildObjectTreeForDocument" };
-connection.onRequest(buildObjectTreeForDocument, (requestObj) =>
+var findNode: RequestType<{path:string}, any, any> = { method: "findNode" };
+connection.onRequest(findNode, (requestObj) =>
 {
-    var fileUri = requestObj.path;
-    var text = requestObj.text;
-
-    treeBuilder.Parse(text, fileUri).then(result => {
-        addToWorkspaceTree(result.tree);
-        // notifyClientOfWorkComplete();
-        return true;
-    })
-    .catch(error => {
-        console.log(error);
-        notifyClientOfWorkComplete();
-        return false;
-    });
-});
-
-var deleteFile: RequestType<{path:string}, any, any> = { method: "findNode" };
-connection.onRequest(deleteFile, (requestObj) =>
-{
-    var node = getFileNodeFromPath(requestObj.path);
+    var node = index.getFileNode(requestObj.path);
 
     // connection.console.log(node);
 
@@ -153,7 +261,7 @@ connection.onRequest(deleteFile, (requestObj) =>
  */
 var findFileDocumentSymbols: RequestType<{path:string}, any, any> = { method: "findFileDocumentSymbols" };
 connection.onRequest(findFileDocumentSymbols, (requestObj) => {
-    var node = getFileNodeFromPath(requestObj.path);
+    var node = index.getFileNode(requestObj.path);
     return { symbols: node.symbolCache };
 });
 // function getSymbolObject(node: any, query: string, path: string, usings: string[], parent: any = null): FileSymbolCache {
@@ -191,7 +299,7 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
 
     connection.console.log(query);
 
-    workspaceTree.forEach(item => {
+   index.tree.forEach(item => {
         // Search The interfaces
         item.interfaces.forEach(interfaceNode => {
             let ns: string = interfaceNode.namespaceParts.join('\\');
@@ -369,7 +477,7 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
  * Finds the Usings in a file
  */
 function getFileUsings(path: string): string[] {
-    var node = getFileNodeFromPath(path);
+    var node = index.getFileNode(path);
 
     var namespaces: string[] = [];
     node.classes.forEach(item => {
@@ -395,260 +503,5 @@ function getFileUsings(path: string): string[] {
 
     return namespaces;
 };
-
-var deleteFile: RequestType<{path:string}, any, any> = { method: "deleteFile" };
-connection.onRequest(deleteFile, (requestObj) =>
-{
-    var node = getFileNodeFromPath(requestObj.path);
-    if (node instanceof FileNode) {
-        removeFromWorkspaceTree(node);
-    }
-});
-
-var saveTreeCache: RequestType<{ projectDir: string, projectTree: string }, any, any> = { method: "saveTreeCache" };
-connection.onRequest(saveTreeCache, request => {
-    saveProjectTree(request.projectDir, request.projectTree).then(saved => {
-        notifyClientOfWorkComplete();
-    }).catch(error => {
-        Debug.error(util.inspect(error, false, null));
-    });
-});
-
-let docsDoneCount = 0;
-var docsToDo: string[] = [];
-var stubsToDo: string[] = [];
-
-var buildFromFiles: RequestType<{
-    files: string[],
-    craneRoot: string,
-    projectPath: string,
-    treePath: string,
-    enableCache: boolean,
-    rebuild: boolean
-}, any, any> = { method: "buildFromFiles" };
-connection.onRequest(buildFromFiles, (project) => {
-    if (project.rebuild) {
-        workspaceTree = [];
-        treeBuilder = new TreeBuilder();
-    }
-    enableCache = project.enableCache;
-    docsToDo = project.files;
-    docsDoneCount = 0;
-    connection.console.log('starting work!');
-    // Run asynchronously
-    setTimeout(() => {
-        glob(project.craneRoot + '/phpstubs/*/*.php', (err, fileNames) => {
-            // Process the php stubs
-            stubsToDo = fileNames;
-            Debug.info(`Processing ${stubsToDo.length} stubs from ${project.craneRoot}/phpstubs`)
-            connection.console.log(`Stub files to process: ${stubsToDo.length}`);
-            processStub().then(data => {
-                connection.console.log('stubs done!');
-                connection.console.log(`Workspace files to process: ${docsToDo.length}`);
-                processWorkspaceFiles(project.projectPath, project.treePath);
-            }).catch(data => {
-                connection.console.log('No stubs found!');
-                connection.console.log(`Workspace files to process: ${docsToDo.length}`);
-                processWorkspaceFiles(project.projectPath, project.treePath);
-            });
-        });
-    }, 100);
-});
-
-var buildFromProject: RequestType<{treePath:string, enableCache:boolean}, any, any> = { method: "buildFromProject" };
-connection.onRequest(buildFromProject, (data) => {
-    enableCache = data.enableCache;
-    fs.readFile(data.treePath, (err, data) => {
-        if (err) {
-            Debug.error('Could not read cache file');
-            Debug.error((util.inspect(err, false, null)));
-        } else {
-            Debug.info('Unzipping the file');
-            var treeStream = new Buffer(data);
-            zlib.gunzip(treeStream, (err, buffer) => {
-                if (err) {
-                    Debug.error('Could not unzip cache file');
-                    Debug.error((util.inspect(err, false, null)));
-                } else {
-                    Debug.info('Cache file successfully read');
-                    workspaceTree = JSON.parse(buffer.toString());
-                    Debug.info('Loaded');
-                    notifyClientOfWorkComplete();
-                }
-            });
-        }
-    });
-});
-
-/**
- * Processes the stub files
- */
-function processStub() {
-    return new Promise((resolve, reject) => {
-        var offset: number = 0;
-        if (stubsToDo.length == 0) {
-            reject();
-        }
-        stubsToDo.forEach(file => {
-            fq.readFile(file, { encoding: 'utf8' }, (err, data) => {
-                treeBuilder.Parse(data, file).then(result => {
-                    addToWorkspaceTree(result.tree);
-                    connection.console.log(`${offset} Stub Processed: ${file}`);
-                    offset++;
-                    if (offset == stubsToDo.length) {
-                        resolve();
-                    }
-                }).catch(err => {
-                    connection.console.log(`${offset} Stub Error: ${file}`);
-                    Debug.error((util.inspect(err, false, null)));
-                    offset++;
-                    if (offset == stubsToDo.length) {
-                        resolve();
-                    }
-                });
-            });
-        });
-    });
-}
-
-/**
- * Processes the users workspace files
- */
-function processWorkspaceFiles(projectPath: string, treePath: string) {
-    docsToDo.forEach(file => {
-        fq.readFile(file, { encoding: 'utf8' }, (err, data) => {
-            treeBuilder.Parse(data, file).then(result => {
-                addToWorkspaceTree(result.tree);
-                docsDoneCount++;
-                connection.console.log(`(${docsDoneCount} of ${docsToDo.length}) File: ${file}`);
-                connection.sendNotification({ method: "fileProcessed" }, { filename: file, total: docsDoneCount, error: null });
-                if (docsToDo.length == docsDoneCount) {
-                    workspaceProcessed(projectPath, treePath);
-                }
-            }).catch(data => {
-                docsDoneCount++;
-                if (docsToDo.length == docsDoneCount) {
-                    workspaceProcessed(projectPath, treePath);
-                }
-                connection.console.log(util.inspect(data, false, null));
-                connection.console.log(`Issue processing ${file}`);
-                connection.sendNotification({ method: "fileProcessed" }, { filename: file, total: docsDoneCount, error: util.inspect(data, false, null) });
-            });
-        });
-    });
-}
-
-function workspaceProcessed(projectPath, treePath) {
-    Debug.info("Workspace files have processed");
-    saveProjectTree(projectPath, treePath).then(savedTree => {
-        notifyClientOfWorkComplete();
-        if (savedTree) {
-            Debug.info('Project tree has been saved');
-        }
-    }).catch(error => {
-        Debug.error(util.inspect(error, false, null));
-    });
-}
-
-function addToWorkspaceTree(tree:FileNode)
-{
-    // Loop through existing filenodes and replace if exists, otherwise add
-
-    var fileNode = workspaceTree.filter((fileNode) => {
-        return fileNode.path == tree.path;
-    })[0];
-
-    var index = workspaceTree.indexOf(fileNode);
-
-    if (index !== -1) {
-        workspaceTree[index] = tree;
-    } else {
-        workspaceTree.push(tree);
-    }
-
-    // Debug
-    // connection.console.log("Parsed file: " + tree.path);
-}
-
-function removeFromWorkspaceTree(tree: FileNode) {
-    var index: number = workspaceTree.indexOf(tree);
-    if (index > -1) {
-        workspaceTree.splice(index, 1);
-    }
-}
-
-function getClassNodeFromTree(className:string): ClassNode
-{
-    var toReturn = null;
-
-    var fileNode = workspaceTree.forEach((fileNode) => {
-        fileNode.classes.forEach((classNode) => {
-            if (classNode.name.toLowerCase() == className.toLowerCase()) {
-                toReturn = classNode;
-            }
-        })
-    });
-
-    return toReturn;
-}
-
-function getTraitNodeFromTree(traitName: string): ClassNode
-{
-    var toReturn = null;
-
-    var fileNode = workspaceTree.forEach((fileNode) => {
-        fileNode.traits.forEach((traitNode) => {
-            if (traitNode.name.toLowerCase() == traitName.toLowerCase()) {
-                toReturn = traitNode;
-            }
-        })
-    });
-
-    return toReturn;
-}
-
-function getFileNodeFromPath(path: string): FileNode {
-    var returnNode = null;
-
-    workspaceTree.forEach(fileNode => {
-        if (fileNode.path == path) {
-            returnNode = fileNode;
-        }
-    });
-
-    return returnNode;
-}
-
-function notifyClientOfWorkComplete()
-{
-    var requestType: RequestType<any, any, any> = { method: "workDone" };
-    connection.sendRequest(requestType);
-}
-
-function saveProjectTree(projectPath: string, treeFile: string): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-        if (!enableCache) {
-            resolve(false);
-        } else {
-            Debug.info('Packing tree file: ' + treeFile);
-            fq.writeFile(`${projectPath}/tree.tmp`, JSON.stringify(workspaceTree), (err) => {
-                if (err) {
-                    Debug.error('Could not write to cache file');
-                    Debug.error(util.inspect(err, false, null));
-                    resolve(false);
-                } else {
-                    var gzip = zlib.createGzip();
-                    var inp = fs.createReadStream(`${projectPath}/tree.tmp`);
-                    var out = fs.createWriteStream(treeFile);
-                    inp.pipe(gzip).pipe(out).on('close', function () {
-                        fs.unlinkSync(`${projectPath}/tree.tmp`);
-                    });
-                    Debug.info('Cache file updated');
-                    resolve(true);
-                }
-            });
-        }
-    });
-}
 
 connection.listen();

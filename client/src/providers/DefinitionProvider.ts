@@ -19,6 +19,8 @@ export class PHPDefinitionProvider implements DefinitionProvider {
             let wordRange: Range = document.getWordRangeAtPosition(position);
             let word: string = document.getText(wordRange);
 
+            word = word + "::#EXACT";
+
             commands.executeCommand('vscode.executeWorkspaceSymbolProvider', word).then((items: Array<SymbolInformation>) => {
                 var locations: Location[] = [];
                 items.forEach(item => {

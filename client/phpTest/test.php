@@ -4,6 +4,8 @@ $test = new Awesome();
 
 class Awesome
 {
+    use testTrait;
+
     /**
      * @param string $param1
      * @param string $param2
@@ -22,7 +24,9 @@ class Awesome
 
 }
 
-class Awesome2
+interface myInterface {}
+
+class Awesome2 implements myInterface
 {
     public function ha(Awesome $a)
     {

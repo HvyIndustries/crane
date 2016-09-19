@@ -48,14 +48,15 @@ export class PHPWorkspaceSymbolProvider implements WorkspaceSymbolProvider {
 
             let results: SymbolInformation[] = [];
 
-            let findFileDocumentSymbols: RequestType<{query:string,path:string}, {symbols:any}, any> = {method: 'findWorkspaceSymbols'};
-            Crane.langClient.sendRequest(findFileDocumentSymbols, {
+            let findWorkspaceSymbols: RequestType<{query:string,path:string}, {symbols:any}, any> = {method: 'findWorkspaceSymbols'};
+            Crane.langClient.sendRequest(findWorkspaceSymbols, {
                 query: query,
                 path: window.activeTextEditor.document.uri.fsPath
             }).then(result => {
                 result.symbols.forEach((item) => {
                     let uri: Uri = this.getUri(item.path);
                     if (uri == null) { return; }
+
                     let symbol = new SymbolInformation(
                         item.name, item.kind - 1,
                         new Range(item.startLine - 1, item.startChar, item.endLine - 1, item.endChar),

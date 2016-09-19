@@ -179,7 +179,7 @@ connection.onRequest(findFileDocumentSymbols, (requestObj) => {
 //     return symbol;
 // }
 
-var convertSymbolCacheToSymbol = function(node)
+var convertSymbolCacheToSymbol = function(node, path)
 {
     var cache = new FileSymbolCache();
 
@@ -187,7 +187,7 @@ var convertSymbolCacheToSymbol = function(node)
     cache.startChar = node.startPos.col;
     cache.endLine = node.endPos.line;
     cache.endChar = node.endPos.col;
-    cache.path = node.path;
+    cache.path = path;
 
     if (node.name) {
         cache.parentName = node.name;
@@ -214,14 +214,14 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
         item.interfaces.forEach(interfaceNode => {
             let ns: string = interfaceNode.namespaceParts.join('\\');
             if (interfaceNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
-                let symbol = convertSymbolCacheToSymbol(interfaceNode);
+                let symbol = convertSymbolCacheToSymbol(interfaceNode, item.path);
                 symbol.kind = SymbolKind.Interface;
                 symbols.push(symbol);
             }
             // Search the methods within the interface
             interfaceNode.methods.forEach(methodNode => {
                 if (methodNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
-                    let symbol = convertSymbolCacheToSymbol(methodNode);
+                    let symbol = convertSymbolCacheToSymbol(methodNode, item.path);
                     symbol.kind = SymbolKind.Method;
                     symbols.push(symbol);
                 }
@@ -229,7 +229,7 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
             // Search the constants within the interface
             interfaceNode.constants.forEach(constNode => {
                 if (constNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
-                    let symbol = convertSymbolCacheToSymbol(constNode);
+                    let symbol = convertSymbolCacheToSymbol(constNode, item.path);
                     symbol.kind = SymbolKind.Constant;
                     symbols.push(symbol);
                 }
@@ -239,14 +239,14 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
         item.traits.forEach(traitNode => {
             let ns: string = traitNode.namespaceParts.join('\\');
             if (traitNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
-                let symbol = convertSymbolCacheToSymbol(traitNode);
+                let symbol = convertSymbolCacheToSymbol(traitNode, item.path);
                 symbol.kind = SymbolKind.Class;
                 symbols.push(symbol);
             }
             // Search the methods within the traits
             traitNode.methods.forEach(methodNode => {
                 if (methodNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
-                    let symbol = convertSymbolCacheToSymbol(methodNode);
+                    let symbol = convertSymbolCacheToSymbol(methodNode, item.path);
                     symbol.kind = SymbolKind.Method;
                     symbols.push(symbol);
                 }
@@ -254,7 +254,7 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
             // Search the properties within the traits
             traitNode.properties.forEach(propertyNode => {
                 if (propertyNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
-                    let symbol = convertSymbolCacheToSymbol(propertyNode);
+                    let symbol = convertSymbolCacheToSymbol(propertyNode, item.path);
                     symbol.kind = SymbolKind.Property;
                     symbols.push(symbol);
                 }
@@ -262,7 +262,7 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
             // Search the constants within the trait
             traitNode.constants.forEach(constNode => {
                 if (constNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
-                    let symbol = convertSymbolCacheToSymbol(constNode);
+                    let symbol = convertSymbolCacheToSymbol(constNode, item.path);
                     symbol.kind = SymbolKind.Constant;
                     symbols.push(symbol);
                 }
@@ -272,14 +272,14 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
         item.classes.forEach(classNode => {
             let ns: string = classNode.namespaceParts.join('\\');
             if (classNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
-                let symbol = convertSymbolCacheToSymbol(classNode);
+                let symbol = convertSymbolCacheToSymbol(classNode, item.path);
                 symbol.kind = SymbolKind.Class;
                 symbols.push(symbol);
             }
             // Search the methods within the classes
             classNode.methods.forEach(methodNode => {
                 if (methodNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
-                    let symbol = convertSymbolCacheToSymbol(methodNode);
+                    let symbol = convertSymbolCacheToSymbol(methodNode, item.path);
                     symbol.kind = SymbolKind.Method;
                     symbols.push(symbol);
                 }
@@ -287,7 +287,7 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
             // Search the properties within the classes
             classNode.properties.forEach(propertyNode => {
                 if (propertyNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
-                    let symbol = convertSymbolCacheToSymbol(propertyNode);
+                    let symbol = convertSymbolCacheToSymbol(propertyNode, item.path);
                     symbol.kind = SymbolKind.Property;
                     symbols.push(symbol);
                 }
@@ -295,7 +295,7 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
             // Search the constants within the class
             classNode.constants.forEach(constNode => {
                 if (constNode.name == query && (usings.indexOf(ns) != -1 || usings.length == 0)) {
-                    let symbol = convertSymbolCacheToSymbol(constNode);
+                    let symbol = convertSymbolCacheToSymbol(constNode, item.path);
                     symbol.kind = SymbolKind.Constant;
                     symbols.push(symbol);
                 }
@@ -303,7 +303,7 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
         });
         item.functions.forEach(funcNode => {
             if (funcNode.name == query) {
-                let symbol = convertSymbolCacheToSymbol(funcNode);
+                let symbol = convertSymbolCacheToSymbol(funcNode, item.path);
                 symbol.kind = SymbolKind.Function;
                 symbols.push(symbol);
             }

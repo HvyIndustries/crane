@@ -4,6 +4,8 @@ $test = new Awesome();
 
 class Awesome
 {
+    use testTrait;
+
     /**
      * @param string $param1
      * @param string $param2
@@ -11,6 +13,7 @@ class Awesome
      */
     public static function test($param1, Awesome $param2, $p2 = 'cat')
     {
+        self::test();
         return new Awesome2();
     }
 
@@ -22,7 +25,12 @@ class Awesome
 
 }
 
-class Awesome2
+interface myInterface
+{
+    public function ha(Awesome $a);
+}
+
+class Awesome2 implements myInterface
 {
     public function ha(Awesome $a)
     {

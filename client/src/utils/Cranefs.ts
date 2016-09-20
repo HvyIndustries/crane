@@ -30,11 +30,14 @@ export class Cranefs {
         if (process.env.APPDATA) {
             return process.env.APPDATA + '/Crane';
         }
+        if (process.env.XDG_CONFIG_HOME) {
+            return process.env.XDG_CONFIG_HOME + '/Crane';
+        }
         if (process.platform == 'darwin') {
             return process.env.HOME + '/Library/Preferences/Crane';
         }
         if (process.platform == 'linux') {
-            return process.env.HOME + '/Crane';
+            return process.env.HOME + '/.config/Crane';
         }
     }
 

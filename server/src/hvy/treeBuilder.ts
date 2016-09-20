@@ -6,8 +6,7 @@
 
 "use strict";
 
-import { IConnection } from 'vscode-languageserver';
-import { Debug } from '../util/Debug';
+import { IConnection, SymbolKind } from 'vscode-languageserver';
 
 var phpParser = require("php-parser");
 
@@ -54,20 +53,13 @@ export class TreeBuilder
                         tree: tree,
                         symbolCache: symbolCache
                     };
+
                     resolve(returnObj);
-                }, error => {
-                    Debug.error(`BuildSymbolCache Error: ${error}`);
-                    reject(error);
-                }).catch(error => {
-                    Debug.error(error);
-                    reject(error);
+                }).catch(data => {
+                    reject(data);
                 });
-            }, path => {
-                Debug.error(`BuildTree Error: ${path}`);
-                reject(path);
-            }).catch(error => {
-                Debug.error(error);
-                reject(error);
+            }).catch(data => {
+                reject(data);
             });
         });
     }
@@ -82,11 +74,7 @@ export class TreeBuilder
             tree.path = filePath;
             tree = this.ProcessBranch(ast[1], [], tree);
 
-            if (tree) {
-                resolve(tree);
-            } else {
-                reject(tree.path);
-            }
+            resolve(tree);
         });
     }
 
@@ -147,7 +135,12 @@ export class TreeBuilder
 
                 case "use":
                     let namespaceUsingNode = new NamespaceUsingNode();
-                    namespaceUsingNode.name = branch[2];
+                    if (branch[1][branch[1].length - 1] != branch[2]) {
+                        namespaceUsingNode.name = branch[1][branch[1].length - 1];
+                        namespaceUsingNode.refName = branch[2];
+                    } else {
+                        namespaceUsingNode.name = branch[2];
+                    }
                     branch[1].forEach(item => {
                         if (item != namespaceUsingNode.name) {
                             namespaceUsingNode.parents.push(item);
@@ -179,10 +172,17 @@ export class TreeBuilder
                             tree.lineCache.push(variable.lineCache);
                         }
 
-                        var symbolCache = new FileSymbolCache();
-                        symbolCache.name = variable.name;
-                        symbolCache.type = SymbolType.TopLevelVariable;
-                        tree.symbolCache.push(symbolCache);
+                        if (variable.variableNode.startPos && variable.variableNode.endPos) {
+                            var symbolCache = new FileSymbolCache();
+                            symbolCache.name = variable.variableNode.name;
+                            symbolCache.type = SymbolType.TopLevelVariable;
+                            symbolCache.kind = SymbolKind.Variable;
+                            symbolCache.startLine = variable.variableNode.startPos.line;
+                            symbolCache.endLine = variable.variableNode.endPos.line;
+                            symbolCache.startChar = 0
+                            symbolCache.endChar = 999;
+                            tree.symbolCache.push(symbolCache);
+                        }
                     }
                     break;
 
@@ -236,6 +236,11 @@ export class TreeBuilder
                             var symbolCache = new FileSymbolCache();
                             symbolCache.name = methodNode.name;
                             symbolCache.type = SymbolType.TopLevelFunction;
+                            symbolCache.kind = SymbolKind.Function;
+                            symbolCache.startLine = methodNode.startPos.line;
+                            symbolCache.startChar = methodNode.startPos.col;
+                            symbolCache.endLine = methodNode.endPos.line;
+                            symbolCache.endChar = methodNode.endPos.col;
                             tree.symbolCache.push(symbolCache);
 
                             tree.functions.push(methodNode);
@@ -254,6 +259,14 @@ export class TreeBuilder
                                 branch[3][3].forEach(extendedInterface =>
                                 {
                                     interfaceNode.extends.push(extendedInterface[0]);
+                                });
+                            }
+
+                            if (parentBranches != null && parentBranches.length > 0)
+                            {
+                                // Add namespaces
+                                parentBranches.forEach(item => {
+                                    interfaceNode.namespaceParts.push(item);
                                 });
                             }
 
@@ -296,6 +309,11 @@ export class TreeBuilder
                             var symbolCache = new FileSymbolCache();
                             symbolCache.name = interfaceNode.name;
                             symbolCache.type = SymbolType.Interface;
+                            symbolCache.kind = SymbolKind.Interface;
+                            symbolCache.startLine = interfaceNode.startPos.line;
+                            symbolCache.startChar = interfaceNode.startPos.col;
+                            symbolCache.endLine = interfaceNode.endPos.line;
+                            symbolCache.endChar = interfaceNode.endPos.col;
                             tree.symbolCache.push(symbolCache);
 
                             tree.interfaces.push(interfaceNode);
@@ -314,41 +332,54 @@ export class TreeBuilder
                                 traitNode.extends = branch[3][2][0];
                             }
 
+                            if (parentBranches != null && parentBranches.length > 0)
+                            {
+                                // Add namespaces
+                                parentBranches.forEach(item => {
+                                    traitNode.namespaceParts.push(item);
+                                });
+                            }
+
                             branch[3][4].properties.forEach(propLevel =>
                             {
-                                propLevel[3].forEach(pLevel => {
-                                    let propNode: PropertyNode = new PropertyNode();
+                                let propNode: PropertyNode = new PropertyNode();
 
-                                    propNode.startPos = this.BuildStartLocation(propLevel[3][0][1]);
-                                    propNode.endPos = this.BuildEndLocation(propLevel[3][0][2]);
+                                propNode.startPos = this.BuildStartLocation(propLevel[3][0][1]);
+                                propNode.endPos = this.BuildEndLocation(propLevel[3][0][2]);
 
-                                    if (propLevel[4][0] == 0) {
-                                        propNode.accessModifier = AccessModifierNode.public;
-                                    }
-                                    if (propLevel[4][0] == 1) {
-                                        propNode.accessModifier = AccessModifierNode.protected;
-                                    }
-                                    if (propLevel[4][0] == 2) {
-                                        propNode.accessModifier = AccessModifierNode.private;
-                                    }
+                                if (propLevel[4][0] == 0) {
+                                    propNode.accessModifier = AccessModifierNode.public;
+                                }
+                                if (propLevel[4][0] == 1) {
+                                    propNode.accessModifier = AccessModifierNode.protected;
+                                }
+                                if (propLevel[4][0] == 2) {
+                                    propNode.accessModifier = AccessModifierNode.private;
+                                }
 
-                                    if (propLevel[4][1] == 1) {
-                                        propNode.isStatic = true;
-                                    }
+                                if (propLevel[4][1] == 1) {
+                                    propNode.isStatic = true;
+                                }
 
-                                    propNode.name = propLevel[3][0];
-                                    if (pLevel[3][1] != null) {
-                                        propNode.type = pLevel[3][1][0];
-                                    }
+                                propLevel = propLevel[3][0];
+                                propNode.name = propLevel[3][0];
 
-                                    var symbolCache = new FileSymbolCache();
-                                    symbolCache.name = propNode.name;
-                                    symbolCache.type = SymbolType.Property;
-                                    symbolCache.parentName = traitNode.name;
-                                    tree.symbolCache.push(symbolCache);
+                                if (propLevel[3][1] != null) {
+                                    propNode.type = propLevel[3][1][0];
+                                }
 
-                                    traitNode.properties.push(propNode);
-                                });
+                                var symbolCache = new FileSymbolCache();
+                                symbolCache.name = propNode.name;
+                                symbolCache.type = SymbolType.Property;
+                                symbolCache.kind = SymbolKind.Property;
+                                symbolCache.parentName = traitNode.name;
+                                symbolCache.startLine = propNode.startPos.line;
+                                symbolCache.startChar = propNode.startPos.col;
+                                symbolCache.endLine = propNode.endPos.line;
+                                symbolCache.endChar = propNode.endPos.col;
+                                tree.symbolCache.push(symbolCache);
+
+                                traitNode.properties.push(propNode);
                             });
 
                             // Build constants
@@ -368,7 +399,12 @@ export class TreeBuilder
                                 var symbolCache = new FileSymbolCache();
                                 symbolCache.name = constantNode.name;
                                 symbolCache.type = SymbolType.Constant;
+                                symbolCache.kind = SymbolKind.Field;
                                 symbolCache.parentName = traitNode.name;
+                                symbolCache.startLine = constantNode.startPos.line;
+                                symbolCache.startChar = constantNode.startPos.col;
+                                symbolCache.endLine = constantNode.endPos.line;
+                                symbolCache.endChar = constantNode.endPos.col;
                                 tree.symbolCache.push(symbolCache);
 
                                 traitNode.constants.push(constantNode);
@@ -395,7 +431,12 @@ export class TreeBuilder
                                 var symbolCache = new FileSymbolCache();
                                 symbolCache.name = methodNode.name;
                                 symbolCache.type = SymbolType.Method;
+                                symbolCache.kind = SymbolKind.Method;
                                 symbolCache.parentName = traitNode.name;
+                                symbolCache.startLine = methodNode.startPos.line;
+                                symbolCache.startChar = methodNode.startPos.col;
+                                symbolCache.endLine = methodNode.endPos.line;
+                                symbolCache.endChar = methodNode.endPos.col;
                                 tree.symbolCache.push(symbolCache);
 
                                 traitNode.methods.push(methodNode);
@@ -409,6 +450,11 @@ export class TreeBuilder
                             var symbolCache = new FileSymbolCache();
                             symbolCache.name = traitNode.name;
                             symbolCache.type = SymbolType.Trait;
+                            symbolCache.kind = SymbolKind.Class;
+                            symbolCache.startLine = traitNode.startPos.line;
+                            symbolCache.startChar = traitNode.startPos.col;
+                            symbolCache.endLine = traitNode.endPos.line;
+                            symbolCache.endChar = traitNode.endPos.col;
                             tree.symbolCache.push(symbolCache);
 
                             tree.traits.push(traitNode);
@@ -456,46 +502,51 @@ export class TreeBuilder
                             // Build properties
                             branch[5].properties.forEach(propLevel =>
                             {
-                                propLevel[3].forEach(pLevel => {
-                                    let propNode: PropertyNode = new PropertyNode();
+                                let propNode: PropertyNode = new PropertyNode();
 
-                                    propNode.startPos = this.BuildStartLocation(propLevel[1]);
-                                    propNode.endPos = this.BuildEndLocation(propLevel[2]);
+                                propNode.startPos = this.BuildStartLocation(propLevel[1]);
+                                propNode.endPos = this.BuildEndLocation(propLevel[2]);
 
-                                    if (propLevel[4][0] == 0) {
-                                        propNode.accessModifier = AccessModifierNode.public;
+                                if (propLevel[4][0] == 0) {
+                                    propNode.accessModifier = AccessModifierNode.public;
+                                }
+                                if (propLevel[4][0] == 1) {
+                                    propNode.accessModifier = AccessModifierNode.protected;
+                                }
+                                if (propLevel[4][0] == 2) {
+                                    propNode.accessModifier = AccessModifierNode.private;
+                                }
+
+                                if (propLevel[4][1] == 1) {
+                                    propNode.isStatic = true;
+                                }
+
+                                propLevel = propLevel[3][0];
+                                propNode.name = propLevel[3][0];
+
+                                if (propLevel[3][1] != null) {
+                                    let type = propLevel[3][1][0];
+                                    if (type == "string" || type == "number") {
+                                        propNode.type = type;
+                                        //propNode.value = codeLevel[3][1][1];
+                                    } else if (type == "const") {
+                                        propNode.type = "boolean";
+                                        //propNode.value = codeLevel[2][1];
                                     }
-                                    if (propLevel[4][0] == 1) {
-                                        propNode.accessModifier = AccessModifierNode.protected;
-                                    }
-                                    if (propLevel[4][0] == 2) {
-                                        propNode.accessModifier = AccessModifierNode.private;
-                                    }
+                                }
 
-                                    if (propLevel[4][1] == 1) {
-                                        propNode.isStatic = true;
-                                    }
+                                var symbolCache = new FileSymbolCache();
+                                symbolCache.name = propNode.name;
+                                symbolCache.type = SymbolType.Property;
+                                symbolCache.kind = SymbolKind.Property;
+                                symbolCache.parentName = classNode.name;
+                                symbolCache.startLine = propNode.startPos.line;
+                                symbolCache.startChar = propNode.startPos.col;
+                                symbolCache.endLine = propNode.endPos.line;
+                                symbolCache.endChar = propNode.endPos.col;
+                                tree.symbolCache.push(symbolCache);
 
-                                    propNode.name = pLevel[3][0];
-                                    if (pLevel[3][1] != null) {
-                                        let type = pLevel[3][1][0];
-                                        if (type == "string" || type == "number") {
-                                            propNode.type = type;
-                                            //propNode.value = codeLevel[3][1][1];
-                                        } else if (type == "const") {
-                                            propNode.type = "boolean";
-                                            //propNode.value = codeLevel[2][1];
-                                        }
-                                    }
-
-                                    var symbolCache = new FileSymbolCache();
-                                    symbolCache.name = propNode.name;
-                                    symbolCache.type = SymbolType.Property;
-                                    symbolCache.parentName = classNode.name;
-                                    tree.symbolCache.push(symbolCache);
-
-                                    classNode.properties.push(propNode);
-                                });
+                                classNode.properties.push(propNode);
                             });
 
                             // Build constants
@@ -516,7 +567,12 @@ export class TreeBuilder
                                 var symbolCache = new FileSymbolCache();
                                 symbolCache.name = constNode.name;
                                 symbolCache.type = SymbolType.Constant;
+                                symbolCache.kind = SymbolKind.Field;
                                 symbolCache.parentName = classNode.name;
+                                symbolCache.startLine = constNode.startPos.line;
+                                symbolCache.startChar = constNode.startPos.col;
+                                symbolCache.endLine = constNode.endPos.line;
+                                symbolCache.endChar = constNode.endPos.col;
                                 tree.symbolCache.push(symbolCache);
 
                                 classNode.constants.push(constNode);
@@ -651,7 +707,12 @@ export class TreeBuilder
                                     var symbolCache = new FileSymbolCache();
                                     symbolCache.name = methodNode.name;
                                     symbolCache.type = SymbolType.Method;
+                                    symbolCache.kind = SymbolKind.Method;
                                     symbolCache.parentName = classNode.name;
+                                    symbolCache.startLine = methodNode.startPos.line;
+                                    symbolCache.startChar = methodNode.startPos.col;
+                                    symbolCache.endLine = methodNode.endPos.line;
+                                    symbolCache.endChar = methodNode.endPos.col;
                                     tree.symbolCache.push(symbolCache);
 
                                     classNode.methods.push(methodNode);
@@ -667,6 +728,11 @@ export class TreeBuilder
                             var symbolCache = new FileSymbolCache();
                             symbolCache.name = classNode.name;
                             symbolCache.type = SymbolType.Class;
+                            symbolCache.kind = SymbolKind.Class;
+                            symbolCache.startLine = classNode.startPos.line;
+                            symbolCache.startChar = classNode.startPos.col;
+                            symbolCache.endLine = classNode.endPos.line;
+                            symbolCache.endChar = classNode.endPos.col;
                             tree.symbolCache.push(symbolCache);
 
                             tree.classes.push(classNode);
@@ -935,6 +1001,7 @@ export class TreeBuilder
 class BaseNode
 {
     public name: string;
+    public refName: string;
     public startPos: PositionInfo;
     public endPos: PositionInfo;
 }
@@ -961,7 +1028,13 @@ export class FileSymbolCache
 {
     public name: string;
     public type: SymbolType;
+    public kind: SymbolKind;
     public parentName: string;
+    public startLine: number = 1;
+    public endLine: number = 1;
+    public startChar: number = 1;
+    public endChar: number = 1;
+    public path: string = '';
 }
 
 export class LineCache
@@ -1012,7 +1085,7 @@ export class InterfaceNode extends BaseNode
     public extends: string[] = [];
     public constants: ConstantNode[] = [];
     public methods: MethodNode[] = [];
-    public namespace: string[] = [];
+    public namespaceParts: string[] = [];
 }
 
 export class MethodNode extends BaseNode

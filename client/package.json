@@ -12,7 +12,7 @@
     "version": "0.2.0",
     "publisher": "HvyIndustries",
     "engines": {
-        "vscode": "^0.10.x"
+        "vscode": "^1.4.0"
     },
     "bugs": {
         "url": "https://github.com/HvyIndustries/crane/issues"
@@ -29,7 +29,8 @@
     "keywords": [
         "php",
         "code-completion",
-        "intellisense"
+        "intellisense",
+        "productivity"
     ],
     "galleryBanner": {
         "theme": "dark",
@@ -116,6 +117,7 @@
         "php-parser": "HvyIndustries/php-parser#bde9c58",
         "rimraf": "^2.5.2",
         "unzip": "^0.1.11",
-        "vscode-languageclient": "^1.1.0"
+        "open": "^0.0.5",
+        "vscode-languageclient": "^2.4.2"
     }
 }

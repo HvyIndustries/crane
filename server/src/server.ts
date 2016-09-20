@@ -7,11 +7,11 @@
 'use strict';
 
 import {
-    IPCMessageReader, IPCMessageWriter,
+    IPCMessageReader, IPCMessageWriter, SymbolKind,
     createConnection, IConnection, TextDocumentSyncKind,
-    TextDocuments, ITextDocument, Diagnostic, DiagnosticSeverity,
-    InitializeParams, InitializeResult, TextDocumentIdentifier, TextDocumentPosition,
-    CompletionItem, CompletionItemKind, RequestType, Position,
+    TextDocuments, Diagnostic, DiagnosticSeverity,
+    InitializeParams, InitializeResult, TextDocumentIdentifier, TextDocumentPositionParams,
+    CompletionList, CompletionItem, CompletionItemKind, RequestType, Position,
     SignatureHelp, SignatureInformation, ParameterInformation
 } from 'vscode-languageserver';
 
@@ -94,16 +94,14 @@ connection.onDidChangeWatchedFiles((change) =>
 });
 
 // This handler provides the initial list of the completion items.
-connection.onCompletion((textDocumentPosition: TextDocumentPosition): CompletionItem[] =>
+connection.onCompletion((textDocumentPosition: TextDocumentPositionParams): CompletionList =>
 {
-    if (textDocumentPosition.languageId != "php") return;
-
-    var doc = documents.get(textDocumentPosition.uri);
+    var doc = documents.get(textDocumentPosition.textDocument.uri);
     var suggestionBuilder = new SuggestionBuilder();
 
     suggestionBuilder.prepare(textDocumentPosition, doc, workspaceTree);
 
-    var toReturn: CompletionItem[] = suggestionBuilder.build();
+    var toReturn: CompletionList = { isIncomplete: false, items: suggestionBuilder.build() };
 
     return toReturn;
 });
@@ -140,6 +138,243 @@ connection.onRequest(buildObjectTreeForDocument, (requestObj) =>
         return false;
     });
 });
+
+var deleteFile: RequestType<{path:string}, any, any> = { method: "findNode" };
+connection.onRequest(deleteFile, (requestObj) =>
+{
+    var node = getFileNodeFromPath(requestObj.path);
+
+    // connection.console.log(node);
+
+});
+
+/**
+ * Finds all the symbols in a particular file
+ */
+var findFileDocumentSymbols: RequestType<{path:string}, any, any> = { method: "findFileDocumentSymbols" };
+connection.onRequest(findFileDocumentSymbols, (requestObj) => {
+    var node = getFileNodeFromPath(requestObj.path);
+    return { symbols: node.symbolCache };
+});
+// function getSymbolObject(node: any, query: string, path: string, usings: string[], parent: any = null): FileSymbolCache {
+//     let symbol = null;
+//     if (node.name == query) {
+//         connection.console.log(usings);
+//         if(parent !== null)
+//             connection.console.log(parent.namespaceParts);
+//         if (parent !== null && usings.indexOf(parent.namespaceParts.join('\\')) == -1) {
+//             return null;
+//         }
+//         symbol = new FileSymbolCache();
+//         symbol.kind = SymbolKind.Class;
+//         symbol.startLine = node.startPos.line;
+//         symbol.startChar = node.startPos.col;
+//         symbol.endLine = node.endPos.line;
+//         symbol.endChar = node.endPos.col;
+//         symbol.path = path;
+//         if (parent !== null) {
+//             symbol.parentName = parent.name;
+//         }
+//     }
+//     return symbol;
+// }
+
+var convertSymbolCacheToSymbol = function(node, path)
+{
+    var cache = new FileSymbolCache();
+
+    cache.startLine = node.startPos.line;
+    cache.startChar = node.startPos.col;
+    cache.endLine = node.endPos.line;
+    cache.endChar = node.endPos.col;
+    cache.path = path;
+
+    if (node.name) {
+        cache.name = node.name;
+    }
+
+    return cache;
+}
+
+var queryMatchesName = function(query: string, nameToSearch: string) : boolean
+{
+    // Limit to exact matches for go to definition provider
+    if (query.indexOf("::#EXACT") > -1) {
+        var queries = query.split("::#EXACT");
+
+        // Strip "$" to match properties
+        if (nameToSearch.charAt(0) == "$") {
+            nameToSearch = nameToSearch.substr(1, nameToSearch.length);
+        }
+
+        if (nameToSearch == queries[0]) {
+            return true;
+        }
+        return false;
+    }
+
+    query = query.toLowerCase();
+    nameToSearch = nameToSearch.toLowerCase();
+
+    if (nameToSearch == query || nameToSearch.indexOf(query) > -1) {
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Finds all the symbols in the workspace
+ */
+var findWorkspaceSymbols: RequestType<{query:string,path:string}, any, any> = { method: "findWorkspaceSymbols" };
+connection.onRequest(findWorkspaceSymbols, (requestObj) => {
+
+    let query: string = requestObj.query;
+
+    let symbols: FileSymbolCache[] = [];
+    let usings: string[] = getFileUsings(requestObj.path);
+
+    connection.console.log(query);
+
+    workspaceTree.forEach(item => {
+        // Search The interfaces
+        item.interfaces.forEach(interfaceNode => {
+            let ns: string = interfaceNode.namespaceParts.join('\\');
+            if (queryMatchesName(query, interfaceNode.name) && (usings.indexOf(ns) != -1 || usings.length == 0)) {
+                let symbol = convertSymbolCacheToSymbol(interfaceNode, item.path);
+                symbol.kind = SymbolKind.Interface;
+                symbols.push(symbol);
+            }
+            // Search the methods within the interface
+            interfaceNode.methods.forEach(methodNode => {
+                if (queryMatchesName(query, methodNode.name) && (usings.indexOf(ns) != -1 || usings.length == 0)) {
+                    let symbol = convertSymbolCacheToSymbol(methodNode, item.path);
+                    symbol.kind = SymbolKind.Method;
+                    symbols.push(symbol);
+                }
+            });
+            // Search the constants within the interface
+            interfaceNode.constants.forEach(constNode => {
+                if (queryMatchesName(query, constNode.name) && (usings.indexOf(ns) != -1 || usings.length == 0)) {
+                    let symbol = convertSymbolCacheToSymbol(constNode, item.path);
+                    symbol.kind = SymbolKind.Constant;
+                    symbols.push(symbol);
+                }
+            });
+        });
+
+        // Search the traits
+        item.traits.forEach(traitNode => {
+            let ns: string = traitNode.namespaceParts.join('\\');
+            if (queryMatchesName(query, traitNode.name) && (usings.indexOf(ns) != -1 || usings.length == 0)) {
+                let symbol = convertSymbolCacheToSymbol(traitNode, item.path);
+                symbol.kind = SymbolKind.Class;
+                symbols.push(symbol);
+            }
+            // Search the methods within the traits
+            traitNode.methods.forEach(methodNode => {
+                if (queryMatchesName(query, methodNode.name) && (usings.indexOf(ns) != -1 || usings.length == 0)) {
+                    let symbol = convertSymbolCacheToSymbol(methodNode, item.path);
+                    symbol.kind = SymbolKind.Method;
+                    symbols.push(symbol);
+                }
+            });
+            // Search the properties within the traits
+            traitNode.properties.forEach(propertyNode => {
+                if (queryMatchesName(query, propertyNode.name) && (usings.indexOf(ns) != -1 || usings.length == 0)) {
+                    let symbol = convertSymbolCacheToSymbol(propertyNode, item.path);
+                    symbol.kind = SymbolKind.Property;
+                    symbols.push(symbol);
+                }
+            });
+            // Search the constants within the trait
+            traitNode.constants.forEach(constNode => {
+                if (queryMatchesName(query, constNode.name) && (usings.indexOf(ns) != -1 || usings.length == 0)) {
+                    let symbol = convertSymbolCacheToSymbol(constNode, item.path);
+                    symbol.kind = SymbolKind.Constant;
+                    symbols.push(symbol);
+                }
+            });
+        });
+
+        // Search the classes
+        item.classes.forEach(classNode => {
+            let ns: string = classNode.namespaceParts.join('\\');
+            if (queryMatchesName(query, classNode.name) && (usings.indexOf(ns) != -1 || usings.length == 0)) {
+                let symbol = convertSymbolCacheToSymbol(classNode, item.path);
+                symbol.kind = SymbolKind.Class;
+                symbols.push(symbol);
+            }
+            // Search the methods within the classes
+            classNode.methods.forEach(methodNode => {
+                if (queryMatchesName(query, methodNode.name) && (usings.indexOf(ns) != -1 || usings.length == 0)) {
+                    let symbol = convertSymbolCacheToSymbol(methodNode, item.path);
+                    symbol.kind = SymbolKind.Method;
+                    symbols.push(symbol);
+                }
+            });
+            // Search the properties within the classes
+            classNode.properties.forEach(propertyNode => {
+                if (queryMatchesName(query, propertyNode.name) && (usings.indexOf(ns) != -1 || usings.length == 0)) {
+                    let symbol = convertSymbolCacheToSymbol(propertyNode, item.path);
+                    symbol.kind = SymbolKind.Property;
+                    symbols.push(symbol);
+                }
+            });
+            // Search the constants within the class
+            classNode.constants.forEach(constNode => {
+                if (queryMatchesName(query, constNode.name) && (usings.indexOf(ns) != -1 || usings.length == 0)) {
+                    let symbol = convertSymbolCacheToSymbol(constNode, item.path);
+                    symbol.kind = SymbolKind.Constant;
+                    symbols.push(symbol);
+                }
+            });
+        });
+
+        item.functions.forEach(funcNode => {
+            if (funcNode.name == query) {
+                let symbol = convertSymbolCacheToSymbol(funcNode, item.path);
+                symbol.kind = SymbolKind.Function;
+                symbols.push(symbol);
+            }
+        });
+    });
+
+
+    // var node = getFileNodeFromPath(requestObj.path);
+    return { symbols: symbols };
+});
+
+/**
+ * Finds the Usings in a file
+ */
+function getFileUsings(path: string): string[] {
+    var node = getFileNodeFromPath(path);
+
+    var namespaces: string[] = [];
+    node.classes.forEach(item => {
+        let ns: string = item.namespaceParts.join('\\');
+        if (ns.length > 0 && namespaces.indexOf(ns) == -1) {
+            namespaces.push(ns);
+        }
+    });
+
+    node.traits.forEach(item => {
+        let ns: string = item.namespaceParts.join('\\');
+        if (ns.length > 0 && namespaces.indexOf(ns) == -1) {
+            namespaces.push(ns);
+        }
+    });
+
+    node.namespaceUsings.forEach(item => {
+        let ns: string = item.parents.join('\\');
+        if (ns.length > 0 && namespaces.indexOf(ns) == -1) {
+            namespaces.push(ns);
+        }
+    });
+
+    return namespaces;
+};
 
 var deleteFile: RequestType<{path:string}, any, any> = { method: "deleteFile" };
 connection.onRequest(deleteFile, (requestObj) =>

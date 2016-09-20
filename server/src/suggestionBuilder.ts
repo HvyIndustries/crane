@@ -6,10 +6,10 @@
 
 'use strict';
 
-import { TextDocumentPosition, ITextDocument, CompletionItem, CompletionItemKind } from 'vscode-languageserver';
+import { TextDocumentPositionParams, TextDocument, CompletionItem, CompletionItemKind } from 'vscode-languageserver';
 import {
-    TreeBuilder, FileNode, FileSymbolCache,
-    SymbolType, AccessModifierNode, ClassNode, TraitNode
+    TreeBuilder, FileNode, SymbolType, AccessModifierNode,
+    ClassNode, TraitNode, MethodNode
 } from "./hvy/treeBuilder";
 
 const fs = require('fs');
@@ -23,15 +23,15 @@ export class SuggestionBuilder
     private lineIndex: number;
     private charIndex: number;
 
-    private doc: ITextDocument;
+    private doc: TextDocument;
     private currentLine: string;
     private lastChar: string;
 
-    public prepare(textDocumentPosition: TextDocumentPosition, document: ITextDocument, workspaceTree: FileNode[])
+    public prepare(textDocumentPosition: TextDocumentPositionParams, document: TextDocument, workspaceTree: FileNode[])
     {
         this.workspaceTree = workspaceTree;
 
-        this.filePath = this.buildDocumentPath(textDocumentPosition.uri);
+        this.filePath = this.buildDocumentPath(textDocumentPosition.textDocument.uri);
         this.lineIndex = textDocumentPosition.position.line;
         this.charIndex = textDocumentPosition.position.character;
 
@@ -360,7 +360,7 @@ export class SuggestionBuilder
     {
         var path = uri;
         path = path.replace("file:///", "");
-        path = path.replace("%3A", ":");
+        path = decodeURIComponent(path);
 
         // Handle Windows and Unix paths
         switch (process.platform) {
@@ -551,6 +551,35 @@ export class SuggestionBuilder
         return toReturn;
     }
 
+    // Currently unused
+    private buildParams(methodNode: MethodNode)
+    {
+        let toReturn: string = "";
+        let params: string[] = [];
+
+        if (methodNode.params && methodNode.params.length > 0) {
+            methodNode.params.forEach(item => {
+                var str = "";
+                if (item.type != "mixed" || item.type != "unknown") {
+                    str += item.type;
+                }
+
+                str += " " + item.name;
+
+                if (item.optional) {
+                    str += "]";
+                    str = "[" + str;
+                }
+
+                params.push(str);
+            });
+        }
+
+        toReturn = params.join(", ");
+
+        return toReturn;
+    }
+
     private addClassMembers(classNode: ClassNode, staticOnly: boolean, includePrivate: boolean, includeProtected: boolean)
     {
         var toReturn = [];
@@ -566,7 +595,11 @@ export class SuggestionBuilder
         classNode.methods.forEach((subNode) => {
             if (subNode.isStatic == staticOnly) {
                 var accessModifier = "(" + this.buildAccessModifierText(subNode.accessModifier);
-                var insertText = subNode.name + "()";
+                var insertText = subNode.name;
+
+                if (subNode.params.length == 0) {
+                    insertText += "()";
+                }
 
                 accessModifier = accessModifier + ` method) : ${subNode.returns}`;
 

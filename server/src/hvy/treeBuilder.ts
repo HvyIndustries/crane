@@ -341,11 +341,11 @@ export class TreeBuilder
                             }
 
                             // Build Properties
-                            this.treeProperties(branch[3][4].properties, traitNode, tree);
+                            this.buildTreeProperties(branch[3][4].properties, traitNode, tree);
                             // Build Constants
-                            this.treeConstants(branch[3][4].constants, traitNode, tree);
+                            this.buildTreeConstants(branch[3][4].constants, traitNode, tree);
                             // Build Methods
-                            this.treeMethods(branch[3][4].methods, traitNode, tree);
+                            this.buildTreeMethods(branch[3][4].methods, traitNode, tree);
 
                             branch[3][4].use.traits.forEach(traitLevel =>
                             {
@@ -404,11 +404,11 @@ export class TreeBuilder
                             }
 
                             // Build Properties
-                            this.treeProperties(branch[5].properties, classNode, tree);
+                            this.buildTreeProperties(branch[5].properties, classNode, tree);
                             // Build Constants
-                            this.treeConstants(branch[5].constants, classNode, tree);
+                            this.buildTreeConstants(branch[5].constants, classNode, tree);
                             // Build Methods
-                            this.treeMethods(branch[5].methods, classNode, tree);
+                            this.buildTreeMethods(branch[5].methods, classNode, tree);
 
                             // Build Traits
                             branch[5].use.traits.forEach(traitLevel =>
@@ -435,7 +435,7 @@ export class TreeBuilder
         return tree;
     }
 
-    private treeProperties(properties: Array<any>, parentNode: ClassNode, tree:FileNode) {
+    private buildTreeProperties(properties: Array<any>, parentNode: ClassNode, tree:FileNode) {
         properties.forEach(propLevel => {
             propLevel[3].forEach(pLevel => {
                 let propNode: PropertyNode = new PropertyNode();
@@ -478,7 +478,7 @@ export class TreeBuilder
         });
     }
 
-    private treeConstants(constants: Array<any>, parentNode: ClassNode, tree: FileNode) {
+    private buildTreeConstants(constants: Array<any>, parentNode: ClassNode, tree: FileNode) {
         constants.forEach(constLevel => {
             constLevel[3].forEach(cLevel => {
                 let constNode: ConstantNode = new ConstantNode();
@@ -508,7 +508,7 @@ export class TreeBuilder
         });
     }
 
-    private treeMethods(methods: Array<any>, parentNode: ClassNode, tree: FileNode) {
+    private buildTreeMethods(methods: Array<any>, parentNode: ClassNode, tree: FileNode) {
         methods.forEach(methodLevel => {
             // Build constructor (newstyle + oldstyle)
             if (methodLevel[3][1] == "__construct" || methodLevel[3][1] == parentNode.name)

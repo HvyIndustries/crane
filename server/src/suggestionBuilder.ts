@@ -70,7 +70,7 @@ export class SuggestionBuilder
             } else {
                 // Probably accessing via [ClassName]::
                 var classNames = this.currentLine.trim().match(/\S(\B[a-z]+?)(?=::)/ig);
-                if (classNames.length > 0) {
+                if (classNames && classNames.length > 0) {
                     var className = classNames[classNames.length - 1];
                     var classNode = this.getClassNodeFromTree(className);
                     if (classNode != null) {

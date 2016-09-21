@@ -234,8 +234,6 @@ connection.onRequest(findWorkspaceSymbols, (requestObj) => {
     let symbols: FileSymbolCache[] = [];
     let usings: string[] = getFileUsings(requestObj.path);
 
-    connection.console.log(query);
-
     workspaceTree.forEach(item => {
         // Search The interfaces
         item.interfaces.forEach(interfaceNode => {

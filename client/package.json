@@ -1,6 +1,6 @@
 {
     "name": "crane",
-    "displayName": "Crane - PHP Intellisense",
+    "displayName": "PHP Intellisense - Crane",
     "description": "PHP Intellisense/code-completion",
     "author": {
         "name": "Hvy Industries",
@@ -28,6 +28,11 @@
     ],
     "keywords": [
         "php",
+        "php5",
+        "php7",
+        "crane",
+        "hvy",
+        "productivity",
         "code-completion",
         "intellisense"
     ],

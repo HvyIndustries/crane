@@ -798,7 +798,7 @@ export class TreeBuilder
         {
             var funcNode: FunctionCallNode = new FunctionCallNode();
 
-            if (codeLevel[1][0] == "ns" && Array.isArray(codeLevel[1]) && Array.isArray(codeLevel[1][1])) {
+            if (Array.isArray(codeLevel[1]) && codeLevel[1][0] == "ns" && Array.isArray(codeLevel[1][1])) {
                 var arrLength = codeLevel[1][1].length;
                 funcNode.name = codeLevel[1][1][arrLength - 1];
                 codeLevel[1][1].forEach(item => {

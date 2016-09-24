@@ -6,11 +6,15 @@
 
 'use strict';
 
-import { TextDocumentPositionParams, TextDocument, CompletionItem, CompletionItemKind } from 'vscode-languageserver';
+import { TextDocumentPositionParams, TextDocument, CompletionItem, CompletionItemKind, IConnection, createConnection,
+    IPCMessageReader, IPCMessageWriter
+} from 'vscode-languageserver';
 import {
     TreeBuilder, FileNode, SymbolType, AccessModifierNode,
     ClassNode, TraitNode, MethodNode
 } from "./hvy/treeBuilder";
+
+let connection: IConnection = createConnection(new IPCMessageReader(process), new IPCMessageWriter(process));
 
 const fs = require('fs');
 
@@ -67,10 +71,16 @@ export class SuggestionBuilder
                         toReturn = toReturn.concat(this.addClassMembers(classNode, true, true, true));
                     }
                 });
+            } else if (this.currentLine.substr(this.charIndex - 8, this.charIndex - 1) == "parent::") {
+                // Accessing via parent::
+                this.currentFileNode.classes.forEach(classNode => {
+                    let parentClassNode = this.getClassNodeFromTree(classNode.extends);
+                    toReturn = toReturn.concat(this.addClassMembers(parentClassNode, true, true, true));
+                });
             } else {
                 // Probably accessing via [ClassName]::
                 var classNames = this.currentLine.trim().match(/\S(\B[a-z]+?)(?=::)/ig);
-                if (classNames.length > 0) {
+                if (Array.isArray(classNames) && classNames.length > 0) {
                     var className = classNames[classNames.length - 1];
                     var classNode = this.getClassNodeFromTree(className);
                     if (classNode != null) {
@@ -349,10 +359,9 @@ export class SuggestionBuilder
 
     private withinBlock(block) : boolean
     {
-        if (block.startPos.line <= this.lineIndex && block.endPos.line >= this.lineIndex) {
-            return true;
-        }
-
+        if (block && block.startPos.line <= this.lineIndex && block.endPos.line >= this.lineIndex) {
+                return true;
+            }
         return false;
     }
 
@@ -382,7 +391,7 @@ export class SuggestionBuilder
 
         var fileNode = this.workspaceTree.forEach((fileNode) => {
             fileNode.classes.forEach((classNode) => {
-                if (classNode.name.toLowerCase() == className.toLowerCase()) {
+                if (classNode instanceof ClassNode && classNode.name.toLowerCase() == className.toLowerCase()) {
                     toReturn = classNode;
                 }
             });
@@ -397,7 +406,7 @@ export class SuggestionBuilder
 
         var fileNode = this.workspaceTree.forEach((fileNode) => {
             fileNode.traits.forEach((traitNode) => {
-                if (traitNode.name.toLowerCase() == traitName.toLowerCase()) {
+                if (traitNode instanceof TraitNode && traitNode.name.toLowerCase() == traitName.toLowerCase()) {
                     toReturn = traitNode;
                 }
             });
@@ -583,75 +592,76 @@ export class SuggestionBuilder
     private addClassMembers(classNode: ClassNode, staticOnly: boolean, includePrivate: boolean, includeProtected: boolean)
     {
         var toReturn = [];
-
-        classNode.constants.forEach((subNode) => {
-            let value = subNode.value;
-            if (subNode.type == "string") {
-                value = "\"" + value + "\"";
-            }
-            toReturn.push({ label: subNode.name, kind: CompletionItemKind.Value, detail: `(constant) : ${subNode.type} : ${value}` });
-        });
-
-        classNode.methods.forEach((subNode) => {
-            if (subNode.isStatic == staticOnly) {
-                var accessModifier = "(" + this.buildAccessModifierText(subNode.accessModifier);
-                var insertText = subNode.name;
-
-                if (subNode.params.length == 0) {
-                    insertText += "()";
+        if (classNode instanceof ClassNode) {
+            classNode.constants.forEach((subNode) => {
+                let value = subNode.value;
+                if (subNode.type == "string") {
+                    value = "\"" + value + "\"";
                 }
+                toReturn.push({ label: subNode.name, kind: CompletionItemKind.Value, detail: `(constant) : ${subNode.type} : ${value}` });
+            });
 
-                accessModifier = accessModifier + ` method) : ${subNode.returns}`;
+            classNode.methods.forEach((subNode) => {
+                if (subNode.isStatic == staticOnly) {
+                    var accessModifier = "(" + this.buildAccessModifierText(subNode.accessModifier);
+                    var insertText = subNode.name;
 
-                if (includeProtected && subNode.accessModifier == AccessModifierNode.protected) {
-                    toReturn.push({ label: subNode.name, kind: CompletionItemKind.Function, detail: accessModifier, insertText: insertText });
-                }
-                if (includePrivate && subNode.accessModifier == AccessModifierNode.private) {
-                    toReturn.push({ label: subNode.name, kind: CompletionItemKind.Function, detail: accessModifier, insertText: insertText });
-                }
-                if (subNode.accessModifier == AccessModifierNode.public) {
-                    toReturn.push({ label: subNode.name, kind: CompletionItemKind.Function, detail: accessModifier, insertText: insertText });
-                }
-            }
-        });
+                    if (subNode.params.length == 0) {
+                        insertText += "()";
+                    }
 
-        classNode.properties.forEach((subNode) => {
-            if (subNode.isStatic == staticOnly) {
-                var accessModifier = "(" + this.buildAccessModifierText(subNode.accessModifier) + ` property) : ${subNode.type}`;
-                var insertText = subNode.name;
+                    accessModifier = accessModifier + ` method) : ${subNode.returns}`;
 
-                if (!staticOnly) {
-                    // Strip the leading $
-                    insertText = subNode.name.substr(1, subNode.name.length - 1);
+                    if (includeProtected && subNode.accessModifier == AccessModifierNode.protected) {
+                        toReturn.push({ label: subNode.name, kind: CompletionItemKind.Function, detail: accessModifier, insertText: insertText });
+                    }
+                    if (includePrivate && subNode.accessModifier == AccessModifierNode.private) {
+                        toReturn.push({ label: subNode.name, kind: CompletionItemKind.Function, detail: accessModifier, insertText: insertText });
+                    }
+                    if (subNode.accessModifier == AccessModifierNode.public) {
+                        toReturn.push({ label: subNode.name, kind: CompletionItemKind.Function, detail: accessModifier, insertText: insertText });
+                    }
                 }
+            });
 
-                if (includeProtected && subNode.accessModifier == AccessModifierNode.protected) {
-                    toReturn.push({ label: subNode.name, kind: CompletionItemKind.Property, detail: accessModifier, insertText: insertText });
-                }
-                if (includePrivate && subNode.accessModifier == AccessModifierNode.private) {
-                    toReturn.push({ label: subNode.name, kind: CompletionItemKind.Property, detail: accessModifier, insertText: insertText });
-                }
-                if (subNode.accessModifier == AccessModifierNode.public) {
-                    toReturn.push({ label: subNode.name, kind: CompletionItemKind.Property, detail: accessModifier, insertText: insertText });
-                }
-            }
-        });
+            classNode.properties.forEach((subNode) => {
+                if (subNode.isStatic == staticOnly) {
+                    var accessModifier = "(" + this.buildAccessModifierText(subNode.accessModifier) + ` property) : ${subNode.type}`;
+                    var insertText = subNode.name;
 
-        // Add items from included traits
-        classNode.traits.forEach((traitName) => {
-            // Look up the trait node in the tree
-            var traitNode = this.getTraitNodeFromTree(traitName);
-            if (traitNode != null) {
-                toReturn = toReturn.concat(this.addClassMembers(traitNode, staticOnly, true, true));
-            }
-        });
+                    if (!staticOnly) {
+                        // Strip the leading $
+                        insertText = subNode.name.substr(1, subNode.name.length - 1);
+                    }
 
-        // Add items from parent(s)
-        if (classNode.extends != null && classNode.extends != "") {
-            // Look up the class node in the tree
-            var extendedClassNode = this.getClassNodeFromTree(classNode.extends);
-            if (extendedClassNode != null) {
-                toReturn = toReturn.concat(this.addClassMembers(extendedClassNode, staticOnly, false, true));
+                    if (includeProtected && subNode.accessModifier == AccessModifierNode.protected) {
+                        toReturn.push({ label: subNode.name, kind: CompletionItemKind.Property, detail: accessModifier, insertText: insertText });
+                    }
+                    if (includePrivate && subNode.accessModifier == AccessModifierNode.private) {
+                        toReturn.push({ label: subNode.name, kind: CompletionItemKind.Property, detail: accessModifier, insertText: insertText });
+                    }
+                    if (subNode.accessModifier == AccessModifierNode.public) {
+                        toReturn.push({ label: subNode.name, kind: CompletionItemKind.Property, detail: accessModifier, insertText: insertText });
+                    }
+                }
+            });
+
+            // Add items from included traits
+            classNode.traits.forEach((traitName) => {
+                // Look up the trait node in the tree
+                var traitNode = this.getTraitNodeFromTree(traitName);
+                if (traitNode != null) {
+                    toReturn = toReturn.concat(this.addClassMembers(traitNode, staticOnly, true, true));
+                }
+            });
+
+            // Add items from parent(s)
+            if (classNode.extends != null && classNode.extends != "") {
+                // Look up the class node in the tree
+                var extendedClassNode = this.getClassNodeFromTree(classNode.extends);
+                if (extendedClassNode != null) {
+                    toReturn = toReturn.concat(this.addClassMembers(extendedClassNode, staticOnly, false, true));
+                }
             }
         }
 

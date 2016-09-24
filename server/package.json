@@ -1,17 +1,21 @@
 {
     "name": "crane-lang-server",
     "description": "The language server for Crane",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "author": "HVY Industries",
     "license": "MIT",
     "engines": {
         "node": "*"
     },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/HvyIndustries/crane.git"
+    },
     "dependencies": {
         "filequeue": "^0.5.0",
         "glob": "7.0.3",
-        "php-parser": "HvyIndustries/php-parser#bde9c58",
-        "vscode-languageserver": "^2.2.1"
+        "php-parser": "HvyIndustries/php-parser#8820998",
+        "vscode-languageserver": "^2.2.1",
     },
     "devDependencies": {
         "typescript": "^1.6.2"

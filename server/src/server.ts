@@ -39,6 +39,12 @@ let treeBuilder: TreeBuilder = new TreeBuilder();
 treeBuilder.SetConnection(connection);
 let workspaceTree: FileNode[] = [];
 
+// Prevent garbage collection of essential objects
+let timer = setInterval(() => {
+                treeBuilder.Ping();
+                return workspaceTree.length;
+            }, 15000);
+
 let workspaceRoot: string;
 var craneProjectDir: string;
 let enableCache: boolean = true;

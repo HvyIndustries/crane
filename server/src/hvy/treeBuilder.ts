@@ -64,6 +64,11 @@ export class TreeBuilder
         });
     }
 
+    public Ping(): string
+    {
+        return "pong";
+    }
+
     // Convert the generated AST into a usable object tree
     private BuildObjectTree(ast, filePath:string) : Promise<FileNode>
     {
@@ -209,28 +214,33 @@ export class TreeBuilder
 
                             if (Array.isArray(branch[3][6])) {
                                 branch[3][6].forEach(codeLevel => {
-                                    // Build local scope variable setters
-                                    let scopeVar = this.BuildVariableOrProp(codeLevel);
-                                    if (scopeVar != null) {
-                                        methodNode.scopeVariables.push(scopeVar.variableNode);
-                                        if (scopeVar.lineCache != null) {
-                                            tree.lineCache.push(scopeVar.lineCache);
-                                        }
-                                    }
-
-                                    // Build function calls
-                                    let functionCalls = this.BuildFunctionCallsToOtherFunctions(codeLevel);
-                                    functionCalls.forEach(element => {
-                                        methodNode.functionCalls.push(element);
-                                    });
-
-                                    // Build imported global variables
-                                    if (codeLevel[0] == "global") {
-                                        codeLevel[1].forEach(importGlobalLevel => {
-                                            if (importGlobalLevel[0] == "var") {
-                                                methodNode.globalVariables.push(importGlobalLevel[1]);
+                                    if (codeLevel != null) {
+                                        // Build local scope variable setters
+                                        let scopeVar = this.BuildVariableOrProp(codeLevel);
+                                        if (scopeVar != null) {
+                                            methodNode.scopeVariables.push(scopeVar.variableNode);
+                                            if (scopeVar.lineCache != null) {
+                                                tree.lineCache.push(scopeVar.lineCache);
                                             }
+                                        }
+
+                                        // Build function calls
+                                        let functionCalls = this.BuildFunctionCallsToOtherFunctions(codeLevel);
+                                        functionCalls.forEach(element => {
+                                            methodNode.functionCalls.push(element);
                                         });
+
+                                        // Build imported global variables
+                                        if (codeLevel[0] == "global")
+                                        {
+                                            codeLevel[1].forEach(importGlobalLevel =>
+                                            {
+                                                if (importGlobalLevel[0] == "var")
+                                                {
+                                                    methodNode.globalVariables.push(importGlobalLevel[1]);
+                                                }
+                                            });
+                                        }
                                     }
                                 });
                             }
@@ -464,7 +474,23 @@ export class TreeBuilder
                 propNode.name = pLevel[3][0];
 
                 if (pLevel[3][1] != null) {
-                    propNode.type = pLevel[3][1][0];
+                    let type = pLevel[3][1][0];
+
+                    if (type == "position") {
+                        type = pLevel[3][1][3][0];
+                    }
+
+                    if (type == "string" || type == "number" || type == "array") {
+                        propNode.type = type;
+                        //propNode.value = codeLevel[3][1][1];
+                    } else if (type == "const") {
+                        if (pLevel[3][1][1][0].toLowerCase() == "true" || pLevel[3][1][1][0].toLowerCase() == "false") {
+                            propNode.type = "boolean";
+                        } else if (pLevel[3][1][1][0].toLowerCase() == "null") {
+                            propNode.type = "null";
+                        }
+                        //propNode.value = codeLevel[2][1];
+                    }
                 }
 
                 var symbolCache = new FileSymbolCache();

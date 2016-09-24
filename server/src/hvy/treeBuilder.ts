@@ -476,11 +476,20 @@ export class TreeBuilder
 
                                     if (propLevel[3][1] != null) {
                                         let type = propLevel[3][1][0];
-                                        if (type == "string" || type == "number") {
+
+                                        if (type == "position") {
+                                            type = propLevel[3][1][3][0];
+                                        }
+
+                                        if (type == "string" || type == "number" || type == "array") {
                                             propNode.type = type;
                                             //propNode.value = codeLevel[3][1][1];
                                         } else if (type == "const") {
-                                            propNode.type = "boolean";
+                                            if (propLevel[3][1][1][0].toLowerCase() == "true" || propLevel[3][1][1][0].toLowerCase() == "false") {
+                                                propNode.type = "boolean";
+                                            } else if (propLevel[3][1][1][0].toLowerCase() == "null") {
+                                                propNode.type = "null";
+                                            }
                                             //propNode.value = codeLevel[2][1];
                                         }
                                     }

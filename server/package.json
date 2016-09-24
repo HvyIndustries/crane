@@ -14,7 +14,7 @@
     "dependencies": {
         "filequeue": "^0.5.0",
         "glob": "7.0.3",
-        "php-parser": "HvyIndustries/php-parser#faa51b7",
+        "php-parser": "HvyIndustries/php-parser#8820998",
         "vscode-languageserver": "^1.1.0"
     },
     "devDependencies": {

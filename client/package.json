@@ -118,7 +118,7 @@
     "dependencies": {
         "fstream": "^1.0.9",
         "mkdirp": "^0.5.1",
-        "php-parser": "HvyIndustries/php-parser#faa51b7",
+        "php-parser": "HvyIndustries/php-parser#8820998",
         "rimraf": "^2.5.2",
         "unzip": "^0.1.11",
         "vscode-languageclient": "^1.1.0"

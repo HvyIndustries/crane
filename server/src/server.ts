@@ -43,7 +43,7 @@ let workspaceTree: FileNode[] = [];
 let timer = setInterval(() => {
                 treeBuilder.Ping();
                 return workspaceTree.length;
-            }, 10000);
+            }, 15000);
 
 let workspaceRoot: string;
 var craneProjectDir: string;

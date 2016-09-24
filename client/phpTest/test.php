@@ -4,6 +4,15 @@ $test = new Awesome();
 
 class Awesome
 {
+    public $strProp = "string";
+    public $numProp = 14;
+    public $arrayProp = array();
+    public $arrayProp2 = array(
+        "test" => "test"
+    );
+    public $boolProp = TRuE;
+    public $nullProp = NULL;
+
     /**
      * @param string $param1
      * @param string $param2

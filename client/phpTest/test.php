@@ -21,6 +21,7 @@ class Awesome
     public static function test($param1, Awesome $param2, $p2 = 'cat')
     {
         self::test();
+        $t = new Awesome();
         return new Awesome2();
     }
 
@@ -42,13 +43,11 @@ class Awesome2 implements myInterface
     public function ha(Awesome $a)
     {
         $a->test();
-
-        echo "$test->test->test";
+        echo "{$test->test}->test";
     }
 
     public function he()
     {
         $db = new PDO();
     }
-
 }

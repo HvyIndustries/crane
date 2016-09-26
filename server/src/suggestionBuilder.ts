@@ -54,6 +54,19 @@ export class SuggestionBuilder
         })[0];
     }
 
+    private isSelf(): boolean
+    {
+        if (this.currentLine.substr(this.charIndex - 6, this.charIndex - 1) == "self::") {
+            return true;
+        }
+
+        if (this.currentLine.substr(this.charIndex - 8, this.charIndex - 1) == "static::") {
+            return true;
+        }
+
+        return false;
+    }
+
     public build() : CompletionItem[]
     {
         var scope = this.getScope();
@@ -63,7 +76,7 @@ export class SuggestionBuilder
         if (this.lastChar == ">") {
             toReturn = toReturn.concat(this.checkAccessorAndAddMembers(scope));
         } else if (this.lastChar == ":") {
-            if (this.currentLine.substr(this.charIndex - 6, this.charIndex - 1) == "self::") {
+            if (this.isSelf()) {
                 // Accessing via self::
                 this.currentFileNode.classes.forEach(classNode => {
                     if (this.withinBlock(classNode)) {

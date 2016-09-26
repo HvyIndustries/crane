@@ -20,6 +20,7 @@ class Awesome
      */
     public static function test($param1, Awesome $param2, $p2 = 'cat')
     {
+        $t = new Awesome();
         return new Awesome2();
     }
 
@@ -36,13 +37,11 @@ class Awesome2
     public function ha(Awesome $a)
     {
         $a->test();
-
-        echo "$test->test->test";
+        echo "{$test->test}->test";
     }
 
     public function he()
     {
         $db = new PDO();
     }
-
 }

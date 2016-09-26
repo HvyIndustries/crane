@@ -64,6 +64,11 @@ export class TreeBuilder
         });
     }
 
+    public Ping(): string
+    {
+        return "pong";
+    }
+
     // Convert the generated AST into a usable object tree
     private BuildObjectTree(ast, filePath:string) : Promise<FileNode>
     {
@@ -193,31 +198,33 @@ export class TreeBuilder
 
                             branch[3][6].forEach(codeLevel =>
                             {
-                                // Build local scope variable setters
-                                let scopeVar = this.BuildVariableOrProp(codeLevel);
-                                if (scopeVar != null) {
-                                    methodNode.scopeVariables.push(scopeVar.variableNode);
-                                    if (scopeVar.lineCache != null) {
-                                        tree.lineCache.push(scopeVar.lineCache);
-                                    }
-                                }
-
-                                // Build function calls
-                                let functionCalls = this.BuildFunctionCallsToOtherFunctions(codeLevel);
-                                functionCalls.forEach(element => {
-                                    methodNode.functionCalls.push(element);
-                                });
-
-                                // Build imported global variables
-                                if (codeLevel[0] == "global")
-                                {
-                                    codeLevel[1].forEach(importGlobalLevel =>
-                                    {
-                                        if (importGlobalLevel[0] == "var")
-                                        {
-                                            methodNode.globalVariables.push(importGlobalLevel[1]);
+                                if (codeLevel != null) {
+                                    // Build local scope variable setters
+                                    let scopeVar = this.BuildVariableOrProp(codeLevel);
+                                    if (scopeVar != null) {
+                                        methodNode.scopeVariables.push(scopeVar.variableNode);
+                                        if (scopeVar.lineCache != null) {
+                                            tree.lineCache.push(scopeVar.lineCache);
                                         }
+                                    }
+
+                                    // Build function calls
+                                    let functionCalls = this.BuildFunctionCallsToOtherFunctions(codeLevel);
+                                    functionCalls.forEach(element => {
+                                        methodNode.functionCalls.push(element);
                                     });
+
+                                    // Build imported global variables
+                                    if (codeLevel[0] == "global")
+                                    {
+                                        codeLevel[1].forEach(importGlobalLevel =>
+                                        {
+                                            if (importGlobalLevel[0] == "var")
+                                            {
+                                                methodNode.globalVariables.push(importGlobalLevel[1]);
+                                            }
+                                        });
+                                    }
                                 }
                             });
 
@@ -463,27 +470,38 @@ export class TreeBuilder
                                     propNode.isStatic = true;
                                 }
 
-                                propLevel = propLevel[3][0];
-                                propNode.name = propLevel[3][0];
+                                if (propLevel[3][0] != null) {
+                                    propLevel = propLevel[3][0];
+                                    propNode.name = propLevel[3][0];
 
-                                if (propLevel[3][1] != null) {
-                                    let type = propLevel[3][1][0];
-                                    if (type == "string" || type == "number") {
-                                        propNode.type = type;
-                                        //propNode.value = codeLevel[3][1][1];
-                                    } else if (type == "const") {
-                                        propNode.type = "boolean";
-                                        //propNode.value = codeLevel[2][1];
+                                    if (propLevel[3][1] != null) {
+                                        let type = propLevel[3][1][0];
+
+                                        if (type == "position") {
+                                            type = propLevel[3][1][3][0];
+                                        }
+
+                                        if (type == "string" || type == "number" || type == "array") {
+                                            propNode.type = type;
+                                            //propNode.value = codeLevel[3][1][1];
+                                        } else if (type == "const") {
+                                            if (propLevel[3][1][1][0].toLowerCase() == "true" || propLevel[3][1][1][0].toLowerCase() == "false") {
+                                                propNode.type = "boolean";
+                                            } else if (propLevel[3][1][1][0].toLowerCase() == "null") {
+                                                propNode.type = "null";
+                                            }
+                                            //propNode.value = codeLevel[2][1];
+                                        }
                                     }
+
+                                    var symbolCache = new FileSymbolCache();
+                                    symbolCache.name = propNode.name;
+                                    symbolCache.type = SymbolType.Property;
+                                    symbolCache.parentName = classNode.name;
+                                    tree.symbolCache.push(symbolCache);
+
+                                    classNode.properties.push(propNode);
                                 }
-
-                                var symbolCache = new FileSymbolCache();
-                                symbolCache.name = propNode.name;
-                                symbolCache.type = SymbolType.Property;
-                                symbolCache.parentName = classNode.name;
-                                tree.symbolCache.push(symbolCache);
-
-                                classNode.properties.push(propNode);
                             });
 
                             // Build constants
@@ -533,31 +551,34 @@ export class TreeBuilder
                                     {
                                         methodLevel[3][6].forEach(codeLevel =>
                                         {
-                                            // Build local scope variable setters
-                                            let scopeVar = this.BuildVariableOrProp(codeLevel);
-                                            if (scopeVar != null) {
-                                                constructorNode.scopeVariables.push(scopeVar.variableNode);
-                                                if (scopeVar.lineCache != null) {
-                                                    tree.lineCache.push(scopeVar.lineCache);
-                                                }
-                                            }
-
-                                            // Build function calls
-                                            let functionCalls = this.BuildFunctionCallsToOtherFunctions(codeLevel);
-                                            functionCalls.forEach(element => {
-                                                constructorNode.functionCalls.push(element);
-                                            });
-
-                                            // Build imported global variables
-                                            if (codeLevel[0] == "global")
+                                            if (codeLevel != null)
                                             {
-                                                codeLevel[1].forEach(importGlobalLevel =>
-                                                {
-                                                    if (importGlobalLevel[0] == "var")
-                                                    {
-                                                        constructorNode.globalVariables.push(importGlobalLevel[1]);
+                                                // Build local scope variable setters
+                                                let scopeVar = this.BuildVariableOrProp(codeLevel);
+                                                if (scopeVar != null) {
+                                                    constructorNode.scopeVariables.push(scopeVar.variableNode);
+                                                    if (scopeVar.lineCache != null) {
+                                                        tree.lineCache.push(scopeVar.lineCache);
                                                     }
+                                                }
+
+                                                // Build function calls
+                                                let functionCalls = this.BuildFunctionCallsToOtherFunctions(codeLevel);
+                                                functionCalls.forEach(element => {
+                                                    constructorNode.functionCalls.push(element);
                                                 });
+
+                                                // Build imported global variables
+                                                if (codeLevel[0] == "global")
+                                                {
+                                                    codeLevel[1].forEach(importGlobalLevel =>
+                                                    {
+                                                        if (importGlobalLevel[0] == "var")
+                                                        {
+                                                            constructorNode.globalVariables.push(importGlobalLevel[1]);
+                                                        }
+                                                    });
+                                                }
                                             }
                                         });
                                     }

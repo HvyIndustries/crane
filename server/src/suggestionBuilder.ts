@@ -50,6 +50,19 @@ export class SuggestionBuilder
         })[0];
     }
 
+    private isSelf(): boolean
+    {
+        if (this.currentLine.substr(this.charIndex - 6, this.charIndex - 1) == "self::") {
+            return true;
+        }
+
+        if (this.currentLine.substr(this.charIndex - 8, this.charIndex - 1) == "static::") {
+            return true;
+        }
+
+        return false;
+    }
+
     public build() : CompletionItem[]
     {
         var scope = this.getScope();
@@ -59,7 +72,7 @@ export class SuggestionBuilder
         if (this.lastChar == ">") {
             toReturn = toReturn.concat(this.checkAccessorAndAddMembers(scope));
         } else if (this.lastChar == ":") {
-            if (this.currentLine.substr(this.charIndex - 6, this.charIndex - 1) == "self::") {
+            if (this.isSelf()) {
                 // Accessing via self::
                 this.currentFileNode.classes.forEach(classNode => {
                     if (this.withinBlock(classNode)) {
@@ -70,7 +83,7 @@ export class SuggestionBuilder
             } else {
                 // Probably accessing via [ClassName]::
                 var classNames = this.currentLine.trim().match(/\S(\B[a-z]+?)(?=::)/ig);
-                if (classNames.length > 0) {
+                if (classNames && classNames.length > 0) {
                     var className = classNames[classNames.length - 1];
                     var classNode = this.getClassNodeFromTree(className);
                     if (classNode != null) {

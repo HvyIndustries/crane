@@ -270,7 +270,7 @@ export default class Crane
         let delayer = this.delayers[key];
 
         if (!delayer) {
-            delayer = new ThrottledDelayer<void>(250);
+            delayer = new ThrottledDelayer<void>(500);
             this.delayers[key] = delayer;
         }
 

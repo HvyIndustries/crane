@@ -37,6 +37,12 @@ For the best development experience, make sure you have the PHP linter enabled i
 > **Another total must have for PHP developers using Visual Studio Code.**  
 > Jan Hajek
 
+> **Essential extension for every PHP developer, just install :)**  
+> Marcelo Rodrigo
+
+> **Essential to every PHP developer, recommended!**  
+> Gabriel Coronado
+
 > That's the tweet I've been waiting for since the first public release of VS Code. Thanks.  
 > [Bruno Baketaric](https://twitter.com/laphblog/status/719631906598449152)
 

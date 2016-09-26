@@ -1,15 +1,15 @@
 {
     "name": "crane",
-    "displayName": "Crane - PHP Intellisense",
+    "displayName": "PHP Intellisense - Crane",
     "description": "PHP Intellisense/code-completion",
     "author": {
         "name": "Hvy Industries",
         "url": "https://hvy.io",
         "email": "joe@hvy.io"
     },
-    "icon": "images/icon.png",
+    "icon": "images/php-256.png",
     "license": "MIT",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "publisher": "HvyIndustries",
     "engines": {
         "vscode": "^0.10.x"
@@ -28,6 +28,11 @@
     ],
     "keywords": [
         "php",
+        "php5",
+        "php7",
+        "crane",
+        "hvy",
+        "productivity",
         "code-completion",
         "intellisense"
     ],
@@ -113,7 +118,7 @@
     "dependencies": {
         "fstream": "^1.0.9",
         "mkdirp": "^0.5.1",
-        "php-parser": "HvyIndustries/php-parser#faa51b7",
+        "php-parser": "HvyIndustries/php-parser#8820998",
         "rimraf": "^2.5.2",
         "unzip": "^0.1.11",
         "vscode-languageclient": "^1.1.0"

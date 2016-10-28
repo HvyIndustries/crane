@@ -31,6 +31,11 @@ export default class Config {
         return Config.craneSettings ? Config.craneSettings.get<string>("phpstubsZipFile", "https://codeload.github.com/HvyIndustries/crane-php-stubs/zip/master") : "https://codeload.github.com/HvyIndustries/crane-php-stubs/zip/master";
     }
 
+    public static get ignoredPaths(): Array<string> {
+        Config.reloadConfig();
+        return Config.craneSettings ? Config.craneSettings.get<Array<string>>("ignoredPaths", []) : [];
+    }
+
     public static get version(): string {
         return pkg.version.toString();
     }

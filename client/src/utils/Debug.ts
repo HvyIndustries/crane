@@ -1,9 +1,9 @@
 import { window, workspace, OutputChannel } from 'vscode';
-import { Config } from './Config';
+import Config from './Config';
 
 const outputConsole = window.createOutputChannel("Crane Console");
 
-export class Debug {
+export default class Debug {
 
     private static calls: number = 0;
 

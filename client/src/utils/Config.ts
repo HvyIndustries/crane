@@ -1,9 +1,9 @@
 import { workspace } from 'vscode';
-import { Debug } from './Debug';
+import Debug from './Debug';
 
 var pkg = require('../../../package.json');
 
-export class Config {
+export default class Config {
 
     public static craneSettings = workspace.getConfiguration("crane");
 

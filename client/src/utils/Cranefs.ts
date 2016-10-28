@@ -1,17 +1,18 @@
 import { workspace, window } from 'vscode';
 import { NotificationType, RequestType } from 'vscode-languageclient';
 import Crane from '../crane';
-import { Debug } from './Debug';
-import { Config } from './Config';
+import Debug from './Debug';
+import Config from './Config';
+import PHPConfig from './PHPConfig';
 
-const crypto  = require('crypto');
-const fs      = require('fs');
+const crypto = require('crypto');
+const fs = require('fs');
 const fstream = require('fstream');
-const http    = require('https');
-const unzip   = require('unzip');
-const util    = require('util');
-const mkdirp  = require('mkdirp');
-const rmrf    = require('rimraf');
+const http = require('https');
+const unzip = require('unzip');
+const util = require('util');
+const mkdirp = require('mkdirp');
+const rmrf = require('rimraf');
 
 let craneSettings = workspace.getConfiguration("crane");
 
@@ -106,18 +107,18 @@ export class Cranefs {
                     Debug.error(util.inspect(error, false, null));
                 });
             } else {
-                resolve({folderExists: false, folderCreated: false, path: null})
+                resolve({ folderExists: false, folderCreated: false, path: null })
             }
         });
     }
 
-    public doesProjectTreeExist(): Promise<{exists:boolean, path:string}> {
+    public doesProjectTreeExist(): Promise<{ exists: boolean, path: string }> {
         return new Promise((resolve, reject) => {
             fs.stat(this.getTreePath(), (err, stat) => {
                 if (err === null) {
-                    resolve({exists: true, path: this.getTreePath()});
+                    resolve({ exists: true, path: this.getTreePath() });
                 } else {
-                    resolve({exists: false, path: null});
+                    resolve({ exists: false, path: null });
                 }
             });
         });
@@ -127,11 +128,13 @@ export class Cranefs {
         if (workspace.rootPath == undefined) return;
         var fileProcessCount = 0;
 
+        PHPConfig.load();
+
         // Get PHP files from 'files.associations' to be processed
-        var files = Config.phpFileTypes;
+        let files = PHPConfig.getFilePatterns();
 
         // Find all the php files to process
-        workspace.findFiles(`{${files.include.join(',')}}`, `{${files.exclude.join(',')}}`).then(files => {
+        workspace.findFiles(files.include, files.exclude).then(files => {
             Debug.info(`Preparing to parse ${files.length} PHP source files...`);
 
             fileProcessCount = files.length;

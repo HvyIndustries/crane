@@ -13,18 +13,17 @@ import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions, T
 
 import Crane from "./crane";
 import QualityOfLife from "./features/qualityOfLife";
-import { Debug } from './utils/Debug';
-import { Config } from './utils/Config';
+import Debug from './utils/Debug';
+import Config from './utils/Config';
 
-export function activate(context: ExtensionContext)
-{
+export function activate(context: ExtensionContext) {
     let qol: QualityOfLife = new QualityOfLife();
 
     let serverModule = context.asAbsolutePath(path.join("server", "server.js"));
     let debugOptions = { execArgv: ["--nolazy", "--debug=6004"] };
 
     let serverOptions: ServerOptions = {
-        run : { module: serverModule, transport: TransportKind.ipc },
+        run: { module: serverModule, transport: TransportKind.ipc },
         debug: { module: serverModule, transport: TransportKind.ipc, options: debugOptions }
     }
 

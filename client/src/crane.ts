@@ -14,8 +14,9 @@ import {
 import { LanguageClient, RequestType, NotificationType } from 'vscode-languageclient';
 import { ThrottledDelayer } from './utils/async';
 import { Cranefs } from './utils/Cranefs';
-import { Debug } from './utils/Debug';
-import { Config } from './utils/Config';
+import Debug from './utils/Debug';
+import Config from './utils/Config';
+import PHPConfig from './utils/PHPConfig';
 
 const exec = require('child_process').exec;
 const util = require('util');
@@ -24,8 +25,7 @@ let craneSettings = workspace.getConfiguration("crane");
 
 const cranefs: Cranefs = new Cranefs();
 console.log(process.platform)
-export default class Crane
-{
+export default class Crane {
     public static langClient: LanguageClient;
 
     private disposable: Disposable;
@@ -41,7 +41,7 @@ export default class Crane
         let subscriptions: Disposable[] = [];
 
         workspace.onDidChangeTextDocument((e) => this.onChangeTextHandler(e.document), null, subscriptions);
-        workspace.onDidCloseTextDocument((textDocument)=> { delete this.delayers[textDocument.uri.toString()]; }, null, subscriptions);
+        workspace.onDidCloseTextDocument((textDocument) => { delete this.delayers[textDocument.uri.toString()]; }, null, subscriptions);
         workspace.onDidSaveTextDocument((document) => this.handleFileSave());
 
         this.disposable = Disposable.from(...subscriptions);
@@ -56,8 +56,7 @@ export default class Crane
         });
     }
 
-    private checkVersion(): Thenable<boolean>
-    {
+    private checkVersion(): Thenable<boolean> {
         var self = this;
         Debug.info('Checking the current version of Crane');
         return new Promise((resolve, reject) => {
@@ -140,25 +139,33 @@ export default class Crane
         var types = Config.phpFileTypes;
         Debug.info(`Watching these files: {${types.include.join(',')}}`);
 
-        var fsw: FileSystemWatcher = workspace.createFileSystemWatcher(`{${types.include.join(',')}}`);
+        var fsw: FileSystemWatcher = workspace.createFileSystemWatcher(`{${types.include.join(',')},**/phpconfig.json}`);
         fsw.onDidChange(e => {
             workspace.openTextDocument(e).then(document => {
-                if (document.languageId != 'php') return;
+                if (!['php', 'json'].indexOf(document.languageId)) return;
                 Debug.info('File Changed: ' + e.fsPath);
-                Crane.langClient.sendRequest({ method: 'buildObjectTreeForDocument' }, {
-                    path: e.fsPath,
-                    text: document.getText()
-                });
+                if (document.languageId == 'php') {
+                    Crane.langClient.sendRequest({ method: 'buildObjectTreeForDocument' }, {
+                        path: e.fsPath,
+                        text: document.getText()
+                    });
+                } else if (document.languageId == 'json') {
+                    cranefs.processWorkspaceFiles(true);
+                }
             });
         });
         fsw.onDidCreate(e => {
             workspace.openTextDocument(e).then(document => {
-                if (document.languageId != 'php') return;
+                if (!['php', 'json'].indexOf(document.languageId)) return;
                 Debug.info('File Created: ' + e.fsPath);
-                Crane.langClient.sendRequest({ method: 'buildObjectTreeForDocument' }, {
-                    path: e.fsPath,
-                    text: document.getText()
-                });
+                if (document.languageId == 'php') {
+                    Crane.langClient.sendRequest({ method: 'buildObjectTreeForDocument' }, {
+                        path: e.fsPath,
+                        text: document.getText()
+                    });
+                } else if (document.languageId == 'json') {
+                    cranefs.processWorkspaceFiles(true);
+                }
             });
         });
         fsw.onDidDelete(e => {
@@ -277,8 +284,7 @@ export default class Crane
         delayer.trigger(() => this.buildObjectTreeForDocument(textDocument));
     }
 
-    private buildObjectTreeForDocument(document: TextDocument): Promise<void>
-    {
+    private buildObjectTreeForDocument(document: TextDocument): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             var path = document.fileName;
             var text = document.getText();
@@ -286,12 +292,11 @@ export default class Crane
             var projectTree = cranefs.getTreePath();
 
             var requestType: RequestType<any, any, any> = { method: "buildObjectTreeForDocument" };
-            Crane.langClient.sendRequest(requestType, { path, text, projectDir, projectTree }).then(() => resolve() );
+            Crane.langClient.sendRequest(requestType, { path, text, projectDir, projectTree }).then(() => resolve());
         });
     }
 
-    dispose()
-    {
+    dispose() {
         this.disposable.dispose();
         Crane.statusBarItem.dispose();
     }

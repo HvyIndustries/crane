@@ -43,7 +43,8 @@
     "private": true,
     "homepage": "https://hvy.io/crane",
     "activationEvents": [
-        "onLanguage:php"
+        "onLanguage:php",
+        "workspaceContains:phpconfig.json"
     ],
     "main": "./out/src/extension",
     "contributes": {

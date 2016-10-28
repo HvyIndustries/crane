@@ -70,6 +70,11 @@
                     "type": "string",
                     "default": "https://codeload.github.com/HvyIndustries/crane-php-stubs/zip/master",
                     "description": "The location of the PHP Stubs zip file that can be downloaded and unzipped for 3rd party library autocompletion"
+                },
+                "crane.ignoredPaths": {
+                    "type": "array",
+                    "default": [],
+                    "description": "An array of files/folders that should be ignored by the parser. Glob patterns are accepted (eg. **/*bad.php)"
                 }
             }
         },

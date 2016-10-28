@@ -20,7 +20,7 @@ For the best development experience, make sure you have the PHP linter enabled i
 
 ## What's new in v0.2.2 (latest release)
 
-- Ability to ignore files/folders for parsing (workaround for parser crashing issue)
+- Added new setting `crane.ignoredPaths` that gives users the ability to ignore files/folders for parsing _(workaround for parser crashing issue)_
 - Added "what's new" section to readme to highlight new features/bug fixes
 
 ---

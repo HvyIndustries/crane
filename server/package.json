@@ -3,6 +3,13 @@
     "description": "The language server for Crane",
     "version": "1.0.2",
     "author": "HVY Industries",
+    "contributors": [
+        {
+            "name": "Ryan Naddy",
+            "email": "untuned20@gmail.com",
+            "url": "http://ryannaddy.com"
+        }
+    ],
     "license": "MIT",
     "engines": {
         "node": "*"
@@ -18,7 +25,7 @@
         "vscode-languageserver": "^1.1.0"
     },
     "devDependencies": {
-        "typescript": "^1.6.2"
+        "typescript": "^2.*.*"
     },
     "scripts": {
         "compile": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc -p .",

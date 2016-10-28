@@ -130,6 +130,9 @@ export class Cranefs {
         // Get PHP files from 'files.associations' to be processed
         var files = Config.phpFileTypes;
 
+        // Exclude files ignored by the user
+        files.exclude = files.exclude.concat(Config.ignoredPaths);
+
         // Find all the php files to process
         workspace.findFiles(`{${files.include.join(',')}}`, `{${files.exclude.join(',')}}`).then(files => {
             Debug.info(`Preparing to parse ${files.length} PHP source files...`);

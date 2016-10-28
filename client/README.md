@@ -16,6 +16,15 @@ Follow [@HvyIndustries](https://twitter.com/HvyIndustries) on Twitter for update
 
 For the best development experience, make sure you have the PHP linter enabled in your user settings, and set it to run `onType` instead of `onSave`!
 
+---
+
+## What's new in v0.2.2 (latest release)
+
+- Added new setting `crane.ignoredPaths` that gives users the ability to ignore files/folders for parsing _(workaround for parser crashing issue)_
+- Added "what's new" section to readme to highlight new features/bug fixes
+
+---
+
 ## Current Features
 
 - Code-completion _(in progress, not quite 100% complete yet)_

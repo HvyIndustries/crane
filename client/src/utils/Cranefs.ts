@@ -35,7 +35,7 @@ export class Cranefs {
             return process.env.HOME + '/Library/Preferences/Crane';
         }
         if (process.platform == 'linux') {
-            return process.env.HOME + '/Crane';
+            return process.env.HOME + '/.Crane';
         }
     }
 
@@ -130,7 +130,7 @@ export class Cranefs {
 
         PHPConfig.load();
 
-        // Get PHP files from 'files.associations' to be processed
+        // Get PHP files from 'phpconfig.json' to be processed
         let files = PHPConfig.getFilePatterns();
 
         // Exclude files ignored by the user

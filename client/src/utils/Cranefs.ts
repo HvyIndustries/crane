@@ -134,7 +134,7 @@ export class Cranefs {
         let files = PHPConfig.getFilePatterns();
 
         // Exclude files ignored by the user
-        files.exclude = files.exclude.concat(Config.ignoredPaths);
+        // files.exclude = files.exclude.concat(Config.ignoredPaths);
 
         // Find all the php files to process
         workspace.findFiles(files.include, files.exclude).then(files => {

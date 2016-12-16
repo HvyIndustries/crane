@@ -126,6 +126,10 @@ export class TreeBuilder
                     break;
 
                 case "const":
+                    // this fixes exception when trying ot get completion on file `use` statements
+                    if (branch[1][0] === undefined || branch[1][0][1] === undefined || branch[1][0][1][0] === undefined) {
+                        break;
+                    }
                     let constantNode: ConstantNode = new ConstantNode();
                     if (isset(branch[1][0][0] || false) && isset(branch[1][0][1][0] || false)) {
                         constantNode.name = branch[1][0][0];

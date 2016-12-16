@@ -284,7 +284,9 @@ export class SuggestionBuilder
                         detail: '\\' + item.namespaceParts.join('\\'),
                         insertText:
                             (this.doc.getText().indexOf('use ' + item.namespaceParts.join('\\') + '\\' + item.name + ';') !== -1) ?
-                                item.name : item.namespaceParts.join('\\') + '\\' + item.name
+                                item.name : (item.namespaceParts.length > 0 ? (
+                                    this.currentLine.indexOf('use ') !== 0 ? '\\' : ''
+                                ) + item.namespaceParts.join('\\') : '') + '\\'+ item.name
                     });
                 });
             }
@@ -297,7 +299,9 @@ export class SuggestionBuilder
                         detail: '\\' + item.namespace.join('\\'),
                         insertText:
                             (this.doc.getText().indexOf('use ' + item.namespace.join('\\') + '\\' + item.name + ';') !== -1) ?
-                                item.name : item.namespace.join('\\') + '\\' + item.name
+                                item.name : (item.namespace.length > 0 ? (
+                                    this.currentLine.indexOf('use ') !== 0 ? '\\' : ''
+                                ) + item.namespace.join('\\') : '') + '\\'+ item.name
                     });
                 });
             }
@@ -310,20 +314,34 @@ export class SuggestionBuilder
                         detail: '\\' + item.namespaceParts.join('\\'),
                         insertText:
                             (this.doc.getText().indexOf('use ' + item.namespaceParts.join('\\') + '\\' + item.name + ';') !== -1) ?
-                                item.name : item.namespaceParts.join('\\') + '\\' + item.name
+                                item.name : (item.namespaceParts.length > 0 ? (
+                                    this.currentLine.indexOf('use ') !== 0 ? '\\' : ''
+                                ) + item.namespaceParts.join('\\') : '') + '\\'+ item.name
                     });
                 });
             }
         });
 
         return toReturn.filter((item) => {
-            if (this.currentLine.indexOf('new') !== -1 || this.currentLine.indexOf('extends') !== -1 && (this.currentLine.indexOf('extends') < this.charIndex)) {
+            if (this.currentLine.indexOf(' new ') !== -1 || this.currentLine.indexOf(' extends ') !== -1 && (this.currentLine.indexOf(' extends ') < this.charIndex)) {
                 return item.kind === CompletionItemKind.Class;
             }
 
-            if (this.currentLine.indexOf('implements') !== -1 && (this.currentLine.indexOf('implements') < this.charIndex)) {
+            if (this.currentLine.indexOf(' implements ') !== -1 && (this.currentLine.indexOf(' implements ') < this.charIndex)) {
                 return item.kind === CompletionItemKind.Interface;
             }
+
+            if (this.currentLine.indexOf(' use ') === 0) {
+                return item.kind === CompletionItemKind.Module;
+            }
+
+            /**
+             * This prevents issues where suggestions hould be there but are not
+             * like when assigning the result of a static method call to a variable,
+             * looking for '=' on the line is a bit risky and might lead to poor
+             * suggestions, also another case is when typehinting the function/method
+             * arguments.
+             */
 
             return true;
         });

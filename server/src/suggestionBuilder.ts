@@ -268,24 +268,73 @@ export class SuggestionBuilder
         this.workspaceTree.forEach(fileNode => {
             if (options.classes) {
                 fileNode.classes.forEach(item => {
-                    toReturn.push({ label: item.name, kind: CompletionItemKind.Class, detail: "(class)" });
+                    toReturn.push({
+                        label: item.name,
+                        kind: CompletionItemKind.Class,
+                        detail: '\\' + item.namespaceParts.join('\\'),
+                        insertText:
+                            (this.doc.getText().indexOf('use ' + item.namespaceParts.join('\\') + '\\' + item.name + ';') !== -1) ?
+                                item.name : (item.namespaceParts.length > 0 ? (
+                                    this.currentLine.indexOf('use ') !== 0 ? '\\' : ''
+                                ) + item.namespaceParts.join('\\') : '') + '\\'+ item.name
+                    });
                 });
             }
 
             if (options.interfaces) {
                 fileNode.interfaces.forEach(item => {
-                    toReturn.push({ label: item.name, kind: CompletionItemKind.Interface, detail: "(interface)" });
+                    toReturn.push({
+                        label: item.name,
+                        kind: CompletionItemKind.Interface,
+                        detail: '\\' + item.namespace.join('\\'),
+                        insertText:
+                            (this.doc.getText().indexOf('use ' + item.namespace.join('\\') + '\\' + item.name + ';') !== -1) ?
+                                item.name : (item.namespace.length > 0 ? (
+                                    this.currentLine.indexOf('use ') !== 0 ? '\\' : ''
+                                ) + item.namespace.join('\\') : '') + '\\'+ item.name
+                    });
                 });
             }
 
             if (options.traits) {
                 fileNode.traits.forEach(item => {
-                    toReturn.push({ label: item.name, kind: CompletionItemKind.Module, detail: "(trait)" });
+                    toReturn.push({
+                        label: item.name,
+                        kind: CompletionItemKind.Module,
+                        detail: '\\' + item.namespaceParts.join('\\'),
+                        insertText:
+                            (this.doc.getText().indexOf('use ' + item.namespaceParts.join('\\') + '\\' + item.name + ';') !== -1) ?
+                                item.name : (item.namespaceParts.length > 0 ? (
+                                    this.currentLine.indexOf('use ') !== 0 ? '\\' : ''
+                                ) + item.namespaceParts.join('\\') : '') + '\\'+ item.name
+                    });
                 });
             }
         });
 
-        return toReturn;
+        return toReturn.filter((item) => {
+            if (this.currentLine.indexOf(' new ') !== -1 || this.currentLine.indexOf(' extends ') !== -1 && (this.currentLine.indexOf(' extends ') < this.charIndex)) {
+                return item.kind === CompletionItemKind.Class;
+            }
+
+            if (this.currentLine.indexOf(' implements ') !== -1 && (this.currentLine.indexOf(' implements ') < this.charIndex)) {
+                return item.kind === CompletionItemKind.Interface;
+            }
+
+            if (this.currentLine.indexOf(' use ') === 0) {
+                return item.kind === CompletionItemKind.Module;
+            }
+
+            /**
+             * This prevents issues where suggestions hould be there but are not
+             * like when assigning the result of a static method call to a variable,
+             * looking for '=' on the line is a bit risky and might lead to poor
+             * suggestions, also another case is when typehinting the function/method
+             * arguments.
+             */
+
+            return true;
+        });
     }
 
     private getScope() : Scope

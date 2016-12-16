@@ -126,6 +126,10 @@ export class TreeBuilder
                     break;
 
                 case "const":
+                    // this fixes exception when trying ot get completion on file `use` statements
+                    if (branch[1][0] === undefined || branch[1][0][1] === undefined || branch[1][0][1][0] === undefined) {
+                        break;
+                    }
                     let constantNode: ConstantNode = new ConstantNode();
                     if (isset(branch[1][0][0] || false) && isset(branch[1][0][1][0] || false)) {
                         constantNode.name = branch[1][0][0];
@@ -252,6 +256,14 @@ export class TreeBuilder
                                 });
                             }
 
+                            if (parentBranches != null && parentBranches.length > 0)
+                            {
+                                // Add namespaces
+                                parentBranches.forEach(item => {
+                                    interfaceNode.namespace.push(item);
+                                });
+                            }
+
                             // Build constants
                             branch[3][4].constants.forEach(constant =>
                             {
@@ -307,6 +319,14 @@ export class TreeBuilder
 
                             if (branch[3][2] != false) {
                                 traitNode.extends = branch[3][2][0];
+                            }
+
+                            if (parentBranches != null && parentBranches.length > 0)
+                            {
+                                // Add namespaces
+                                parentBranches.forEach(item => {
+                                    traitNode.namespaceParts.push(item);
+                                });
                             }
 
                             branch[3][4].properties.forEach(propLevel =>

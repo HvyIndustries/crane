@@ -296,12 +296,12 @@ export class SuggestionBuilder
                     toReturn.push({
                         label: item.name,
                         kind: CompletionItemKind.Interface,
-                        detail: '\\' + item.namespace.join('\\'),
+                        detail: '\\' + item.namespaceParts.join('\\'),
                         insertText:
-                            (this.doc.getText().indexOf('use ' + item.namespace.join('\\') + '\\' + item.name + ';') !== -1) ?
-                                item.name : (item.namespace.length > 0 ? (
+                            (this.doc.getText().indexOf('use ' + item.namespaceParts.join('\\') + '\\' + item.name + ';') !== -1) ?
+                                item.name : (item.namespaceParts.length > 0 ? (
                                     this.currentLine.indexOf('use ') !== 0 ? '\\' : ''
-                                ) + item.namespace.join('\\') : '') + '\\'+ item.name
+                                ) + item.namespaceParts.join('\\') : '') + '\\'+ item.name
                     });
                 });
             }

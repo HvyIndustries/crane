@@ -268,24 +268,55 @@ export class SuggestionBuilder
         this.workspaceTree.forEach(fileNode => {
             if (options.classes) {
                 fileNode.classes.forEach(item => {
-                    toReturn.push({ label: item.name, kind: CompletionItemKind.Class, detail: "(class)" });
+                    toReturn.push({
+                        label: item.name,
+                        kind: CompletionItemKind.Class,
+                        detail: '\\' + item.namespaceParts.join('\\'),
+                        insertText:
+                            (this.doc.getText().indexOf('use ' + item.namespaceParts.join('\\') + '\\' + item.name + ';') !== -1) ?
+                                item.name : item.namespaceParts.join('\\') + '\\' + item.name
+                    });
                 });
             }
 
             if (options.interfaces) {
                 fileNode.interfaces.forEach(item => {
-                    toReturn.push({ label: item.name, kind: CompletionItemKind.Interface, detail: "(interface)" });
+                    toReturn.push({
+                        label: item.name,
+                        kind: CompletionItemKind.Interface,
+                        detail: '\\' + item.namespace.join('\\'),
+                        insertText:
+                            (this.doc.getText().indexOf('use ' + item.namespace.join('\\') + '\\' + item.name + ';') !== -1) ?
+                                item.name : item.namespace.join('\\') + '\\' + item.name
+                    });
                 });
             }
 
             if (options.traits) {
                 fileNode.traits.forEach(item => {
-                    toReturn.push({ label: item.name, kind: CompletionItemKind.Module, detail: "(trait)" });
+                    toReturn.push({
+                        label: item.name,
+                        kind: CompletionItemKind.Module,
+                        detail: '\\' + item.namespaceParts.join('\\'),
+                        insertText:
+                            (this.doc.getText().indexOf('use ' + item.namespaceParts.join('\\') + '\\' + item.name + ';') !== -1) ?
+                                item.name : item.namespaceParts.join('\\') + '\\' + item.name
+                    });
                 });
             }
         });
 
-        return toReturn;
+        return toReturn.filter((item) => {
+            if (this.currentLine.indexOf('new') !== -1 || this.currentLine.indexOf('extends') !== -1 && (this.currentLine.indexOf('extends') < this.charIndex)) {
+                return item.kind === CompletionItemKind.Class;
+            }
+
+            if (this.currentLine.indexOf('implements') !== -1 && (this.currentLine.indexOf('implements') < this.charIndex)) {
+                return item.kind === CompletionItemKind.Interface;
+            }
+
+            return true;
+        });
     }
 
     private getScope() : Scope

@@ -252,6 +252,14 @@ export class TreeBuilder
                                 });
                             }
 
+                            if (parentBranches != null && parentBranches.length > 0)
+                            {
+                                // Add namespaces
+                                parentBranches.forEach(item => {
+                                    interfaceNode.namespace.push(item);
+                                });
+                            }
+
                             // Build constants
                             branch[3][4].constants.forEach(constant =>
                             {
@@ -307,6 +315,14 @@ export class TreeBuilder
 
                             if (branch[3][2] != false) {
                                 traitNode.extends = branch[3][2][0];
+                            }
+
+                            if (parentBranches != null && parentBranches.length > 0)
+                            {
+                                // Add namespaces
+                                parentBranches.forEach(item => {
+                                    traitNode.namespaceParts.push(item);
+                                });
                             }
 
                             branch[3][4].properties.forEach(propLevel =>

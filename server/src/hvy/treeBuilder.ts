@@ -126,7 +126,7 @@ export class TreeBuilder
                     break;
 
                 case "const":
-                    // this fixes exception when trying ot get completion on file `use` statements
+                    // this fixes exception when trying to get completion on file `use` statements
                     if (branch[1][0] === undefined || branch[1][0][1] === undefined || branch[1][0][1][0] === undefined) {
                         break;
                     }

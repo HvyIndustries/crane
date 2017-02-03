@@ -11,17 +11,17 @@ import App from '../app';
  * Defines a callback registration
  */
 export function cmdRefresh(app:App, connection:IConnection) {
-    connection.onRequest(
-        new RequestType<any, any, any, any>("doRefresh"),
-        (data) => {
-            app.workspace.scan()
-                .catch(function(e) {
-                    app.message.error(e.message);
-                    if (app.settings.debugMode) {
-                        app.message.trace(e.stack);
-                    }
-                    return new Error()
-                });
-        }
-    );
+    // connection.onRequest(
+    //     new RequestType<any, any, any, any>("doRefresh"),
+    //     (data) => {
+    //         app.workspace.scan()
+    //             .catch(function(e) {
+    //                 app.message.error(e.message);
+    //                 if (app.settings.debugMode) {
+    //                     app.message.trace(e.stack);
+    //                 }
+    //                 return new Error()
+    //             });
+    //     }
+    // );
 };

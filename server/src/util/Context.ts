@@ -81,35 +81,35 @@ export default class Context {
     /**
      * Resolves the current context
      */
-    resolve(app:App, filename:string, offset:number): Promise<any> {
-        return new Promise((done, reject) => {
-            // search the file
-            app.workspace.has(filename).then((document) => {
-                if (!document) {
-                    // document not saved yet
-                    try {
-                        var reader = new phpParser({
-                            ast: {
-                                withPositions: true
-                            },
-                            parser: {
-                                extractDoc: true,
-                                suppressErrors: true
-                            }
-                        });
-                        // virtual file (without putting it into the repository)
-                        document = new fileReflection(
-                            app.workspace,
-                            filename,
-                            reader.parseCode(this.text)
-                        );
-                    } catch (e) {
-                        reject(e);
-                    }
-                }
-                this.scope = document.scope(offset);
-                done();
-            });
-        });
-    }
+    // resolve(app:App, filename:string, offset:number): Promise<any> {
+    //     return new Promise((done, reject) => {
+    //         // search the file
+    //         app.workspace.has(filename).then((document) => {
+    //             if (!document) {
+    //                 // document not saved yet
+    //                 try {
+    //                     var reader = new phpParser({
+    //                         ast: {
+    //                             withPositions: true
+    //                         },
+    //                         parser: {
+    //                             extractDoc: true,
+    //                             suppressErrors: true
+    //                         }
+    //                     });
+    //                     // virtual file (without putting it into the repository)
+    //                     document = new fileReflection(
+    //                         app.workspace,
+    //                         filename,
+    //                         reader.parseCode(this.text)
+    //                     );
+    //                 } catch (e) {
+    //                     reject(e);
+    //                 }
+    //             }
+    //             this.scope = document.scope(offset);
+    //             done();
+    //         });
+    //     });
+    // }
 }

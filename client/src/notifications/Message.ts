@@ -6,6 +6,7 @@
 'use strict';
 
 import { NotificationType, LanguageClient } from "vscode-languageclient";
+import * as utils from "../utils";
 
 /**
  * List of message types
@@ -24,8 +25,8 @@ class MessageArg {
     message: String;
 };
 
-function action(message:MessageArg) {
-    console.log(message);
+function action(msg:MessageArg) {
+    utils.log('MESSAGE('+msg.type+') '+msg.message);
 }
 
 const type: NotificationType<MessageArg, any> = new NotificationType("message");

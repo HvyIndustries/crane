@@ -17,7 +17,7 @@ import {
 import * as vscode from 'vscode';
 import * as nls from 'vscode-nls';
 
-import * as util from './util';
+import * as utils from './utils';
 import commands from './commands';
 import notifications from './notifications';
 import * as providers from './providers';
@@ -29,7 +29,7 @@ const localize = nls.config()();
 export function activate(context: vscode.ExtensionContext) {
 
     // Create the language client and start the client.
-    util.log('start the language client');
+    utils.log('start the language client');
 
     let serverModule = context.asAbsolutePath(path.join("server", "server.js"));
     let debugOptions = { execArgv: ["--nolazy", "--debug=6004"] };
@@ -61,19 +61,19 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     client.onReady().then(function() {
-        util.log('registering notifications');
+        utils.log('registering notifications');
         for(let name in notifications) {
             notifications[name].activate(client);
         }
     }).catch(function(e) {
-        util.log('FATAL ERROR / Unable to start server\n\n' + e.stack);
+        utils.log('FATAL ERROR / Unable to start server\n\n' + e.stack);
     });
     
     context.subscriptions.push(
         client.start()
     );
 
-    util.log('registering commands');
+    utils.log('registering commands');
     for(let name in commands) {
         context.subscriptions.push(
             vscode.commands.registerCommand(
@@ -82,7 +82,7 @@ export function activate(context: vscode.ExtensionContext) {
         );
     }
 
-    util.log('registering providers');
+    utils.log('registering providers');
     providers.activate(context);
 
 }

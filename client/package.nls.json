@@ -1,0 +1,6 @@
+{
+    "crane.config.debug": "Enable or disable debug mode. WARNING: may cause performance slowdowns on large project s!",
+    "crane.config.cache": "Enable caching to allow Crane to start faster after the workspace has been indexed",
+    "crane.command.rebuildSources": "Crane - Reindex PHP files in the workspace",
+    "crane.command.deleteCaches": "Crane - Delete all PHP file caches"
+}

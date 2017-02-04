@@ -45,21 +45,21 @@
     "activationEvents": [
         "onLanguage:php"
     ],
-    "main": "./out/extension",
+    "main": "./out/main",
     "contributes": {
         "configuration": {
             "type": "object",
             "title": "Crane Configuration",
             "properties": {
-                "crane.enableCache": {
+                "crane.cache": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Enable caching to allow Crane to start faster after the workspace has been indexed"
+                    "description": "%crane.config.cache%"
                 },
-                "crane.debugMode": {
+                "crane.debug": {
                     "type": "boolean",
                     "default": false,
-                    "description": "Enable or disable debug mode. WARNING: may cause performance slowdowns on large projects!"
+                    "description": "%crane.config.debug%"
                 }
             }
         },
@@ -74,11 +74,11 @@
         "commands": [
             {
                 "command": "crane.rebuildSources",
-                "title": "Crane - Reindex PHP files in the workspace"
+                "title": "%crane.command.rebuildSources%"
             },
             {
                 "command": "crane.deleteCaches",
-                "title": "Crane - Delete all PHP file caches"
+                "title": "%crane.command.deleteCaches%"
             }
         ],
         "snippets": [
@@ -102,6 +102,7 @@
     "dependencies": {
         "php-parser": "^2.0.0-pre4",
         "php-reflection": "^1.1.0",
-        "vscode-languageclient": "^3.0.4"
+        "vscode-languageclient": "^3.0.3",
+        "vscode-nls": "^1.0.4"
     }
 }

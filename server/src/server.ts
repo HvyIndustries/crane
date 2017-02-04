@@ -29,6 +29,8 @@ import App from './app';
 import Message from './util/Message';
 import Context from './util/Context';
 import Autocomplete from './suggestion';
+import cmdRefresh from './commands/Refresh';
+
 let instance:App = null;
 
 // Initialise the connection with the client
@@ -39,7 +41,6 @@ let connection: IConnection = createConnection(
 
 // creates the debug instance
 let out:Message = new Message(connection);
-out.status("Starting crane");
 
 // loads the workspace definition
 let documents: TextDocuments = new TextDocuments();
@@ -49,11 +50,13 @@ documents.listen(connection);
  * Here the application starts
  */
 connection.onInitialize((params): InitializeResult => {
+    out.status("Starting crane");
+
     instance = new App(params.rootPath, params.initializationOptions);
     instance.message = out;
     instance.autocomplete = Autocomplete(instance);
     // registers commands
-    require('./commands/Refresh')(connection, instance);
+    cmdRefresh(instance, connection);
     out.status("Crane extension is loaded");
 
     // automatically triggers errors

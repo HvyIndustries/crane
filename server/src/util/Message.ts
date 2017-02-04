@@ -39,7 +39,7 @@ export default class Message {
      */
     protected sendMessage(type: MessageType, message) : Message {
         this.connection.sendNotification(
-            'showMessage', {
+            'message', {
                 type: type,
                 message: message
             }

@@ -10,7 +10,7 @@ import App from '../app';
 /**
  * Defines a callback registration
  */
-export function cmdRefresh(app:App, connection:IConnection) {
+export default function cmdRefresh(app:App, connection:IConnection) {
     connection.onRequest(
         new RequestType<any, any, any, any>("doRefresh"),
         (data) => {

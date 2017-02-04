@@ -46,6 +46,8 @@ let out:Message = new Message(connection);
 let documents: TextDocuments = new TextDocuments();
 documents.listen(connection);
 
+console.log('Starts to work');
+
 /**
  * Here the application starts
  */
@@ -108,7 +110,9 @@ connection.onInitialize((params): InitializeResult => {
 connection.onDidChangeConfiguration((change) => {
     if (instance) {
         instance.setSettings(change.settings);
-        out.success("Crane configuration changed");
+        out.success(
+            "Crane configuration changed as " + JSON.stringify(change.settings)
+        );
     }
 });
 

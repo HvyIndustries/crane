@@ -3,7 +3,7 @@
 	"version": "0.1.0",
 	"configurations": [
 		{
-			"name": "Launch Extension",
+			"name": "Client",
 			"type": "extensionHost",
 			"request": "launch",
 			"runtimeExecutable": "${execPath}",
@@ -12,6 +12,14 @@
 			"sourceMaps": true,
 			"outFiles": [ "${workspaceRoot}/out/src/**/*.js" ],
 			"preLaunchTask": "npm"
+		},
+		{
+			"name": "Server",
+            "type": "node",
+            "request": "attach",
+            "port": 6004,
+			"sourceMaps": true,
+			"outFiles": [ "${workspaceRoot}/server/**/*.js" ]
 		},
 		{
 			"name": "Launch Tests",
@@ -23,6 +31,12 @@
 			"sourceMaps": true,
 			"outFiles": [ "${workspaceRoot}/out/test/**/*.js" ],
 			"preLaunchTask": "npm"
+		}
+	],
+	"compounds": [
+		{
+			"name": "Launch Client/Server",
+			"configurations": ["Server", "Client"]
 		}
 	]
 }

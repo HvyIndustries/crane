@@ -49,3 +49,6 @@ Temporary Items
 
 client/npm-debug.log
 client/src-server
+client/php-parser
+client/php-reflections
+client/php-reflection

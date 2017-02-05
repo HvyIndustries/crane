@@ -49,6 +49,23 @@ class App extends events.EventEmitter {
     }
 
     /**
+     * Make an absolute path relative to current root repository
+     */
+    resolveUri(uri:string): string {
+        let filename:string = uri;
+        if (filename.substring(0, 7) === 'file://') {
+            filename = filename.substring(7);
+        }
+        if (filename.startsWith(this.path)) {
+            filename = filename.substring(this.path.length);
+            if (filename[0] === '/') {
+                filename = filename.substring(1);
+            }
+        }
+        return filename;
+    }
+
+    /**
      * Changing the current path
      */
     setPath(path: string) {
@@ -65,16 +82,9 @@ class App extends events.EventEmitter {
     setSettings(settings: ISettings) {
         this.settings = settings;
 
-        //debug
-        console.log(this.path);
-        //debugger;
-
         this.workspace = new phpReflection(this.path, {
             // @todo : bind parameters
-            directory: "toto",
-            options: {
-                cacheByFileHash: true
-            }
+            cacheByFileHash: true
         });
 
         // forward events :

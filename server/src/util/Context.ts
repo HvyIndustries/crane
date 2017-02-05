@@ -83,6 +83,9 @@ export default class Context {
      */
     resolve(app:App, filename:string, offset:number): Promise<any> {
         return new Promise((done, reject) => {
+            app.message.trace(
+                'Autocomplete from ' + offset + ' @ ' + this.char + ' / ' + this.word
+            );
             // search the file
             app.workspace.has(filename).then((document) => {
                 if (!document) {

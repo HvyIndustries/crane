@@ -22,7 +22,8 @@ import {
     InitializeResult,
     FileChangeType,
     CompletionItem,
-    CompletionItemKind
+    CompletionItemKind,
+    TextDocumentPositionParams
 } from 'vscode-languageserver';
 
 import App from './app';
@@ -45,8 +46,6 @@ let out:Message = new Message(connection);
 // loads the workspace definition
 let documents: TextDocuments = new TextDocuments();
 documents.listen(connection);
-
-console.log('Starts to work');
 
 /**
  * Here the application starts
@@ -121,11 +120,14 @@ connection.onDidChangeConfiguration((change) => {
  */
 connection.onDidChangeWatchedFiles((change) => {
     if (instance) {
+        
         // workspace is ready to start
         change.changes.forEach(element => {
+            // resolves the filename
+            let filename:String = instance.resolveUri(element.uri);
             // add a new file to the parser cache
             if (element.type === FileChangeType.Created) {
-                instance.workspace.parse(element.uri)
+                instance.workspace.parse(filename)
                     .catch(e => {
                         out.error(e.message);
                         if (instance.settings.debugMode) {
@@ -135,7 +137,7 @@ connection.onDidChangeWatchedFiles((change) => {
             }
             // refresh the cache with the file changes
             else if (element.type === FileChangeType.Changed) {
-                instance.workspace.refresh(element.uri)
+                instance.workspace.refresh(filename)
                     .catch(e => {
                         out.error(e.message);
                         if (instance.settings.debugMode) {
@@ -145,7 +147,7 @@ connection.onDidChangeWatchedFiles((change) => {
             }
             // removes the file from the cache
             else if (element.type === FileChangeType.Deleted) {
-                instance.workspace.remove(element.uri)
+                instance.workspace.remove(filename)
                     .catch(e => {
                         out.warning(e.message);
                         if (instance.settings.debugMode) {
@@ -161,18 +163,19 @@ connection.onDidChangeWatchedFiles((change) => {
  * This handler provides the initial list of the completion items.
  */
 connection.onCompletion(
-    (textDocumentPosition: any) : Thenable<CompletionItem[]> => {
+    (where: TextDocumentPositionParams) : Thenable<CompletionItem[]> => {
+    
+    if (!instance) return;
+    const doc = documents.get(where.textDocument.uri);
+    if (doc.languageId != "php") return;
 
-    if (!instance || textDocumentPosition.languageId != "php") return;
-
-    var doc = documents.get(textDocumentPosition.uri);
-    var offset = doc.offsetAt(textDocumentPosition.position);
+    var offset = doc.offsetAt(where.position);
 
     return new Promise(function(done, reject) {
         var context = new Context(doc.getText(), offset);
         context.resolve(
             instance,
-            textDocumentPosition.uri,
+            instance.resolveUri(doc.uri),
             offset
         ).then(function() {
             instance.autocomplete(context).then(done, reject);

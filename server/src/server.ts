@@ -137,7 +137,7 @@ connection.onDidChangeWatchedFiles((change) => {
             }
             // refresh the cache with the file changes
             else if (element.type === FileChangeType.Changed) {
-                instance.workspace.refresh(filename)
+                instance.workspace.parse(filename)
                     .catch(e => {
                         out.error(e.message);
                         if (instance.settings.debugMode) {
@@ -147,13 +147,7 @@ connection.onDidChangeWatchedFiles((change) => {
             }
             // removes the file from the cache
             else if (element.type === FileChangeType.Deleted) {
-                instance.workspace.remove(filename)
-                    .catch(e => {
-                        out.warning(e.message);
-                        if (instance.settings.debugMode) {
-                            out.trace(e.stack);
-                        }
-                    });
+                instance.workspace.removeFile(filename);
             }
         });
     }

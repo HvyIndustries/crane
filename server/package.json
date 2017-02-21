@@ -1,27 +1,27 @@
 {
-    "name": "crane-lang-server",
-    "description": "The language server for Crane",
-    "version": "2.0.0",
-    "author": "HVY Industries",
-    "license": "MIT",
-    "engines": {
-        "node": "*"
-    },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/HvyIndustries/crane.git"
-    },
-    "dependencies": {
-        "php-parser": "^2.0.0-pre4",
-        "php-reflection": "^1.1.0",
-        "vscode-languageserver": "^3.0.4"
-    },
-    "devDependencies": {
-        "@types/node": "^7.0.4",
-        "typescript": "^2.1.5"
-    },
-    "scripts": {
-        "compile": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc -p .",
-        "watch": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc --watch -p ."
-    }
+  "name": "crane-lang-server",
+  "description": "The language server for Crane",
+  "version": "2.0.0",
+  "author": "HVY Industries",
+  "license": "MIT",
+  "engines": {
+    "node": "*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/HvyIndustries/crane.git"
+  },
+  "dependencies": {
+    "php-parser": "^2.0.0-pre6",
+    "php-reflection": "^2.2.0",
+    "vscode-languageserver": "^3.0.4"
+  },
+  "devDependencies": {
+    "@types/node": "^7.0.4",
+    "typescript": "^2.1.5"
+  },
+  "scripts": {
+    "compile": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc -p .",
+    "watch": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc --watch -p ."
+  }
 }

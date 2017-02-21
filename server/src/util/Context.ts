@@ -6,23 +6,7 @@
 
 import App from '../app';
 import phpParser from 'php-parser';
-import fileReflection from 'php-reflection/src/file';
-
-/**
- * Defines the scope structure
- */
-interface IScope {
-    file: any;
-    offset: number;
-    namespace: any;
-    class: any;
-    trait: any;
-    interface: any;
-    method: any;
-    function: any;
-    variables: any[];
-    getVariables(): any[];
-};
+import { File, Scope } from 'php-reflection';
 
 /**
  * With a context resolves everything
@@ -31,7 +15,7 @@ export default class Context {
     public char:string;
     public word:string;
     public text:string;
-    public scope:IScope;
+    public scope:Scope;
 
     /**
      * Retrieves current state from the specified offset
@@ -86,33 +70,19 @@ export default class Context {
             app.message.trace(
                 'Autocomplete from ' + offset + ' @ ' + this.char + ' / ' + this.word
             );
+            
             // search the file
-            app.workspace.has(filename).then((document) => {
-                if (!document) {
-                    // document not saved yet
-                    try {
-                        var reader = new phpParser({
-                            ast: {
-                                withPositions: true
-                            },
-                            parser: {
-                                extractDoc: true,
-                                suppressErrors: true
-                            }
-                        });
-                        // virtual file (without putting it into the repository)
-                        document = new fileReflection(
-                            app.workspace,
-                            filename,
-                            reader.parseCode(this.text)
-                        );
-                    } catch (e) {
-                        reject(e);
-                    }
-                }
-                this.scope = document.scope(offset);
-                done();
-            });
+            let file = app.workspace.getFile(filename);
+            if (!file) {
+                return app.workspace.sync(
+                    filename, this.text
+                ).then((file: File) => {
+                    this.scope = file.getScope(offset);
+                    done();
+                });
+            }
+            this.scope = file.getScope(offset);
+            done();
         });
     }
 }

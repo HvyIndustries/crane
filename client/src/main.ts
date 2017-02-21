@@ -69,9 +69,7 @@ export function activate(context: vscode.ExtensionContext) {
         utils.log('FATAL ERROR / Unable to start server\n\n' + e.stack);
     });
     
-    context.subscriptions.push(
-        client.start()
-    );
+    context.subscriptions.push(client.start());
 
     utils.log('registering commands');
     for(let name in commands) {

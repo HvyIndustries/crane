@@ -8,7 +8,7 @@ import events = require('events');
 import ISettings from './options/ISettings';
 import Settings from './options/Settings';
 import Message from './util/Message';
-import * as phpReflection from 'php-reflection';
+import { Repository } from 'php-reflection';
 
 /**
  * The main application instance
@@ -22,7 +22,7 @@ class App extends events.EventEmitter {
     /**
      * The reflection engine
      */
-    workspace: phpReflection;
+    workspace: Repository;
 
     /**
      * The messaging object
@@ -82,10 +82,14 @@ class App extends events.EventEmitter {
     setSettings(settings: ISettings) {
         this.settings = settings;
 
-        this.workspace = new phpReflection(this.path, {
+        this.workspace = new Repository(this.path, {
             // @todo : bind parameters
-            cacheByFileHash: true
+            cacheByFileHash: true,
+            lazyCache: function(type: String, name: String) {
+
+            }
         });
+
 
         // forward events :
         this.workspace.on('read', this.emit.bind(this, ['read']));

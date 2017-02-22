@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "php-parser": "^2.0.0-pre6",
-    "php-reflection": "^2.2.0",
+    "php-reflection": "^2.2.1",
     "vscode-languageserver": "^3.0.4"
   },
   "devDependencies": {
@@ -21,7 +21,7 @@
     "typescript": "^2.1.5"
   },
   "scripts": {
-    "compile": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc -p .",
-    "watch": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc --watch -p ."
+    "compile": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc -p ./",
+    "watch": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc --watch -p ./"
   }
 }

@@ -19,8 +19,7 @@
             "request": "attach",
             "port": 6004,
 			"sourceMaps": true,
-			"outFiles": [ "${workspaceRoot}/server/**/*.js" ],
-			"cwd": "${workspaceRoot}/src-sercer/"
+			"outFiles": [ "${workspaceRoot}/server/**/*.js" ]
 		},
 		{
 			"name": "Launch Tests",

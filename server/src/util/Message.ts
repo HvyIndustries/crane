@@ -38,26 +38,18 @@ export default class Message {
      * Sends a message to the client
      */
     protected sendMessage(type: MessageType, message) : Message {
-        console.log('[crane server] : ' + message);
-        this.connection.sendNotification(
-            'message', {
-                type: type,
-                message: message
-            }
-        );
-
         // sends the message to the error console
         message = '[crane server] : ' + message;
+        console.log(message);
         if (type === MessageType.Error) {
             this.connection.console.error(message);
         } else if (type === MessageType.Info) {
             this.connection.console.info(message);
-        } else if (type === MessageType.Trace) {
-            this.connection.console.log(message);
         } else if (type === MessageType.Warning) {
             this.connection.console.warn(message);
+        }  else {
+            this.connection.console.log(message);
         }
-
         return this;
     }
 

@@ -56,16 +56,14 @@ connection.onInitialize((params): InitializeResult => {
     instance = new App(params.rootPath, params.initializationOptions);
     instance.message = out;
     instance.autocomplete = Autocomplete(instance);
+
     // registers commands
     cmdRefresh(instance, connection);
     out.status("Crane extension is loaded");
 
     // automatically triggers errors
     instance.on('error', (e:any) => {
-        out.error(typeof e === 'string' ? e : e.message);
-        if (instance.settings.debugMode && e.stack) {
-            out.trace(e.stack);
-        }
+        out.error(typeof e === 'string' ? e : e.stack);
     });
 
     // handle parsing progression
@@ -172,7 +170,11 @@ connection.onCompletion(
             instance.resolveUri(doc.uri),
             offset
         ).then(function() {
-            instance.autocomplete(context).then(done, reject);
+            try {
+                done(instance.autocomplete(context));
+            } catch(e) {
+                reject(e);
+            }
         }, reject);
     });
 });

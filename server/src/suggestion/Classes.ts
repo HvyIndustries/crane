@@ -19,20 +19,26 @@ class Classes implements IFinder {
      * Initialize a new instance
      */
     constructor(app:App) {
-        return null;
+        this.app = app;
     }
 
     /**
      * Checks if finder can match
      */
     matches(context:Context): boolean {
-        return (context.word === 'extends' || context.word === 'implements');
+        return (
+            context.word === 'extends' || context.word === 'new'
+        );
     }
 
     /**
      * Finds a list of completion items
      */
     find(context:Context) : CompletionItem[] {
+        var nodes = this.app.workspace.getByName(
+            'class',
+            context.
+        );
         if (context.inNamespace()) {
             // @todo
         }

@@ -19,7 +19,7 @@ class Variables implements IFinder {
      * Initialize a new instance
      */
     constructor(app:App) {
-        return null;
+        this.app = app;
     }
 
     /**
@@ -33,7 +33,11 @@ class Variables implements IFinder {
      * Finds a list of completion items
      */
     find(context:Context) : CompletionItem[] {
-        return null;
+        var result = [];
+        var item = CompletionItem.create('$foo');
+        item.kind = 1;
+        result.push(item);
+        return result;
     }
 }
 

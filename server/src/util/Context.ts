@@ -13,16 +13,37 @@ import { File, Scope } from 'php-reflection';
  */
 export default class Context {
     public char:string;
+    public prefix:string;
     public word:string;
     public text:string;
     public scope:Scope;
+    public offset:number;
 
     /**
      * Retrieves current state from the specified offset
      */
     constructor(text: string, offset: number) {
         this.text = text;
-        let i = offset - 1
+        this.offset = offset;
+        this.char = text[offset];
+        if (this.char === '$' || this.char === ' ') {
+            this.word = '';
+            this.prefix = this.consumeWord(offset - 1);
+        } else {
+
+        }
+        this.word = 
+        for(; i > 0; i--) {
+            const ch = text[i];
+            if (ch === '\r' || '\n') {
+                // ignore line breaks
+                return;
+            }
+            if (ch !== ' ' && ch !== '\t') {
+                // strip white spaces
+                break;
+            }
+        }
         for(; i > 0; i--) {
             const ch = text.charCodeAt(i);
             if (
@@ -37,8 +58,12 @@ export default class Context {
                 break;
             }
         }
-        this.char = text[offset];
         this.word = text.substring(i, offset).trim();
+    }
+
+    private consumeWord(position: number): string {
+        let result = '';
+        return result;
     }
 
     /**
@@ -68,7 +93,7 @@ export default class Context {
     resolve(app:App, filename:string, offset:number): Promise<any> {
         return new Promise((done, reject) => {
             app.message.trace(
-                'Autocomplete from ' + offset + ' @ ' + this.char + ' / ' + this.word
+                'Autocomplete from ' + offset + ' @ "' + this.char + '" / ' + this.word
             );
             
             // search the file

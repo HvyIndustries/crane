@@ -9,8 +9,8 @@
 import {
     IPCMessageReader, IPCMessageWriter,
     createConnection, IConnection, TextDocumentSyncKind,
-    TextDocuments, ITextDocument, Diagnostic, DiagnosticSeverity,
-    InitializeParams, InitializeResult, TextDocumentIdentifier, TextDocumentPosition,
+    TextDocuments, TextDocument, Diagnostic, DiagnosticSeverity,
+    InitializeParams, InitializeResult, TextDocumentIdentifier, TextDocumentPositionParams,
     CompletionItem, CompletionItemKind, RequestType, Position,
     SignatureHelp, SignatureInformation, ParameterInformation
 } from 'vscode-languageserver';
@@ -100,11 +100,9 @@ connection.onDidChangeWatchedFiles((change) =>
 });
 
 // This handler provides the initial list of the completion items.
-connection.onCompletion((textDocumentPosition: TextDocumentPosition): CompletionItem[] =>
+connection.onCompletion((textDocumentPosition: TextDocumentPositionParams): CompletionItem[] =>
 {
-    if (textDocumentPosition.languageId != "php") return;
-
-    var doc = documents.get(textDocumentPosition.uri);
+    var doc = documents.get(textDocumentPosition.textDocument.uri);
     var suggestionBuilder = new SuggestionBuilder();
 
     suggestionBuilder.prepare(textDocumentPosition, doc, workspaceTree);
@@ -129,7 +127,7 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem =>
     return item;
 });
 
-var buildObjectTreeForDocument: RequestType<{path:string,text:string}, any, any> = { method: "buildObjectTreeForDocument" };
+var buildObjectTreeForDocument: RequestType<{path:string,text:string}, any, any, any> = new RequestType("buildObjectTreeForDocument");
 connection.onRequest(buildObjectTreeForDocument, (requestObj) =>
 {
     var fileUri = requestObj.path;
@@ -147,7 +145,7 @@ connection.onRequest(buildObjectTreeForDocument, (requestObj) =>
     });
 });
 
-var deleteFile: RequestType<{path:string}, any, any> = { method: "deleteFile" };
+var deleteFile: RequestType<{path:string}, any, any, any> = new RequestType("deleteFile");
 connection.onRequest(deleteFile, (requestObj) =>
 {
     var node = getFileNodeFromPath(requestObj.path);
@@ -156,7 +154,7 @@ connection.onRequest(deleteFile, (requestObj) =>
     }
 });
 
-var saveTreeCache: RequestType<{ projectDir: string, projectTree: string }, any, any> = { method: "saveTreeCache" };
+var saveTreeCache: RequestType<{ projectDir: string, projectTree: string }, any, any, any> = new RequestType("saveTreeCache");
 connection.onRequest(saveTreeCache, request => {
     saveProjectTree(request.projectDir, request.projectTree).then(saved => {
         notifyClientOfWorkComplete();
@@ -176,7 +174,7 @@ var buildFromFiles: RequestType<{
     treePath: string,
     enableCache: boolean,
     rebuild: boolean
-}, any, any> = { method: "buildFromFiles" };
+}, any, any, any> = new RequestType("buildFromFiles");
 connection.onRequest(buildFromFiles, (project) => {
     if (project.rebuild) {
         workspaceTree = [];
@@ -206,7 +204,7 @@ connection.onRequest(buildFromFiles, (project) => {
     }, 100);
 });
 
-var buildFromProject: RequestType<{treePath:string, enableCache:boolean}, any, any> = { method: "buildFromProject" };
+var buildFromProject: RequestType<{treePath:string, enableCache:boolean}, any, any, any> = new RequestType("buildFromProject");
 connection.onRequest(buildFromProject, (data) => {
     enableCache = data.enableCache;
     fs.readFile(data.treePath, (err, data) => {
@@ -272,7 +270,11 @@ function processWorkspaceFiles(projectPath: string, treePath: string) {
                 addToWorkspaceTree(result.tree);
                 docsDoneCount++;
                 connection.console.log(`(${docsDoneCount} of ${docsToDo.length}) File: ${file}`);
-                connection.sendNotification({ method: "fileProcessed" }, { filename: file, total: docsDoneCount, error: null });
+                connection.sendNotification("fileProcessed", { 
+                    filename: file, 
+                    total: docsDoneCount, 
+                    error: null 
+                });
                 if (docsToDo.length == docsDoneCount) {
                     workspaceProcessed(projectPath, treePath);
                 }
@@ -283,7 +285,7 @@ function processWorkspaceFiles(projectPath: string, treePath: string) {
                 }
                 connection.console.log(util.inspect(data, false, null));
                 connection.console.log(`Issue processing ${file}`);
-                connection.sendNotification({ method: "fileProcessed" }, { filename: file, total: docsDoneCount, error: util.inspect(data, false, null) });
+                connection.sendNotification("fileProcessed", { filename: file, total: docsDoneCount, error: util.inspect(data, false, null) });
             });
         });
     });
@@ -372,8 +374,7 @@ function getFileNodeFromPath(path: string): FileNode {
 
 function notifyClientOfWorkComplete()
 {
-    var requestType: RequestType<any, any, any> = { method: "workDone" };
-    connection.sendRequest(requestType);
+    connection.sendRequest("workDone");
 }
 
 function saveProjectTree(projectPath: string, treeFile: string): Promise<boolean> {

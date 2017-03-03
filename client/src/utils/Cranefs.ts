@@ -148,7 +148,7 @@ export class Cranefs {
             Crane.statusBarItem.text = "$(zap) Indexing PHP files";
 
             // Send the array of paths to the language server
-            Crane.langClient.sendRequest({ method: "buildFromFiles" }, {
+            Crane.langClient.sendRequest("buildFromFiles", {
                 files: filePaths,
                 craneRoot: this.getCraneDir(),
                 projectPath: this.getProjectDir(),
@@ -158,7 +158,7 @@ export class Cranefs {
             });
 
             // Update the UI so the user knows the processing status
-            var fileProcessed: NotificationType<any> = { method: "fileProcessed" };
+            var fileProcessed: NotificationType<any, any> = new NotificationType("fileProcessed");
             Crane.langClient.onNotification(fileProcessed, data => {
                 // Get the percent complete
                 var percent: string = ((data.total / fileProcessCount) * 100).toFixed(1);
@@ -175,7 +175,7 @@ export class Cranefs {
 
     public processProject(): void {
         Debug.info('Building project from cache file: ' + this.getTreePath());
-        Crane.langClient.sendRequest({ method: "buildFromProject" }, {
+        Crane.langClient.sendRequest("buildFromProject", {
             treePath: this.getTreePath(),
             enableCache: this.isCacheable()
         });

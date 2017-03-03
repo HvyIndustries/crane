@@ -9,14 +9,14 @@ export class Debug{
     }
 
     public static info(message: string) {
-        Debug.connection.sendNotification({ method: 'serverDebugMessage' }, { type: 'info', message: message });
+        Debug.connection.sendNotification('serverDebugMessage', { type: 'info', message: message });
     }
 
     public static error(message: string) {
-        Debug.connection.sendNotification({ method: 'serverDebugMessage' }, { type: 'error', message: message });
+        Debug.connection.sendNotification('serverDebugMessage', { type: 'error', message: message });
     }
 
     public static warning(message: string) {
-        Debug.connection.sendNotification({ method: 'serverDebugMessage' }, { type: 'warning', message: message });
+        Debug.connection.sendNotification('serverDebugMessage', { type: 'warning', message: message });
     }
 }

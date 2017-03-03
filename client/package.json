@@ -12,7 +12,7 @@
     "version": "0.2.2",
     "publisher": "HvyIndustries",
     "engines": {
-        "vscode": "^0.10.x"
+        "vscode": "^1.8.0"
     },
     "bugs": {
         "url": "https://github.com/HvyIndustries/crane/issues"
@@ -117,8 +117,9 @@
         "postinstall": "node ./node_modules/vscode/bin/install"
     },
     "devDependencies": {
-        "typescript": "^1.6.2",
-        "vscode": "^0.11.13"
+        "@types/node": "^6.0.40",
+        "typescript": "^2.0.3",
+        "vscode": "^1.0.5"
     },
     "dependencies": {
         "fstream": "^1.0.9",
@@ -126,6 +127,6 @@
         "php-parser": "^2.0.0-pre8",
         "rimraf": "^2.5.2",
         "unzip": "^0.1.11",
-        "vscode-languageclient": "^1.1.0"
+        "vscode-languageclient": "^3.1.0"
     }
 }

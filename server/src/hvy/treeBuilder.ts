@@ -36,11 +36,13 @@ export class TreeBuilder
     {
         return new Promise((resolve, reject) =>
         {
-            var parserInst = phpParser.create({
+            var parserInst = new phpParser({
                 parser: {
-                    locations: true,
-                    docBlocks: true,
+                    extractDoc: true,
                     suppressErrors: true
+                },
+                ast: {
+                    withPositions: true
                 }
             });
 

@@ -110,7 +110,7 @@ export default class Crane
         // statusBarItem.tooltip = 'Crane (PHP Code-completion) version ' + Config.version;
         // statusBarItem.show();
 
-        var serverDebugMessage: NotificationType<{ type: string, message: string }> = { method: "serverDebugMessage" };
+        var serverDebugMessage: NotificationType<{ type: string, message: string }, any> = new NotificationType("serverDebugMessage");
         Crane.langClient.onNotification(serverDebugMessage, message => {
             switch (message.type) {
                 case 'info': Debug.info(message.message); break;
@@ -120,7 +120,7 @@ export default class Crane
             }
         });
 
-        var requestType: RequestType<any, any, any> = { method: "workDone" };
+        var requestType: RequestType<any, any, any, any> = new RequestType("workDone");
         Crane.langClient.onRequest(requestType, (tree) => {
             // this.projectBuilding = false;
             Crane.statusBarItem.text = '$(check) PHP File Indexing Complete!';
@@ -147,7 +147,7 @@ export default class Crane
             workspace.openTextDocument(e).then(document => {
                 if (document.languageId != 'php') return;
                 Debug.info('File Changed: ' + e.fsPath);
-                Crane.langClient.sendRequest({ method: 'buildObjectTreeForDocument' }, {
+                Crane.langClient.sendRequest('buildObjectTreeForDocument', {
                     path: e.fsPath,
                     text: document.getText()
                 });
@@ -157,7 +157,7 @@ export default class Crane
             workspace.openTextDocument(e).then(document => {
                 if (document.languageId != 'php') return;
                 Debug.info('File Created: ' + e.fsPath);
-                Crane.langClient.sendRequest({ method: 'buildObjectTreeForDocument' }, {
+                Crane.langClient.sendRequest('buildObjectTreeForDocument', {
                     path: e.fsPath,
                     text: document.getText()
                 });
@@ -165,7 +165,7 @@ export default class Crane
         });
         fsw.onDidDelete(e => {
             Debug.info('File Deleted: ' + e.fsPath);
-            Crane.langClient.sendRequest({ method: 'deleteFile' }, {
+            Crane.langClient.sendRequest('deleteFile', {
                 path: e.fsPath
             });
         });
@@ -211,7 +211,7 @@ export default class Crane
         var document = editor.document;
 
         this.buildObjectTreeForDocument(document).then(() => {
-            Crane.langClient.sendRequest({ method: 'saveTreeCache' }, { projectDir: cranefs.getProjectDir(), projectTree: cranefs.getTreePath() });
+            Crane.langClient.sendRequest('saveTreeCache', { projectDir: cranefs.getProjectDir(), projectTree: cranefs.getTreePath() });
         }).catch(error => {
             Debug.error(util.inspect(error, false, null));
         });
@@ -287,7 +287,7 @@ export default class Crane
             var projectDir = cranefs.getProjectDir();
             var projectTree = cranefs.getTreePath();
 
-            var requestType: RequestType<any, any, any> = { method: "buildObjectTreeForDocument" };
+            var requestType: RequestType<any, any, any, any> = new RequestType("buildObjectTreeForDocument");
             Crane.langClient.sendRequest(requestType, { path, text, projectDir, projectTree }).then(() => resolve() );
         });
     }

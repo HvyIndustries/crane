@@ -21,9 +21,10 @@ const exec = require('child_process').exec;
 const util = require('util');
 
 let craneSettings = workspace.getConfiguration("crane");
-
 const cranefs: Cranefs = new Cranefs();
+
 console.log(process.platform)
+
 export default class Crane
 {
     public static langClient: LanguageClient;
@@ -103,10 +104,11 @@ export default class Crane
 
         this.showIndexingStatusBarMessage();
 
-        var statusBarItem: StatusBarItem = window.createStatusBarItem(StatusBarAlignment.Right);
-        statusBarItem.text = Config.version;
-        statusBarItem.tooltip = 'Crane (PHP Code-completion) version ' + Config.version;
-        statusBarItem.show();
+        // Disable the crane version display in the bottom right sidebar
+        // var statusBarItem: StatusBarItem = window.createStatusBarItem(StatusBarAlignment.Right);
+        // statusBarItem.text = Config.version;
+        // statusBarItem.tooltip = 'Crane (PHP Code-completion) version ' + Config.version;
+        // statusBarItem.show();
 
         var serverDebugMessage: NotificationType<{ type: string, message: string }> = { method: "serverDebugMessage" };
         Crane.langClient.onNotification(serverDebugMessage, message => {

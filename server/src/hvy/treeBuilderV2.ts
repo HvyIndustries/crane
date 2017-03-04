@@ -417,7 +417,7 @@ export class TreeBuilderV2
 
     private buildPosition(position)
     {
-        return new PositionInfo(position.line, position.column, position.offset);
+        return new PositionInfo(position.line - 1, position.column, position.offset);
     }
 
     private methodStub(branch, tree: FileNode)

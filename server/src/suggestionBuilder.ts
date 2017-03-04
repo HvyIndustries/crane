@@ -566,13 +566,15 @@ export class SuggestionBuilder
     {
         var toReturn = [];
 
-        classNode.constants.forEach((subNode) => {
-            let value = subNode.value;
-            if (subNode.type == "string") {
-                value = "\"" + value + "\"";
-            }
-            toReturn.push({ label: subNode.name, kind: CompletionItemKind.Value, detail: `(constant) : ${subNode.type} : ${value}` });
-        });
+        if (staticOnly == true) {
+            classNode.constants.forEach((subNode) => {
+                let value = subNode.value;
+                if (subNode.type == "string") {
+                    value = "\"" + value + "\"";
+                }
+                toReturn.push({ label: subNode.name, kind: CompletionItemKind.Value, detail: `(constant) : ${subNode.type} : ${value}` });
+            });
+        }
 
         classNode.methods.forEach((subNode) => {
             if (subNode.isStatic == staticOnly) {

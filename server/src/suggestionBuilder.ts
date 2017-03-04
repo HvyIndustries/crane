@@ -8,7 +8,7 @@
 
 import { TextDocumentPositionParams, TextDocument, CompletionItem, CompletionItemKind } from 'vscode-languageserver';
 import { TreeBuilder } from "./hvy/treeBuilder";
-import { FileNode, FileSymbolCache, SymbolType, AccessModifierNode, ClassNode, TraitNode } from "./hvy/nodes";
+import { FileNode, FileSymbolCache, SymbolType, AccessModifierNode, ClassNode, TraitNode, MethodNode } from "./hvy/nodes";
 
 const fs = require('fs');
 
@@ -210,12 +210,6 @@ export class SuggestionBuilder
             });
         }
 
-        if (options.topFunctions) {
-            this.currentFileNode.functions.forEach(item => {
-                toReturn.push({ label: item.name, kind: CompletionItemKind.Function,  detail: `(function) : ${item.returns}`, insertText: item.name + "()" });
-            });
-        }
-
         if (options.localVariables || options.parameters || options.globalVariables) {
             // Find out what top level function we're in
             var funcs = [];
@@ -281,9 +275,26 @@ export class SuggestionBuilder
                     toReturn.push({ label: item.name, kind: CompletionItemKind.Module, detail: "(trait)" });
                 });
             }
+
+            if (options.topFunctions) {
+                fileNode.functions.forEach(item => {
+                    toReturn.push({ label: item.name, kind: CompletionItemKind.Function,  detail: `(function) : ${item.returns}`, insertText: this.getFunctionInsertText(item) });
+                });
+            }
         });
 
         return toReturn;
+    }
+
+    private getFunctionInsertText(node: MethodNode)
+    {
+        let text = node.name;
+
+        if (node.params.length == 0) {
+            text += "()";
+        }
+
+        return text;
     }
 
     private getScope() : Scope
@@ -579,7 +590,7 @@ export class SuggestionBuilder
         classNode.methods.forEach((subNode) => {
             if (subNode.isStatic == staticOnly) {
                 var accessModifier = "(" + this.buildAccessModifierText(subNode.accessModifier);
-                var insertText = subNode.name + "()";
+                var insertText = this.getFunctionInsertText(subNode);
 
                 accessModifier = accessModifier + ` method) : ${subNode.returns}`;
 

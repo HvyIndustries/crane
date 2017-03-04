@@ -107,9 +107,14 @@ export class TreeBuilderV2
         if (branch.left.kind == "variable") {
             let node = new VariableNode();
 
-            node.name = branch.left.name;
+            node.name = "$" + branch.left.name;
             node.startPos = this.buildPosition(branch.loc.start);
             node.endPos = this.buildPosition(branch.loc.end);
+
+            if (branch.right.kind == "new") {
+                node.type = "class";
+                node.value = branch.right.what.name;
+            }
 
             context.push(node);
         }
@@ -329,21 +334,13 @@ export class TreeBuilderV2
             branch.body.children.forEach(child => {
                 switch (child.kind) {
                     case "assign":
-                        // Build scope variables for suggestions
-                        if (child.left.kind == "variable") {
-                            let variableNode = new VariableNode();
-                            variableNode.name = child.left.name;
-                            variableNode.startPos = this.buildPosition(child.loc.start);
-                            variableNode.endPos = this.buildPosition(child.loc.end);
-
-                            node.scopeVariables.push(variableNode);
-                        }
+                        this.buildAssignment(child, node.scopeVariables);
                         break;
 
                     case "global":
                         // Build imported global variables for suggestions
                         child.items.forEach(item => {
-                            node.globalVariables.push(item.name);
+                            node.globalVariables.push("$" + item.name);
                         });
                         break;
 

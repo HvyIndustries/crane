@@ -104,12 +104,6 @@ export default class Crane
 
         this.showIndexingStatusBarMessage();
 
-        // Disable the crane version display in the bottom right sidebar
-        // var statusBarItem: StatusBarItem = window.createStatusBarItem(StatusBarAlignment.Right);
-        // statusBarItem.text = Config.version;
-        // statusBarItem.tooltip = 'Crane (PHP Code-completion) version ' + Config.version;
-        // statusBarItem.show();
-
         var serverDebugMessage: NotificationType<{ type: string, message: string }, any> = new NotificationType("serverDebugMessage");
         Crane.langClient.onReady().then(() => {
             Crane.langClient.onNotification(serverDebugMessage, message => {
@@ -138,7 +132,9 @@ export default class Crane
                         Crane.statusBarItem.show();
                     }, 5000);
                 } else {
-                    Crane.statusBarItem.hide();
+                    setTimeout(() => {
+                        Crane.statusBarItem.hide();
+                    }, 7500);
                 }
             });
         });
@@ -253,6 +249,7 @@ export default class Crane
     }
 
     public rebuildProject() {
+        this.showIndexingStatusBarMessage();
         cranefs.rebuildProject();
     }
 

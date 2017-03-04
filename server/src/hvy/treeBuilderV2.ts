@@ -113,7 +113,9 @@ export class TreeBuilderV2
 
             if (branch.right.kind == "new") {
                 node.type = "class";
-                node.value = branch.right.what.name;
+                if (branch.right.what && branch.right.what.name) {
+                    node.value = branch.right.what.name;
+                }
             }
 
             context.push(node);

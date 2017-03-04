@@ -11,8 +11,9 @@
 //      - switch blocks
 //      - handle autoloaded files
 
+import { SymbolInformation } from 'vscode-languageserver';
 
-class BaseNode
+export class BaseNode
 {
     public name: string;
     public startPos: PositionInfo;
@@ -33,35 +34,7 @@ export class FileNode
     // Any files that we're referencing with include(), require(), include_once() or require_once()
     public fileReferences: string[] = [];
 
-    public symbolCache: FileSymbolCache[] = [];
-    public lineCache: LineCache[] = [];
-}
-
-export class FileSymbolCache
-{
-    public name: string;
-    public type: SymbolType;
-    public parentName: string;
-}
-
-export class LineCache
-{
-    public line: number;
-    public name: string;
-    public value: string;
-}
-
-export enum SymbolType
-{
-    Unknown,
-    Class,
-    Interface,
-    Trait,
-    Property,
-    Method,
-    Constant,
-    TopLevelVariable,
-    TopLevelFunction
+    public symbolCache: SymbolInformation[] = [];
 }
 
 export class NamespaceUsingNode extends BaseNode
@@ -173,16 +146,3 @@ export class PositionInfo
     public offset: number;
 }
 
-
-
-export class SymbolLookupCache
-{
-    public cache: SymbolCache[];
-}
-
-export class SymbolCache
-{
-    public name: string;
-    public file: string;
-    public line: number;
-}

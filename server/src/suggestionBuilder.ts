@@ -8,7 +8,7 @@
 
 import { TextDocumentPositionParams, TextDocument, CompletionItem, CompletionItemKind } from 'vscode-languageserver';
 import { TreeBuilder } from "./hvy/treeBuilder";
-import { FileNode, FileSymbolCache, SymbolType, AccessModifierNode, ClassNode, TraitNode, MethodNode } from "./hvy/nodes";
+import { FileNode, AccessModifierNode, ClassNode, TraitNode, MethodNode } from "./hvy/nodes";
 
 const fs = require('fs');
 

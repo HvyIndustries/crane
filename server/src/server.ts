@@ -12,11 +12,12 @@ import {
     TextDocuments, TextDocument, Diagnostic, DiagnosticSeverity,
     InitializeParams, InitializeResult, TextDocumentIdentifier, TextDocumentPositionParams,
     CompletionItem, CompletionItemKind, RequestType, Position,
-    SignatureHelp, SignatureInformation, ParameterInformation
+    SignatureHelp, SignatureInformation, ParameterInformation,
+    Definition
 } from 'vscode-languageserver';
 
 import { TreeBuilder } from "./hvy/treeBuilder";
-import { FileNode, FileSymbolCache, SymbolType, AccessModifierNode, ClassNode } from "./hvy/nodes";
+import { FileNode, AccessModifierNode, ClassNode } from "./hvy/nodes";
 import { Debug } from './util/Debug';
 import { SuggestionBuilder } from './suggestionBuilder';
 
@@ -57,11 +58,11 @@ connection.onInitialize((params): InitializeResult =>
         capabilities:
         {
             textDocumentSync: documents.syncKind,
-            completionProvider:
-            {
+            completionProvider: {
                 resolveProvider: true,
                 triggerCharacters: ['.', ':', '$', '>']
-            }
+            },
+            definitionProvider: true
         }
     }
 });
@@ -126,6 +127,12 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem =>
     //     item.documentation = 'JavaScript documentation'
     // }
     return item;
+});
+
+connection.onDefinition((textDocumentParams, cancellationToken): Promise<Definition> => {
+    return new Promise<Definition>((resolve, reject) => {
+        resolve();
+    });
 });
 
 var buildObjectTreeForDocument: RequestType<{path:string,text:string}, any, any, any> = new RequestType("buildObjectTreeForDocument");

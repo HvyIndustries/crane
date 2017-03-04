@@ -6,6 +6,8 @@
 
 "use strict";
 
+import { SymbolInformation, SymbolKind } from 'vscode-languageserver';
+
 import {
     FileNode,
     ClassNode,
@@ -23,6 +25,13 @@ import {
 
 export class TreeBuilderV2
 {
+    private symbolCache: SymbolInformation[];
+
+    constructor()
+    {
+        this.symbolCache = [];
+    }
+
     public processBranch(branch, tree: FileNode) : FileNode
     {
         if (Array.isArray(branch)) {
@@ -72,6 +81,9 @@ export class TreeBuilderV2
                     break;
             }
         }
+
+        // Save the generated symbol cache
+        tree.symbolCache = this.symbolCache;
 
         return tree;
     }
@@ -206,6 +218,8 @@ export class TreeBuilderV2
 
         classNode.startPos = this.buildPosition(branch.loc.start);
         classNode.endPos = this.buildPosition(branch.loc.end);
+
+        //this.buildSymbol(branch, SymbolKind.Class);
 
         context.push(classNode);
     }
@@ -400,6 +414,17 @@ export class TreeBuilderV2
 
 
 
+    private buildSymbol(branch, sumbolKind: SymbolKind)
+    {
+        let symbol: SymbolInformation = {
+            name: "",
+            containerName: "",
+            kind: sumbolKind,
+            location: null
+        };
+
+        this.symbolCache.push(symbol);
+    }
 
     private getVisibility(visibility)
     {

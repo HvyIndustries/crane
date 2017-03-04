@@ -111,7 +111,7 @@ export default class Crane
         // statusBarItem.show();
 
         var serverDebugMessage: NotificationType<{ type: string, message: string }, any> = new NotificationType("serverDebugMessage");
-        try {
+        Crane.langClient.onReady().then(() => {
             Crane.langClient.onNotification(serverDebugMessage, message => {
                 switch (message.type) {
                     case 'info': Debug.info(message.message); break;
@@ -120,13 +120,10 @@ export default class Crane
                     default: Debug.info(message.message); break;
                 }
             });
-        }
-        catch(e) {
-            console.log(e);
-        }
+        });
 
         var requestType: RequestType<any, any, any, any> = new RequestType("workDone");
-        try {
+        Crane.langClient.onReady().then(() => {
             Crane.langClient.onRequest(requestType, (tree) => {
                 // this.projectBuilding = false;
                 Crane.statusBarItem.text = '$(check) PHP File Indexing Complete!';
@@ -144,10 +141,7 @@ export default class Crane
                     Crane.statusBarItem.hide();
                 }
             });
-        }
-        catch(e) {
-            console.log(e);
-        }
+        });
 
         var types = Config.phpFileTypes;
         Debug.info(`Watching these files: {${types.include.join(',')}}`);

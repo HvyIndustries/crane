@@ -179,9 +179,11 @@ export class Cranefs {
 
     public processProject(): void {
         Debug.info('Building project from cache file: ' + this.getTreePath());
-        Crane.langClient.sendRequest("buildFromProject", {
-            treePath: this.getTreePath(),
-            enableCache: this.isCacheable()
+        Crane.langClient.onReady().then(() => {
+            Crane.langClient.sendRequest("buildFromProject", {
+                treePath: this.getTreePath(),
+                enableCache: this.isCacheable()
+            });
         });
     }
 

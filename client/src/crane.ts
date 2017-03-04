@@ -111,33 +111,43 @@ export default class Crane
         // statusBarItem.show();
 
         var serverDebugMessage: NotificationType<{ type: string, message: string }, any> = new NotificationType("serverDebugMessage");
-        Crane.langClient.onNotification(serverDebugMessage, message => {
-            switch (message.type) {
-                case 'info': Debug.info(message.message); break;
-                case 'error': Debug.error(message.message); break;
-                case 'warning': Debug.warning(message.message); break;
-                default: Debug.info(message.message); break;
-            }
-        });
+        try {
+            Crane.langClient.onNotification(serverDebugMessage, message => {
+                switch (message.type) {
+                    case 'info': Debug.info(message.message); break;
+                    case 'error': Debug.error(message.message); break;
+                    case 'warning': Debug.warning(message.message); break;
+                    default: Debug.info(message.message); break;
+                }
+            });
+        }
+        catch(e) {
+            console.log(e);
+        }
 
         var requestType: RequestType<any, any, any, any> = new RequestType("workDone");
-        Crane.langClient.onRequest(requestType, (tree) => {
-            // this.projectBuilding = false;
-            Crane.statusBarItem.text = '$(check) PHP File Indexing Complete!';
-            // Load settings
-            let craneSettings = workspace.getConfiguration("crane");
-            Debug.info("Processing complete!");
-            if (Config.showBugReport) {
-                setTimeout(() => {
-                    Crane.statusBarItem.tooltip = "Found a problem with the PHP Intellisense provided by Crane? Click here to file a bug report on Github";
-                    Crane.statusBarItem.text = "$(bug) Found a PHP Intellisense Bug?";
-                    Crane.statusBarItem.command = "crane.reportBug";
-                    Crane.statusBarItem.show();
-                }, 5000);
-            } else {
-                Crane.statusBarItem.hide();
-            }
-        });
+        try {
+            Crane.langClient.onRequest(requestType, (tree) => {
+                // this.projectBuilding = false;
+                Crane.statusBarItem.text = '$(check) PHP File Indexing Complete!';
+                // Load settings
+                let craneSettings = workspace.getConfiguration("crane");
+                Debug.info("Processing complete!");
+                if (Config.showBugReport) {
+                    setTimeout(() => {
+                        Crane.statusBarItem.tooltip = "Found a problem with the PHP Intellisense provided by Crane? Click here to file a bug report on Github";
+                        Crane.statusBarItem.text = "$(bug) Found a PHP Intellisense Bug?";
+                        Crane.statusBarItem.command = "crane.reportBug";
+                        Crane.statusBarItem.show();
+                    }, 5000);
+                } else {
+                    Crane.statusBarItem.hide();
+                }
+            });
+        }
+        catch(e) {
+            console.log(e);
+        }
 
         var types = Config.phpFileTypes;
         Debug.info(`Watching these files: {${types.include.join(',')}}`);

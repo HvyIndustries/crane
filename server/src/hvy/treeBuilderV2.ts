@@ -9,6 +9,8 @@
 import {
     FileNode,
     ClassNode,
+    TraitNode,
+    InterfaceNode,
     PropertyNode,
     ConstantNode,
     ConstructorNode,
@@ -21,45 +23,57 @@ import {
 
 export class TreeBuilderV2
 {
-    public processBranch(branch, context) : FileNode
+    public processBranch(branch, tree: FileNode) : FileNode
     {
         if (Array.isArray(branch)) {
             branch.forEach(element => {
-                this.processBranch(element, context);
+                this.processBranch(element, tree);
             });
         } else {
             switch (branch.kind) {
                 case "namespace":
-                    this.processBranch(branch.children, context);
+                    this.processBranch(branch.children, tree);
                     break;
 
                 case "include":
-                    this.buildfileInclude(branch, context);
+                    this.buildfileInclude(branch, tree);
                     break;
 
                 case "usegroup":
-                    this.buildNamespaceUsings(branch, context);
+                    this.buildNamespaceUsings(branch, tree);
                     break;
 
                 case "assign":
-                    this.buildAssignment(branch, context);
+                    this.buildAssignment(branch, tree.topLevelVariables);
+                    break;
+
+                case "constant":
+                    this.buildConstant(branch, tree.constants);
+                    break;
+
+                case "function":
+                    this.buildMethod(branch, tree.functions);
                     break;
 
                 case "call":
-                    this.buildCall(branch, context);
+                    //this.buildCall(branch, tree);
                     break;
 
                 case "class":
-                    this.buildClass(branch, context);
+                    this.buildClass(branch, tree.classes);
+                    break;
 
-                // TODO -- trait, interface, constant
+                case "trait":
+                    this.buildTrait(branch, tree.traits);
+                    break;
 
-                default:
+                case "interface":
+                    this.buildInterface(branch, tree.interfaces);
                     break;
             }
         }
 
-        return context;
+        return tree;
     }
 
     private buildfileInclude(branch, context: FileNode)
@@ -82,23 +96,85 @@ export class TreeBuilderV2
     {
         branch.items.forEach(item => {
             if (item.name) {
-                // TODO -- handle namespace aliases (eg "HVY\test as testy")
+                // TODO -- handle namespace aliases (eg "use HVY\test as testAlias;")
                 context.namespaceUsings.push(item.name);
             }
         });
     }
 
-    private buildAssignment(branch, context)
+    private buildAssignment(branch, context: Array<any>)
     {
-        // TODO -- add assignments to context
+        if (branch.left.kind == "variable") {
+            let node = new VariableNode();
+
+            node.name = branch.left.name;
+            node.startPos = this.buildPosition(branch.loc.start);
+            node.endPos = this.buildPosition(branch.loc.end);
+
+            context.push(node);
+        }
     }
 
-    private buildCall(branch, context)
+    private buildInterface(branch, context: Array<any>)
     {
-        // TODO -- add method calls to context
+        let interfaceNode: InterfaceNode = new InterfaceNode();
+
+        interfaceNode.name = branch.name;
+
+        // TODO -- add namespace info
+
+        if (branch.extends != null) {
+            branch.extends.forEach(item => {
+                interfaceNode.extends.push(item.name);
+            });
+        }
+
+        branch.body.forEach(interfaceBodyBranch => {
+            switch (interfaceBodyBranch.kind) {
+                case "classconstant":
+                    this.buildConstant(interfaceBodyBranch, interfaceNode.constants);
+                    break;
+                case "method":
+                    this.buildMethod(interfaceBodyBranch, interfaceNode.methods);
+                    break;
+            }
+        });
+
+        interfaceNode.startPos = this.buildPosition(branch.loc.start);
+        interfaceNode.endPos = this.buildPosition(branch.loc.end);
+
+        context.push(interfaceNode);
     }
 
-    private buildClass(branch, context: FileNode)
+    private buildTrait(branch, context: Array<any>)
+    {
+        let traitNode: TraitNode = new TraitNode();
+
+        traitNode.name = branch.name;
+
+        // TODO -- add namespace info
+
+        if (branch.extends != null) {
+            traitNode.extends = branch.extends.name;
+        }
+
+        if (branch.implements != null) {
+            branch.implements.forEach(item => {
+                traitNode.implements.push(item.name);
+            });
+        }
+
+        branch.body.forEach(classBodyBranch => {
+            this.buildClassBody(classBodyBranch, traitNode);
+        });
+
+        traitNode.startPos = this.buildPosition(branch.loc.start);
+        traitNode.endPos = this.buildPosition(branch.loc.end);
+
+        context.push(traitNode);
+    }
+
+    private buildClass(branch, context: Array<any>)
     {
         let classNode: ClassNode = new ClassNode();
 
@@ -126,7 +202,7 @@ export class TreeBuilderV2
         classNode.startPos = this.buildPosition(branch.loc.start);
         classNode.endPos = this.buildPosition(branch.loc.end);
 
-        context.classes.push(classNode);
+        context.push(classNode);
     }
 
     private buildClassBody(branch, classNode: ClassNode)
@@ -137,7 +213,7 @@ export class TreeBuilderV2
                 break;
 
             case "classconstant":
-                this.buildClassConstant(branch, classNode);
+                this.buildConstant(branch, classNode.constants);
                 break;
 
             case "doc":
@@ -181,7 +257,7 @@ export class TreeBuilderV2
         classNode.properties.push(propNode);
     }
 
-    private buildClassConstant(branch, classNode: ClassNode)
+    private buildConstant(branch, context: Array<any>)
     {
         let constNode: ConstantNode = new ConstantNode();
 
@@ -195,7 +271,7 @@ export class TreeBuilderV2
             constNode.value = branch.value.value;
         }
 
-        classNode.constants.push(constNode);
+        context.push(constNode);
     }
 
     private buildDocComment(branch, classNode: ClassNode)
@@ -208,7 +284,7 @@ export class TreeBuilderV2
         if (branch.name == "__construct" || branch.name == classNode.name) {
             this.buildConstructor(branch, classNode);
         } else {
-            this.buildMethod(branch, classNode);
+            this.buildMethod(branch, classNode.methods);
         }
     }
 
@@ -225,7 +301,7 @@ export class TreeBuilderV2
         classNode.construct = constructorNode;
     }
 
-    private buildMethod(branch, classNode: ClassNode)
+    private buildMethod(branch, context: Array<any>)
     {
         let methodNode: MethodNode = new MethodNode();
 
@@ -237,7 +313,7 @@ export class TreeBuilderV2
 
         methodNode.accessModifier = this.getVisibility(branch.visibility);
 
-        classNode.methods.push(methodNode);
+        context.push(methodNode);
     }
 
     private buildMethodCore(node: MethodNode, branch)
@@ -276,6 +352,8 @@ export class TreeBuilderV2
                     //         accessing of variables inside loops
 
                     // TODO -- build scope functions calls
+
+                    // TODO -- handle output variables ?
 
                     case "return":
                         // TODO -- build return type if possible

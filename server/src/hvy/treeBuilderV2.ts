@@ -112,8 +112,8 @@ export class TreeBuilderV2
             node.endPos = this.buildPosition(branch.loc.end);
 
             if (branch.right.kind == "new") {
-                node.type = "class";
                 if (branch.right.what && branch.right.what.name) {
+                    node.type = branch.right.what.name;
                     node.value = branch.right.what.name;
                 }
             }
@@ -370,7 +370,7 @@ export class TreeBuilderV2
         methodArguments.forEach(item => {
             let arg = new ParameterNode();
 
-            arg.name = item.name;
+            arg.name = "$" + item.name;
             arg.byRef = item.byref;
             arg.nullable = item.nullable;
 

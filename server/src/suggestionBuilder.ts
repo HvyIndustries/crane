@@ -138,27 +138,15 @@ export class SuggestionBuilder
                         options.traits = true;
                         toReturn = this.buildSuggestionsForScope(scope, options);
                     } else {
-                        if (scope.name == "constructor") {
-                            // Within constructor
-                            // Suggestions
-                            //  / classes
-                            //  / local variables
-                            //  / parameters
-                            options.classes = true;
-                            options.localVariables = true;
-                            options.parameters = true;
-                            toReturn = this.buildSuggestionsForScope(scope, options);
-                        } else {
-                            // Within method
-                            // Suggestions
-                            //  / classes
-                            //  / local variables
-                            //  / parameters
-                            options.classes = true;
-                            options.localVariables = true;
-                            options.parameters = true;
-                            toReturn = this.buildSuggestionsForScope(scope, options);
-                        }
+                        // Within method or constructor
+                        // Suggestions
+                        //  / classes
+                        //  / local variables
+                        //  / parameters
+                        options.classes = true;
+                        options.localVariables = true;
+                        options.parameters = true;
+                        toReturn = this.buildSuggestionsForScope(scope, options);
                     }
                     break;
 
@@ -402,7 +390,7 @@ export class SuggestionBuilder
     {
         var toReturn = null;
 
-        var fileNode = this.workspaceTree.forEach((fileNode) => {
+        this.workspaceTree.forEach((fileNode) => {
             fileNode.classes.forEach((classNode) => {
                 if (classNode.name.toLowerCase() == className.toLowerCase()) {
                     toReturn = classNode;

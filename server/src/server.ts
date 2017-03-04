@@ -15,7 +15,8 @@ import {
     SignatureHelp, SignatureInformation, ParameterInformation
 } from 'vscode-languageserver';
 
-import { TreeBuilder, FileNode, FileSymbolCache, SymbolType, AccessModifierNode, ClassNode } from "./hvy/treeBuilder";
+import { TreeBuilder } from "./hvy/treeBuilder";
+import { FileNode, FileSymbolCache, SymbolType, AccessModifierNode, ClassNode } from "./hvy/nodes";
 import { Debug } from './util/Debug';
 import { SuggestionBuilder } from './suggestionBuilder';
 
@@ -270,10 +271,10 @@ function processWorkspaceFiles(projectPath: string, treePath: string) {
                 addToWorkspaceTree(result.tree);
                 docsDoneCount++;
                 connection.console.log(`(${docsDoneCount} of ${docsToDo.length}) File: ${file}`);
-                connection.sendNotification("fileProcessed", { 
-                    filename: file, 
-                    total: docsDoneCount, 
-                    error: null 
+                connection.sendNotification("fileProcessed", {
+                    filename: file,
+                    total: docsDoneCount,
+                    error: null
                 });
                 if (docsToDo.length == docsDoneCount) {
                     workspaceProcessed(projectPath, treePath);

@@ -7,6 +7,29 @@
 "use strict";
 
 import { IConnection } from 'vscode-languageserver';
+import { TreeBuilderV2 } from './treeBuilderV2';
+import { Program } from 'php-parser';
+
+import {
+    FileNode,
+    ClassNode,
+    PropertyNode,
+    ConstantNode,
+    ConstructorNode,
+    MethodNode,
+    ParameterNode,
+    AccessModifierNode,
+    PositionInfo,
+    NamespaceUsingNode,
+    FileSymbolCache,
+    SymbolCache,
+    SymbolType,
+    InterfaceNode,
+    TraitNode,
+    LineCache,
+    VariableNode,
+    FunctionCallNode
+} from './nodes';
 
 var phpParser = require("php-parser");
 
@@ -18,6 +41,7 @@ function isset(value) {
 
 export class TreeBuilder
 {
+    // v2.0 - updated to use php-parser 2.0.0-pre8
     // v1.5 - added extra types for variables
     // v1.4 - added lineCache
     // v1.3 - support for namespaces + use recursion
@@ -46,7 +70,7 @@ export class TreeBuilder
                 }
             });
 
-            var ast = parserInst.parseCode(text);
+            var ast: Program = parserInst.parseCode(text);
             parserInst = null;
 
             this.BuildObjectTree(ast, filePath).then((tree) => {
@@ -72,14 +96,17 @@ export class TreeBuilder
     }
 
     // Convert the generated AST into a usable object tree
-    private BuildObjectTree(ast, filePath:string) : Promise<FileNode>
+    private BuildObjectTree(ast: Program, filePath:string) : Promise<FileNode>
     {
         return new Promise<FileNode>((resolve, reject) =>
         {
             let tree: FileNode = new FileNode();
+            let treeBuilderV2 = new TreeBuilderV2();
 
             tree.path = filePath;
-            tree = this.ProcessBranch(ast[1], [], tree);
+
+            //tree = this.ProcessBranch(ast[1], [], tree);
+            tree = treeBuilderV2.processBranch(ast.children, tree);
 
             resolve(tree);
         });
@@ -423,8 +450,7 @@ export class TreeBuilder
                                 classNode.extends = branch[3][3][0];
                             }
 
-                            if (parentBranches != null && parentBranches.length > 0)
-                            {
+                            if (parentBranches != null && parentBranches.length > 0) {
                                 // Add namespaces
                                 parentBranches.forEach(item => {
                                     classNode.namespaceParts.push(item);
@@ -933,180 +959,4 @@ export class TreeBuilder
 
         return toReturn;
     }
-}
-
-
-
-
-// Entity Schema
-// TODO - if/else blocks
-//      - switch blocks
-//      - handle autoloaded files
-
-class BaseNode
-{
-    public name: string;
-    public startPos: PositionInfo;
-    public endPos: PositionInfo;
-}
-
-export class FileNode
-{
-    public path: string;
-    public constants: ConstantNode[] = [];
-    public topLevelVariables: VariableNode[] = [];
-    public functions: MethodNode[] = [];
-    public namespaceUsings: NamespaceUsingNode[] = [];
-    public classes: ClassNode[] = [];
-    public interfaces: InterfaceNode[] = [];
-    public traits: TraitNode[] = [];
-
-    // Any files that we're referencing with include(), require(), include_once() or require_once()
-    public fileReferences: string[] = [];
-
-    public symbolCache: FileSymbolCache[] = [];
-    public lineCache: LineCache[] = [];
-}
-
-export class FileSymbolCache
-{
-    public name: string;
-    public type: SymbolType;
-    public parentName: string;
-}
-
-export class LineCache
-{
-    public line: number;
-    public name: string;
-    public value: string;
-}
-
-export enum SymbolType
-{
-    Unknown,
-    Class,
-    Interface,
-    Trait,
-    Property,
-    Method,
-    Constant,
-    TopLevelVariable,
-    TopLevelFunction
-}
-
-export class NamespaceUsingNode extends BaseNode
-{
-    // The parent parts in the correct order (eg. use [Parent1]\[Parent1]\Namespace)
-    public parents: string[] = [];
-}
-
-export class ClassNode extends BaseNode
-{
-    public implements: string[] = [];
-    public extends: string;
-    public isAbstract: boolean = false;
-    public isFinal: boolean = false;
-    public isStatic: boolean = false;
-    public properties: PropertyNode[] = [];
-    public methods: MethodNode[] = [];
-    public constants: ConstantNode[] = [];
-    public traits: string[] = [];
-    public namespaceParts: string[] = [];
-    public construct: ConstructorNode;
-}
-
-export class TraitNode extends ClassNode {}
-
-export class InterfaceNode extends BaseNode
-{
-    public extends: string[] = [];
-    public constants: ConstantNode[] = [];
-    public methods: MethodNode[] = [];
-    public namespace: string[] = [];
-}
-
-export class MethodNode extends BaseNode
-{
-    public params: ParameterNode[] = [];
-    public returns: string = "unknown";
-    public accessModifier: AccessModifierNode = AccessModifierNode.public;
-    public isStatic: boolean = false;
-    public isAbstract: boolean = false;
-    public globalVariables: string[] = [];
-    public scopeVariables: VariableNode[] = [];
-    public functionCalls: FunctionCallNode[] = [];
-}
-
-export class ConstructorNode extends MethodNode
-{
-    public isDeprecated: boolean = false;
-}
-
-export class FunctionCallNode extends BaseNode
-{
-    public params: ParameterNode[] = [];
-    public parents: string[] = [];
-}
-
-export class VariableNode extends BaseNode
-{
-    public type: string = "unknown";
-    public value: string;
-    public variableType: string = "variable"; // "variable" or "property"
-}
-
-export class ParameterNode extends VariableNode
-{
-    public optional: boolean = false;
-    public parents: string[] = [];
-}
-
-export class PropertyNode extends BaseNode
-{
-    public type: string = "unknown";
-    public accessModifier: AccessModifierNode;
-    public isStatic: boolean = false;
-}
-
-export class ConstantNode extends BaseNode
-{
-    // Constants are always public
-    // Constants (should) only be basic types
-    public type: string = "unknown";
-    public value: string;
-}
-
-export enum AccessModifierNode
-{
-    public,
-    private,
-    protected
-}
-
-export class PositionInfo
-{
-    constructor(line = 0, col = 0, offset = 0) {
-        this.line = line;
-        this.col = col;
-        this.offset = offset;
-    }
-
-    public line: number;
-    public col: number;
-    public offset: number;
-}
-
-
-
-export class SymbolLookupCache
-{
-    public cache: SymbolCache[];
-}
-
-export class SymbolCache
-{
-    public name: string;
-    public file: string;
-    public line: number;
 }

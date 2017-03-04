@@ -7,10 +7,8 @@
 'use strict';
 
 import { TextDocumentPositionParams, TextDocument, CompletionItem, CompletionItemKind } from 'vscode-languageserver';
-import {
-    TreeBuilder, FileNode, FileSymbolCache,
-    SymbolType, AccessModifierNode, ClassNode, TraitNode
-} from "./hvy/treeBuilder";
+import { TreeBuilder } from "./hvy/treeBuilder";
+import { FileNode, FileSymbolCache, SymbolType, AccessModifierNode, ClassNode, TraitNode } from "./hvy/nodes";
 
 const fs = require('fs');
 
@@ -73,7 +71,7 @@ export class SuggestionBuilder
             toReturn = toReturn.concat(this.checkAccessorAndAddMembers(scope));
         } else if (this.lastChar == ":") {
             if (this.isSelf()) {
-                // Accessing via self::
+                // Accessing via self:: or static::
                 this.currentFileNode.classes.forEach(classNode => {
                     if (this.withinBlock(classNode)) {
                         // Add static members for this class
@@ -600,9 +598,9 @@ export class SuggestionBuilder
                 var accessModifier = "(" + this.buildAccessModifierText(subNode.accessModifier) + ` property) : ${subNode.type}`;
                 var insertText = subNode.name;
 
-                if (!staticOnly) {
-                    // Strip the leading $
-                    insertText = subNode.name.substr(1, subNode.name.length - 1);
+                if (subNode.isStatic) {
+                    // Add a the leading $
+                    insertText = "$" + subNode.name;
                 }
 
                 if (includeProtected && subNode.accessModifier == AccessModifierNode.protected) {

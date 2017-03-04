@@ -10,6 +10,7 @@ class firstClass {
     private function firstPrivateFunc() {}
 
     function __construct() {
+        $this->
         $this->firstProtectedProp;
     }
 }
@@ -24,7 +25,7 @@ class secondClass extends firstClass {
     private function secondPrivateFunc() {}
 
     function __construct() {
-        //$this-
+        //$this->
     }
 }
 
@@ -48,7 +49,7 @@ class otherClass {
 
 class finalClass extends ExampleClass {
     function __construct() {
-        
+
         thirdClass::myStaticFunc();
     }
 }

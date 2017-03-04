@@ -8,6 +8,8 @@ use PB\Test\Something;
 
 $test = new Awesome();
 
+function func(){}
+
 doSomething($param);
 
 class Awesome extends Awesome2
@@ -23,6 +25,14 @@ class Awesome extends Awesome2
     public $boolProp = TRuE;
     public $nullProp = NULL;
     private static $stat;
+
+    public $nested1,
+           $nested2,
+           $nested3;
+
+    const CONST1='',
+          CONST2='',
+          CONST3='';
 
     /**
      * @param string $param1

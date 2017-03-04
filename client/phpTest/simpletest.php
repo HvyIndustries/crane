@@ -12,6 +12,7 @@ class myClass
 
     public function doSomething(ParamClass $param)
     {
+
         $this->testProp = "test3";
 
         $localVar = new ParamClass();

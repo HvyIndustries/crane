@@ -91,68 +91,107 @@ export class SuggestionBuilder
                 }
             }
         } else {
-            switch (scope.level) {
-                case ScopeLevel.Root:
-                    if (scope.name == null) {
-                        // Top level
-                        // Suggestions:
-                        //  / other top level variables/constants
-                        //  / top level functions
-                        //  / classes/interfaces/traits
-                        //  - namespaces (after 'use')
-                        options.topConstants = true;
-                        options.topVariables = true;
-                        options.topFunctions = true;
-                        options.classes = true;
-                        options.interfaces = true;
-                        options.traits = true;
-                        options.namespaces = true;
-                        toReturn = this.buildSuggestionsForScope(scope, options);
-                    } else {
-                        // Top level function
-                        // Suggestions:
-                        //  / other top level functions
-                        //  / local scope variables
-                        //  / parameters
-                        //  / variables included with 'global'
-                        //  / classes
-                        options.topFunctions = true;
-                        options.localVariables = true;
-                        options.parameters = true;
-                        options.globalVariables = true;
-                        options.classes = true;
-                        toReturn = this.buildSuggestionsForScope(scope, options);
-                    }
-                    break;
+            // Special cases for "extends", "implements", "use"
+            let newIndex = this.currentLine.indexOf(" new ");
+            let newNoSpaceIndex = this.currentLine.indexOf("=new ");
+            let extendsIndex = this.currentLine.indexOf(" extends ");
+            let implementsIndex = this.currentLine.indexOf(" implements ");
+            let useIndex = this.currentLine.indexOf("use ");
 
-                case ScopeLevel.Trait:
-                case ScopeLevel.Class:
-                    if (scope.name == null) {
-                        // Within class, not in method or constructor
-                        // Suggestions
-                        //  / classes (after '=' or 'extends')
-                        //  / interfaces (after 'implements')
-                        //  / traits (after 'use')
-                        options.classes = true;
-                        options.interfaces = true;
-                        options.traits = true;
-                        toReturn = this.buildSuggestionsForScope(scope, options);
-                    } else {
-                        // Within method or constructor
-                        // Suggestions
-                        //  / classes
-                        //  / local variables
-                        //  / parameters
-                        options.classes = true;
-                        options.localVariables = true;
-                        options.parameters = true;
-                        toReturn = this.buildSuggestionsForScope(scope, options);
-                    }
-                    break;
+            let specialCase = false;
 
-                case ScopeLevel.Interface:
-                default:
-                    break;
+            if ((newIndex > -1 || newNoSpaceIndex > -1 || extendsIndex > -1)
+                && (newIndex < this.charIndex || newNoSpaceIndex < this.charIndex || extendsIndex < this.charIndex )) {
+                specialCase = true;
+
+                // Show only classes
+                options.classes = true;
+                toReturn = this.buildSuggestionsForScope(scope, options);
+            }
+
+            if (implementsIndex > -1 && implementsIndex < this.charIndex) {
+                specialCase = true;
+
+                // Show only interfaces
+                options.interfaces = true;
+                toReturn = this.buildSuggestionsForScope(scope, options);
+            }
+
+            if (useIndex > -1 && useIndex < this.charIndex) {
+                specialCase = true;
+
+                // TODO -- If the line contains a "\" as well, show classes within that namespace
+
+                // Show only namespaces and traits
+                options.namespaces = true;
+                options.traits = true;
+                toReturn = this.buildSuggestionsForScope(scope, options);
+            }
+
+            if (!specialCase) {
+                switch (scope.level) {
+                    case ScopeLevel.Root:
+                        if (scope.name == null) {
+                            // Top level
+                            // Suggestions:
+                            //  / other top level variables/constants
+                            //  / top level functions
+                            //  / classes/interfaces/traits
+                            //  - namespaces (after 'use')
+                            options.topConstants = true;
+                            options.topVariables = true;
+                            options.topFunctions = true;
+                            options.classes = true;
+                            options.interfaces = true;
+                            options.traits = true;
+                            options.namespaces = true;
+                            toReturn = this.buildSuggestionsForScope(scope, options);
+                        } else {
+                            // Top level function
+                            // Suggestions:
+                            //  / other top level functions
+                            //  / local scope variables
+                            //  / parameters
+                            //  / variables included with 'global'
+                            //  / classes
+                            options.topFunctions = true;
+                            options.localVariables = true;
+                            options.parameters = true;
+                            options.globalVariables = true;
+                            options.classes = true;
+                            toReturn = this.buildSuggestionsForScope(scope, options);
+                        }
+                        break;
+
+                    case ScopeLevel.Trait:
+                    case ScopeLevel.Class:
+                        if (scope.name == null) {
+                            // Within class, not in method or constructor
+                            // Suggestions
+                            //  / classes (after '=' or 'extends')
+                            //  / interfaces (after 'implements')
+                            //  / traits (after 'use')
+                            options.classes = true;
+                            options.interfaces = true;
+                            options.traits = true;
+                            toReturn = this.buildSuggestionsForScope(scope, options);
+                        } else {
+                            // Within method or constructor
+                            // Suggestions
+                            //  / classes
+                            //  / local variables
+                            //  / parameters
+                            options.classes = true;
+                            options.localVariables = true;
+                            options.parameters = true;
+                            toReturn = this.buildSuggestionsForScope(scope, options);
+                        }
+                        break;
+
+                    case ScopeLevel.Interface:
+                    default:
+                        break;
+                }
             }
         }
 
@@ -172,6 +211,11 @@ export class SuggestionBuilder
         });
 
         return filtered;
+    }
+
+    private isSpecialCasesForExtendsImplementsUse()
+    {
+
     }
 
     private buildSuggestionsForScope(scope: Scope, options: ScopeOptions) : CompletionItem[]
@@ -260,13 +304,19 @@ export class SuggestionBuilder
 
             if (options.traits) {
                 fileNode.traits.forEach(item => {
-                    toReturn.push({ label: item.name, kind: CompletionItemKind.Module, detail: "(trait)" });
+                    toReturn.push({ label: item.name, kind: CompletionItemKind.Class, detail: "(trait)" });
                 });
             }
 
             if (options.topFunctions) {
                 fileNode.functions.forEach(item => {
                     toReturn.push({ label: item.name, kind: CompletionItemKind.Function,  detail: `(function) : ${item.returns}`, insertText: this.getFunctionInsertText(item) });
+                });
+            }
+
+            if (options.namespaces) {
+                fileNode.namespaces.forEach(item => {
+                    toReturn.push({ label: item.name, kind: CompletionItemKind.Module,  detail: `(namespace)` });
                 });
             }
         });

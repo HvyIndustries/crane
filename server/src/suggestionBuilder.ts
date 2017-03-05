@@ -98,6 +98,10 @@ export class SuggestionBuilder
             let implementsIndex = this.currentLine.indexOf(" implements ");
             let useIndex = this.currentLine.indexOf("use ");
 
+            let classIndex = this.currentLine.indexOf("class ");
+            let traitIndex = this.currentLine.indexOf("trait ");
+            let interfaceIndex = this.currentLine.indexOf("interface ");
+
             let specialCase = false;
 
             if (implementsIndex > -1 && implementsIndex < this.charIndex) {
@@ -125,6 +129,12 @@ export class SuggestionBuilder
                 options.classes = true;
                 options.traits = true;
                 toReturn = this.buildSuggestionsForScope(scope, options);
+            }
+
+            if (!specialCase
+                && (classIndex > -1 || traitIndex > -1 || interfaceIndex > -1)
+                && (classIndex < this.charIndex || traitIndex < this.charIndex || interfaceIndex < this.charIndex)) {
+                return null;
             }
 
             if (!specialCase) {

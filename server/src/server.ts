@@ -381,19 +381,27 @@ function saveProjectTree(projectPath: string, treeFile: string): Promise<boolean
             resolve(false);
         } else {
             Debug.info('Packing tree file: ' + treeFile);
-            fq.writeFile(`${projectPath}/tree.tmp`, JSON.stringify(workspaceTree), (err) => {
+
+            fq.writeFile(
+                `${projectPath}/tree.tmp`, JSON.stringify(workspaceTree), (err) => {
                 if (err) {
                     Debug.error('Could not write to cache file');
                     Debug.error(util.inspect(err, false, null));
                     resolve(false);
                 } else {
+                    Debug.info('Start to cache symbols');
                     var gzip = zlib.createGzip();
                     var inp = fs.createReadStream(`${projectPath}/tree.tmp`);
                     var out = fs.createWriteStream(treeFile);
                     inp.pipe(gzip).pipe(out).on('close', function () {
-                        fs.unlinkSync(`${projectPath}/tree.tmp`);
+                        Debug.info('Cache file updated');
+                        try {
+                            fs.unlinkSync(`${projectPath}/tree.tmp`);
+                        } catch(err) {
+                            Debug.error('Could not remove temporary file');
+                            Debug.error(util.inspect(err, false, null));
+                        }
                     });
-                    Debug.info('Cache file updated');
                     resolve(true);
                 }
             });

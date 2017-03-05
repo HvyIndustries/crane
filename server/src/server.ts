@@ -271,7 +271,6 @@ function processWorkspaceFiles(projectPath: string, treePath: string) {
             treeBuilder.Parse(data, file).then(result => {
                 addToWorkspaceTree(result.tree);
                 docsDoneCount++;
-                Debug.info(`(${docsDoneCount} of ${docsToDo.length}) File: ${file}`);
                 connection.sendNotification("fileProcessed", {
                     filename: file,
                     total: docsDoneCount,
@@ -320,9 +319,6 @@ function addToWorkspaceTree(tree:FileNode)
     } else {
         workspaceTree.push(tree);
     }
-
-    // Debug
-    Debug.info("Parsed file: " + tree.path);
 }
 
 function removeFromWorkspaceTree(tree: FileNode) {

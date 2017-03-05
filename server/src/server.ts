@@ -9,13 +9,14 @@
 import {
     IPCMessageReader, IPCMessageWriter,
     createConnection, IConnection, TextDocumentSyncKind,
-    TextDocuments, ITextDocument, Diagnostic, DiagnosticSeverity,
-    InitializeParams, InitializeResult, TextDocumentIdentifier, TextDocumentPosition,
+    TextDocuments, TextDocument, Diagnostic, DiagnosticSeverity,
+    InitializeParams, InitializeResult, TextDocumentIdentifier, TextDocumentPositionParams,
     CompletionItem, CompletionItemKind, RequestType, Position,
     SignatureHelp, SignatureInformation, ParameterInformation
 } from 'vscode-languageserver';
 
-import { TreeBuilder, FileNode, FileSymbolCache, SymbolType, AccessModifierNode, ClassNode } from "./hvy/treeBuilder";
+import { TreeBuilder } from "./hvy/treeBuilder";
+import { FileNode, FileSymbolCache, SymbolType, AccessModifierNode, ClassNode } from "./hvy/nodes";
 import { Debug } from './util/Debug';
 import { SuggestionBuilder } from './suggestionBuilder';
 
@@ -100,11 +101,9 @@ connection.onDidChangeWatchedFiles((change) =>
 });
 
 // This handler provides the initial list of the completion items.
-connection.onCompletion((textDocumentPosition: TextDocumentPosition): CompletionItem[] =>
+connection.onCompletion((textDocumentPosition: TextDocumentPositionParams): CompletionItem[] =>
 {
-    if (textDocumentPosition.languageId != "php") return;
-
-    var doc = documents.get(textDocumentPosition.uri);
+    var doc = documents.get(textDocumentPosition.textDocument.uri);
     var suggestionBuilder = new SuggestionBuilder();
 
     suggestionBuilder.prepare(textDocumentPosition, doc, workspaceTree);
@@ -129,7 +128,7 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem =>
     return item;
 });
 
-var buildObjectTreeForDocument: RequestType<{path:string,text:string}, any, any> = { method: "buildObjectTreeForDocument" };
+var buildObjectTreeForDocument: RequestType<{path:string,text:string}, any, any, any> = new RequestType("buildObjectTreeForDocument");
 connection.onRequest(buildObjectTreeForDocument, (requestObj) =>
 {
     var fileUri = requestObj.path;
@@ -147,7 +146,7 @@ connection.onRequest(buildObjectTreeForDocument, (requestObj) =>
     });
 });
 
-var deleteFile: RequestType<{path:string}, any, any> = { method: "deleteFile" };
+var deleteFile: RequestType<{path:string}, any, any, any> = new RequestType("deleteFile");
 connection.onRequest(deleteFile, (requestObj) =>
 {
     var node = getFileNodeFromPath(requestObj.path);
@@ -156,7 +155,7 @@ connection.onRequest(deleteFile, (requestObj) =>
     }
 });
 
-var saveTreeCache: RequestType<{ projectDir: string, projectTree: string }, any, any> = { method: "saveTreeCache" };
+var saveTreeCache: RequestType<{ projectDir: string, projectTree: string }, any, any, any> = new RequestType("saveTreeCache");
 connection.onRequest(saveTreeCache, request => {
     saveProjectTree(request.projectDir, request.projectTree).then(saved => {
         notifyClientOfWorkComplete();
@@ -176,7 +175,7 @@ var buildFromFiles: RequestType<{
     treePath: string,
     enableCache: boolean,
     rebuild: boolean
-}, any, any> = { method: "buildFromFiles" };
+}, any, any, any> = new RequestType("buildFromFiles");
 connection.onRequest(buildFromFiles, (project) => {
     if (project.rebuild) {
         workspaceTree = [];
@@ -185,28 +184,29 @@ connection.onRequest(buildFromFiles, (project) => {
     enableCache = project.enableCache;
     docsToDo = project.files;
     docsDoneCount = 0;
-    connection.console.log('starting work!');
+    Debug.info("Preparing to parse workspace...");
+
     // Run asynchronously
     setTimeout(() => {
         glob(project.craneRoot + '/phpstubs/*/*.php', (err, fileNames) => {
             // Process the php stubs
             stubsToDo = fileNames;
             Debug.info(`Processing ${stubsToDo.length} stubs from ${project.craneRoot}/phpstubs`)
-            connection.console.log(`Stub files to process: ${stubsToDo.length}`);
+            Debug.info(`Stub files to process: ${stubsToDo.length}`);
             processStub().then(data => {
-                connection.console.log('stubs done!');
-                connection.console.log(`Workspace files to process: ${docsToDo.length}`);
+                Debug.info('Stubs parsing done!');
+                Debug.info(`Workspace files to process: ${docsToDo.length}`);
                 processWorkspaceFiles(project.projectPath, project.treePath);
             }).catch(data => {
-                connection.console.log('No stubs found!');
-                connection.console.log(`Workspace files to process: ${docsToDo.length}`);
+                Debug.info('No stubs found!');
+                Debug.info(`Workspace files to process: ${docsToDo.length}`);
                 processWorkspaceFiles(project.projectPath, project.treePath);
             });
         });
     }, 100);
 });
 
-var buildFromProject: RequestType<{treePath:string, enableCache:boolean}, any, any> = { method: "buildFromProject" };
+var buildFromProject: RequestType<{treePath:string, enableCache:boolean}, any, any, any> = new RequestType("buildFromProject");
 connection.onRequest(buildFromProject, (data) => {
     enableCache = data.enableCache;
     fs.readFile(data.treePath, (err, data) => {
@@ -244,13 +244,13 @@ function processStub() {
             fq.readFile(file, { encoding: 'utf8' }, (err, data) => {
                 treeBuilder.Parse(data, file).then(result => {
                     addToWorkspaceTree(result.tree);
-                    connection.console.log(`${offset} Stub Processed: ${file}`);
+                    Debug.info(`${offset} Stub Processed: ${file}`);
                     offset++;
                     if (offset == stubsToDo.length) {
                         resolve();
                     }
                 }).catch(err => {
-                    connection.console.log(`${offset} Stub Error: ${file}`);
+                    Debug.error(`${offset} Stub Error: ${file}`);
                     Debug.error((util.inspect(err, false, null)));
                     offset++;
                     if (offset == stubsToDo.length) {
@@ -271,8 +271,11 @@ function processWorkspaceFiles(projectPath: string, treePath: string) {
             treeBuilder.Parse(data, file).then(result => {
                 addToWorkspaceTree(result.tree);
                 docsDoneCount++;
-                connection.console.log(`(${docsDoneCount} of ${docsToDo.length}) File: ${file}`);
-                connection.sendNotification({ method: "fileProcessed" }, { filename: file, total: docsDoneCount, error: null });
+                connection.sendNotification("fileProcessed", {
+                    filename: file,
+                    total: docsDoneCount,
+                    error: null
+                });
                 if (docsToDo.length == docsDoneCount) {
                     workspaceProcessed(projectPath, treePath);
                 }
@@ -281,9 +284,9 @@ function processWorkspaceFiles(projectPath: string, treePath: string) {
                 if (docsToDo.length == docsDoneCount) {
                     workspaceProcessed(projectPath, treePath);
                 }
-                connection.console.log(util.inspect(data, false, null));
-                connection.console.log(`Issue processing ${file}`);
-                connection.sendNotification({ method: "fileProcessed" }, { filename: file, total: docsDoneCount, error: util.inspect(data, false, null) });
+                Debug.error(util.inspect(data, false, null));
+                Debug.error(`Issue processing ${file}`);
+                connection.sendNotification("fileProcessed", { filename: file, total: docsDoneCount, error: util.inspect(data, false, null) });
             });
         });
     });
@@ -316,9 +319,6 @@ function addToWorkspaceTree(tree:FileNode)
     } else {
         workspaceTree.push(tree);
     }
-
-    // Debug
-    // connection.console.log("Parsed file: " + tree.path);
 }
 
 function removeFromWorkspaceTree(tree: FileNode) {
@@ -372,8 +372,7 @@ function getFileNodeFromPath(path: string): FileNode {
 
 function notifyClientOfWorkComplete()
 {
-    var requestType: RequestType<any, any, any> = { method: "workDone" };
-    connection.sendRequest(requestType);
+    connection.sendRequest("workDone");
 }
 
 function saveProjectTree(projectPath: string, treeFile: string): Promise<boolean> {

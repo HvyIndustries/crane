@@ -2,7 +2,7 @@
 
 require "file.php";
 include "file2.php";
-require_once $folder . "/file.php"; 
+require_once $folder . "/file.php";
 
 // regular comment with todo text inline
 // TODO -- example
@@ -19,10 +19,16 @@ $numVar = 2.4;
 Foo\globalFunction($numVar);
 $result = myFunc();
 
+$inst = new ExampleClass();
+$inst->publicProp = "test";
+$inst->DoSomethingElse();
+
 function globalFunction()
 {
     global $topLevelVariable;
     $local = "test";
+
+
 
     otherFunc($param);
 }
@@ -65,7 +71,7 @@ class ExampleClass extends ExistingClass implements myInterface // todo inline
     public function __construct()
     {
         $constructorVar = "test";
-        echo $this->testFunc($this->mymethod()); 
+        echo $this->testFunc($this->mymethod());
         $this->DoSomething();
 
         $this->publicProp = "test2";
@@ -76,7 +82,7 @@ class ExampleClass extends ExistingClass implements myInterface // todo inline
     {
     }
 
-    public function DoSomethingElse()
+    public function DoSomethingElse($arg1)
     {
     }
 
@@ -95,7 +101,7 @@ class ExampleClass extends ExistingClass implements myInterface // todo inline
         $this->DoWork();
     }
 
-    private static function OtherFunc($optional = "opt") 
+    private static function OtherFunc($optional = "opt")
     {
         global $parentVar, $secondVar;
 
@@ -116,6 +122,6 @@ class ExampleClass extends ExistingClass implements myInterface // todo inline
     */
     public function DocCommentNameTest()
     {
-        
+
     }
 }

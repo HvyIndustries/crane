@@ -21,9 +21,10 @@ const exec = require('child_process').exec;
 const util = require('util');
 
 let craneSettings = workspace.getConfiguration("crane");
-
 const cranefs: Cranefs = new Cranefs();
+
 console.log(process.platform)
+
 export default class Crane
 {
     public static langClient: LanguageClient;
@@ -103,38 +104,39 @@ export default class Crane
 
         this.showIndexingStatusBarMessage();
 
-        var statusBarItem: StatusBarItem = window.createStatusBarItem(StatusBarAlignment.Right);
-        statusBarItem.text = Config.version;
-        statusBarItem.tooltip = 'Crane (PHP Code-completion) version ' + Config.version;
-        statusBarItem.show();
-
-        var serverDebugMessage: NotificationType<{ type: string, message: string }> = { method: "serverDebugMessage" };
-        Crane.langClient.onNotification(serverDebugMessage, message => {
-            switch (message.type) {
-                case 'info': Debug.info(message.message); break;
-                case 'error': Debug.error(message.message); break;
-                case 'warning': Debug.warning(message.message); break;
-                default: Debug.info(message.message); break;
-            }
+        var serverDebugMessage: NotificationType<{ type: string, message: string }, any> = new NotificationType("serverDebugMessage");
+        Crane.langClient.onReady().then(() => {
+            Crane.langClient.onNotification(serverDebugMessage, message => {
+                switch (message.type) {
+                    case 'info': Debug.info(message.message); break;
+                    case 'error': Debug.error(message.message); break;
+                    case 'warning': Debug.warning(message.message); break;
+                    default: Debug.info(message.message); break;
+                }
+            });
         });
 
-        var requestType: RequestType<any, any, any> = { method: "workDone" };
-        Crane.langClient.onRequest(requestType, (tree) => {
-            // this.projectBuilding = false;
-            Crane.statusBarItem.text = '$(check) PHP File Indexing Complete!';
-            // Load settings
-            let craneSettings = workspace.getConfiguration("crane");
-            Debug.info("Processing complete!");
-            if (Config.showBugReport) {
-                setTimeout(() => {
-                    Crane.statusBarItem.tooltip = "Found a problem with the PHP Intellisense provided by Crane? Click here to file a bug report on Github";
-                    Crane.statusBarItem.text = "$(bug) Found a PHP Intellisense Bug?";
-                    Crane.statusBarItem.command = "crane.reportBug";
-                    Crane.statusBarItem.show();
-                }, 5000);
-            } else {
-                Crane.statusBarItem.hide();
-            }
+        var requestType: RequestType<any, any, any, any> = new RequestType("workDone");
+        Crane.langClient.onReady().then(() => {
+            Crane.langClient.onRequest(requestType, (tree) => {
+                // this.projectBuilding = false;
+                Crane.statusBarItem.text = '$(check) PHP File Indexing Complete!';
+                // Load settings
+                let craneSettings = workspace.getConfiguration("crane");
+                Debug.info("Processing complete!");
+                if (Config.showBugReport) {
+                    setTimeout(() => {
+                        Crane.statusBarItem.tooltip = "Found a problem with the PHP Intellisense provided by Crane? Click here to file a bug report on Github";
+                        Crane.statusBarItem.text = "$(bug) Found a PHP Intellisense Bug?";
+                        Crane.statusBarItem.command = "crane.reportBug";
+                        Crane.statusBarItem.show();
+                    }, 5000);
+                } else {
+                    setTimeout(() => {
+                        Crane.statusBarItem.hide();
+                    }, 7500);
+                }
+            });
         });
 
         var types = Config.phpFileTypes;
@@ -145,7 +147,7 @@ export default class Crane
             workspace.openTextDocument(e).then(document => {
                 if (document.languageId != 'php') return;
                 Debug.info('File Changed: ' + e.fsPath);
-                Crane.langClient.sendRequest({ method: 'buildObjectTreeForDocument' }, {
+                Crane.langClient.sendRequest('buildObjectTreeForDocument', {
                     path: e.fsPath,
                     text: document.getText()
                 });
@@ -155,7 +157,7 @@ export default class Crane
             workspace.openTextDocument(e).then(document => {
                 if (document.languageId != 'php') return;
                 Debug.info('File Created: ' + e.fsPath);
-                Crane.langClient.sendRequest({ method: 'buildObjectTreeForDocument' }, {
+                Crane.langClient.sendRequest('buildObjectTreeForDocument', {
                     path: e.fsPath,
                     text: document.getText()
                 });
@@ -163,7 +165,7 @@ export default class Crane
         });
         fsw.onDidDelete(e => {
             Debug.info('File Deleted: ' + e.fsPath);
-            Crane.langClient.sendRequest({ method: 'deleteFile' }, {
+            Crane.langClient.sendRequest('deleteFile', {
                 path: e.fsPath
             });
         });
@@ -209,7 +211,7 @@ export default class Crane
         var document = editor.document;
 
         this.buildObjectTreeForDocument(document).then(() => {
-            Crane.langClient.sendRequest({ method: 'saveTreeCache' }, { projectDir: cranefs.getProjectDir(), projectTree: cranefs.getTreePath() });
+            Crane.langClient.sendRequest('saveTreeCache', { projectDir: cranefs.getProjectDir(), projectTree: cranefs.getTreePath() });
         }).catch(error => {
             Debug.error(util.inspect(error, false, null));
         });
@@ -247,6 +249,7 @@ export default class Crane
     }
 
     public rebuildProject() {
+        this.showIndexingStatusBarMessage();
         cranefs.rebuildProject();
     }
 
@@ -285,7 +288,7 @@ export default class Crane
             var projectDir = cranefs.getProjectDir();
             var projectTree = cranefs.getTreePath();
 
-            var requestType: RequestType<any, any, any> = { method: "buildObjectTreeForDocument" };
+            var requestType: RequestType<any, any, any, any> = new RequestType("buildObjectTreeForDocument");
             Crane.langClient.sendRequest(requestType, { path, text, projectDir, projectTree }).then(() => resolve() );
         });
     }

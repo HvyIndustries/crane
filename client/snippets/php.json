@@ -3,7 +3,7 @@
         "construct": {
             "prefix": "ctor",
             "body": [
-                "function __construct()",
+                "public function __construct()",
                 "{",
                 "\t$0",
                 "}"

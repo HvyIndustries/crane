@@ -23,16 +23,16 @@ import {
 
 export class TreeBuilderV2
 {
-    public processBranch(branch, tree: FileNode) : FileNode
+    public processBranch(branch, tree: FileNode, parent) : FileNode
     {
         if (Array.isArray(branch)) {
             branch.forEach(element => {
-                this.processBranch(element, tree);
+                this.processBranch(element, tree, parent);
             });
         } else {
             switch (branch.kind) {
                 case "namespace":
-                    this.processBranch(branch.children, tree);
+                    this.processBranch(branch.children, tree, branch);
                     break;
 
                 case "include":
@@ -60,15 +60,15 @@ export class TreeBuilderV2
                     break;
 
                 case "class":
-                    this.buildClass(branch, tree.classes);
+                    this.buildClass(branch, tree.classes, parent);
                     break;
 
                 case "trait":
-                    this.buildTrait(branch, tree.traits);
+                    this.buildTrait(branch, tree.traits, parent);
                     break;
 
                 case "interface":
-                    this.buildInterface(branch, tree.interfaces);
+                    this.buildInterface(branch, tree.interfaces, parent);
                     break;
             }
         }
@@ -122,13 +122,20 @@ export class TreeBuilderV2
         }
     }
 
-    private buildInterface(branch, context: Array<any>)
+    private buildNamespace(node, parent)
+    {
+        if (parent != null && parent.kind == "namespace") {
+            node.namespace = parent.name;
+        }
+    }
+
+    private buildInterface(branch, context: Array<any>, parent)
     {
         let interfaceNode: InterfaceNode = new InterfaceNode();
 
         interfaceNode.name = branch.name;
 
-        // TODO -- add namespace info
+        this.buildNamespace(interfaceNode, parent);
 
         if (branch.extends != null) {
             branch.extends.forEach(item => {
@@ -153,13 +160,13 @@ export class TreeBuilderV2
         context.push(interfaceNode);
     }
 
-    private buildTrait(branch, context: Array<any>)
+    private buildTrait(branch, context: Array<any>, parent)
     {
         let traitNode: TraitNode = new TraitNode();
 
         traitNode.name = branch.name;
 
-        // TODO -- add namespace info
+        this.buildNamespace(traitNode, parent);
 
         if (branch.extends != null) {
             traitNode.extends = branch.extends.name;
@@ -181,13 +188,13 @@ export class TreeBuilderV2
         context.push(traitNode);
     }
 
-    private buildClass(branch, context: Array<any>)
+    private buildClass(branch, context: Array<any>, parent)
     {
         let classNode: ClassNode = new ClassNode();
 
         classNode.name = branch.name;
 
-        // TODO -- add namespace info
+        this.buildNamespace(classNode, parent);
 
         if (branch.extends != null) {
             classNode.extends = branch.extends.name;

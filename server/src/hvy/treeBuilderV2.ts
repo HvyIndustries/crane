@@ -18,7 +18,8 @@ import {
     ParameterNode,
     AccessModifierNode,
     PositionInfo,
-    VariableNode
+    VariableNode,
+    NamespaceUsingNode
 } from './nodes';
 
 export class TreeBuilderV2
@@ -96,8 +97,13 @@ export class TreeBuilderV2
     {
         branch.items.forEach(item => {
             if (item.name) {
-                // TODO -- handle namespace aliases (eg "use HVY\test as testAlias;")
-                context.namespaceUsings.push(item.name);
+                let node = new NamespaceUsingNode();
+                node.name = item.name;
+
+                // Handle namespace aliases (eg "use HVY\test as testAlias;"
+                node.alias = item.alias;
+
+                context.namespaceUsings.push(node);
             }
         });
     }

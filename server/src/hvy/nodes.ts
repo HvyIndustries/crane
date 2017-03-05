@@ -66,8 +66,7 @@ export enum SymbolType
 
 export class NamespaceUsingNode extends BaseNode
 {
-    // The parent parts in the correct order (eg. use [Parent1]\[Parent1]\Namespace)
-    public parents: string[] = [];
+    public alias: string;
 }
 
 export class ClassNode extends BaseNode

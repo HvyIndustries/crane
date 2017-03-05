@@ -19,7 +19,8 @@ import {
     AccessModifierNode,
     PositionInfo,
     VariableNode,
-    NamespaceUsingNode
+    NamespaceUsingNode,
+    NamespaceNode
 } from './nodes';
 
 export class TreeBuilderV2
@@ -97,9 +98,7 @@ export class TreeBuilderV2
     {
         branch.items.forEach(item => {
             if (item.name) {
-                let node = new NamespaceUsingNode();
-                node.name = item.name;
-
+                let node = new NamespaceUsingNode(item.name);
                 // Handle namespace aliases (eg "use HVY\test as testAlias;"
                 node.alias = item.alias;
 
@@ -149,16 +148,18 @@ export class TreeBuilderV2
             });
         }
 
-        branch.body.forEach(interfaceBodyBranch => {
-            switch (interfaceBodyBranch.kind) {
-                case "classconstant":
-                    this.buildConstant(interfaceBodyBranch, interfaceNode.constants);
-                    break;
-                case "method":
-                    this.buildMethod(interfaceBodyBranch, interfaceNode.methods);
-                    break;
-            }
-        });
+        if (branch.body) {
+            branch.body.forEach(interfaceBodyBranch => {
+                switch (interfaceBodyBranch.kind) {
+                    case "classconstant":
+                        this.buildConstant(interfaceBodyBranch, interfaceNode.constants);
+                        break;
+                    case "method":
+                        this.buildMethod(interfaceBodyBranch, interfaceNode.methods);
+                        break;
+                }
+            });
+        }
 
         interfaceNode.startPos = this.buildPosition(branch.loc.start);
         interfaceNode.endPos = this.buildPosition(branch.loc.end);
@@ -184,9 +185,11 @@ export class TreeBuilderV2
             });
         }
 
-        branch.body.forEach(classBodyBranch => {
-            this.buildClassBody(classBodyBranch, traitNode);
-        });
+        if (branch.body) {
+            branch.body.forEach(classBodyBranch => {
+                this.buildClassBody(classBodyBranch, traitNode);
+            });
+        }
 
         traitNode.startPos = this.buildPosition(branch.loc.start);
         traitNode.endPos = this.buildPosition(branch.loc.end);
@@ -215,9 +218,11 @@ export class TreeBuilderV2
         classNode.isAbstract = branch.isAbstract;
         classNode.isFinal = branch.isFinal;
 
-        branch.body.forEach(classBodyBranch => {
-            this.buildClassBody(classBodyBranch, classNode);
-        });
+        if (branch.body) {
+            branch.body.forEach(classBodyBranch => {
+                this.buildClassBody(classBodyBranch, classNode);
+            });
+        }
 
         classNode.startPos = this.buildPosition(branch.loc.start);
         classNode.endPos = this.buildPosition(branch.loc.end);

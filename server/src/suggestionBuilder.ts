@@ -97,6 +97,7 @@ export class SuggestionBuilder
             let extendsIndex = this.currentLine.indexOf(" extends ");
             let implementsIndex = this.currentLine.indexOf(" implements ");
             let useIndex = this.currentLine.indexOf("use ");
+            let namespaceIndex = this.currentLine.indexOf("namespace ");
 
             let classIndex = this.currentLine.indexOf("class ");
             let traitIndex = this.currentLine.indexOf("trait ");
@@ -128,6 +129,13 @@ export class SuggestionBuilder
                 options.namespaces = true;
                 options.classes = true;
                 options.traits = true;
+                toReturn = this.buildSuggestionsForScope(scope, options);
+            }
+
+            if (namespaceIndex > -1 && namespaceIndex < this.charIndex) {
+                specialCase = true;
+
+                options.namespaces = true;
                 toReturn = this.buildSuggestionsForScope(scope, options);
             }
 

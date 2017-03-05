@@ -127,8 +127,12 @@ export class SuggestionBuilder
 
                 // Show namespaces and traits
                 options.namespaces = true;
-                options.classes = true;
                 options.traits = true;
+
+                // This is a quick-fix to suggest classes as well
+                // TODO - only suggest classes within the namespace (check for a "\" in the name)
+                options.classes = true;
+
                 toReturn = this.buildSuggestionsForScope(scope, options);
             }
 
@@ -228,11 +232,6 @@ export class SuggestionBuilder
         });
 
         return filtered;
-    }
-
-    private isSpecialCasesForExtendsImplementsUse()
-    {
-
     }
 
     private buildSuggestionsForScope(scope: Scope, options: ScopeOptions) : CompletionItem[]

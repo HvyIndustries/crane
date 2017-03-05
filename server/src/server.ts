@@ -184,21 +184,22 @@ connection.onRequest(buildFromFiles, (project) => {
     enableCache = project.enableCache;
     docsToDo = project.files;
     docsDoneCount = 0;
-    connection.console.log('starting work!');
+    Debug.info("Preparing to parse workspace...");
+
     // Run asynchronously
     setTimeout(() => {
         glob(project.craneRoot + '/phpstubs/*/*.php', (err, fileNames) => {
             // Process the php stubs
             stubsToDo = fileNames;
             Debug.info(`Processing ${stubsToDo.length} stubs from ${project.craneRoot}/phpstubs`)
-            connection.console.log(`Stub files to process: ${stubsToDo.length}`);
+            Debug.info(`Stub files to process: ${stubsToDo.length}`);
             processStub().then(data => {
-                connection.console.log('stubs done!');
-                connection.console.log(`Workspace files to process: ${docsToDo.length}`);
+                Debug.info('Stubs parsing done!');
+                Debug.info(`Workspace files to process: ${docsToDo.length}`);
                 processWorkspaceFiles(project.projectPath, project.treePath);
             }).catch(data => {
-                connection.console.log('No stubs found!');
-                connection.console.log(`Workspace files to process: ${docsToDo.length}`);
+                Debug.info('No stubs found!');
+                Debug.info(`Workspace files to process: ${docsToDo.length}`);
                 processWorkspaceFiles(project.projectPath, project.treePath);
             });
         });
@@ -243,13 +244,13 @@ function processStub() {
             fq.readFile(file, { encoding: 'utf8' }, (err, data) => {
                 treeBuilder.Parse(data, file).then(result => {
                     addToWorkspaceTree(result.tree);
-                    connection.console.log(`${offset} Stub Processed: ${file}`);
+                    Debug.info(`${offset} Stub Processed: ${file}`);
                     offset++;
                     if (offset == stubsToDo.length) {
                         resolve();
                     }
                 }).catch(err => {
-                    connection.console.log(`${offset} Stub Error: ${file}`);
+                    Debug.error(`${offset} Stub Error: ${file}`);
                     Debug.error((util.inspect(err, false, null)));
                     offset++;
                     if (offset == stubsToDo.length) {
@@ -270,7 +271,7 @@ function processWorkspaceFiles(projectPath: string, treePath: string) {
             treeBuilder.Parse(data, file).then(result => {
                 addToWorkspaceTree(result.tree);
                 docsDoneCount++;
-                connection.console.log(`(${docsDoneCount} of ${docsToDo.length}) File: ${file}`);
+                Debug.info(`(${docsDoneCount} of ${docsToDo.length}) File: ${file}`);
                 connection.sendNotification("fileProcessed", {
                     filename: file,
                     total: docsDoneCount,
@@ -284,8 +285,8 @@ function processWorkspaceFiles(projectPath: string, treePath: string) {
                 if (docsToDo.length == docsDoneCount) {
                     workspaceProcessed(projectPath, treePath);
                 }
-                connection.console.log(util.inspect(data, false, null));
-                connection.console.log(`Issue processing ${file}`);
+                Debug.error(util.inspect(data, false, null));
+                Debug.error(`Issue processing ${file}`);
                 connection.sendNotification("fileProcessed", { filename: file, total: docsDoneCount, error: util.inspect(data, false, null) });
             });
         });
@@ -321,7 +322,7 @@ function addToWorkspaceTree(tree:FileNode)
     }
 
     // Debug
-    // connection.console.log("Parsed file: " + tree.path);
+    Debug.info("Parsed file: " + tree.path);
 }
 
 function removeFromWorkspaceTree(tree: FileNode) {

@@ -316,19 +316,19 @@ export class SuggestionBuilder
         this.workspaceTree.forEach(fileNode => {
             if (options.classes) {
                 fileNode.classes.forEach(item => {
-                    toReturn.push({ label: item.name, kind: CompletionItemKind.Class, detail: "(class)" });
+                    toReturn.push({ label: item.name, kind: CompletionItemKind.Class, detail: "(class)" + this.getNamespace(item) });
                 });
             }
 
             if (options.interfaces) {
                 fileNode.interfaces.forEach(item => {
-                    toReturn.push({ label: item.name, kind: CompletionItemKind.Interface, detail: "(interface)" });
+                    toReturn.push({ label: item.name, kind: CompletionItemKind.Interface, detail: "(interface)" + this.getNamespace(item) });
                 });
             }
 
             if (options.traits) {
                 fileNode.traits.forEach(item => {
-                    toReturn.push({ label: item.name, kind: CompletionItemKind.Class, detail: "(trait)" });
+                    toReturn.push({ label: item.name, kind: CompletionItemKind.Class, detail: "(trait)" + this.getNamespace(item) });
                 });
             }
 
@@ -346,6 +346,15 @@ export class SuggestionBuilder
         });
 
         return toReturn;
+    }
+
+    private getNamespace(node)
+    {
+        if (node.namespace) {
+            return " " + node.namespace;
+        }
+
+        return "";
     }
 
     private getFunctionInsertText(node: MethodNode)

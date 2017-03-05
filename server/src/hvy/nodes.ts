@@ -87,7 +87,7 @@ export class ClassNode extends BaseNode
     public methods: MethodNode[] = [];
     public constants: ConstantNode[] = [];
     public traits: string[] = [];
-    public namespaceParts: string[] = [];
+    public namespace: string;
     public construct: ConstructorNode;
 }
 

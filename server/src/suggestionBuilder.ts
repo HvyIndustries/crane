@@ -258,6 +258,14 @@ export class SuggestionBuilder
             });
         }
 
+        if (options.classes) {
+            this.currentFileNode.namespaceUsings.forEach(item => {
+                if (item.alias != null) {
+                    toReturn.push({ label: item.alias, kind: CompletionItemKind.Class, detail: "(class) " + item.name });
+                }
+            });
+        }
+
         if (options.localVariables || options.parameters || options.globalVariables) {
             // Find out what top level function we're in
             var funcs = [];

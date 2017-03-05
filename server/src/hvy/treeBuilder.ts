@@ -89,7 +89,6 @@ export class TreeBuilder
 
             tree.path = filePath;
 
-            //tree = this.ProcessBranch(ast[1], [], tree);
             tree = treeBuilderV2.processBranch(ast.children, tree, null);
 
             resolve(tree);

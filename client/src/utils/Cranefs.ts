@@ -148,36 +148,42 @@ export class Cranefs {
             Crane.statusBarItem.text = "$(zap) Indexing PHP files";
 
             // Send the array of paths to the language server
-            Crane.langClient.sendRequest({ method: "buildFromFiles" }, {
-                files: filePaths,
-                craneRoot: this.getCraneDir(),
-                projectPath: this.getProjectDir(),
-                treePath: this.getTreePath(),
-                enableCache: this.isCacheable(),
-                rebuild: rebuild
+            Crane.langClient.onReady().then(() => {
+                Crane.langClient.sendRequest("buildFromFiles", {
+                    files: filePaths,
+                    craneRoot: this.getCraneDir(),
+                    projectPath: this.getProjectDir(),
+                    treePath: this.getTreePath(),
+                    enableCache: this.isCacheable(),
+                    rebuild: rebuild
+                });
             });
 
             // Update the UI so the user knows the processing status
-            var fileProcessed: NotificationType<any> = { method: "fileProcessed" };
-            Crane.langClient.onNotification(fileProcessed, data => {
-                // Get the percent complete
-                var percent: string = ((data.total / fileProcessCount) * 100).toFixed(1);
-                Crane.statusBarItem.text = `$(zap) Indexing PHP files (${data.total} of ${fileProcessCount} / ${percent}%)`;
-                if (data.error) {
-                    Debug.error("There was a problem parsing PHP file: " + data.filename);
-                    Debug.error(`${data.error}`);
-                } else {
-                    Debug.info(`Parsed file ${data.total} of ${fileProcessCount} : ${data.filename}`);
-                }
+            var fileProcessed: NotificationType<any, any> = new NotificationType("fileProcessed");
+            Crane.langClient.onReady().then(() => {
+                Crane.langClient.onNotification(fileProcessed, data => {
+                    // Get the percent complete
+                    var percent: string = ((data.total / fileProcessCount) * 100).toFixed(1);
+                    Crane.statusBarItem.text = `$(zap) Indexing PHP files (${data.total} of ${fileProcessCount} / ${percent}%)`;
+                    if (data.error) {
+                        Debug.error("There was a problem parsing PHP file: " + data.filename);
+                        Debug.error(`${data.error}`);
+                    } else {
+                        Debug.info(`Parsed file ${data.total} of ${fileProcessCount} : ${data.filename}`);
+                    }
+                });
             });
         });
     }
 
     public processProject(): void {
         Debug.info('Building project from cache file: ' + this.getTreePath());
-        Crane.langClient.sendRequest({ method: "buildFromProject" }, {
-            treePath: this.getTreePath(),
-            enableCache: this.isCacheable()
+        Crane.langClient.onReady().then(() => {
+            Crane.langClient.sendRequest("buildFromProject", {
+                treePath: this.getTreePath(),
+                enableCache: this.isCacheable()
+            });
         });
     }
 

@@ -6,11 +6,9 @@
 
 'use strict';
 
-import { TextDocumentPosition, ITextDocument, CompletionItem, CompletionItemKind } from 'vscode-languageserver';
-import {
-    TreeBuilder, FileNode, FileSymbolCache,
-    SymbolType, AccessModifierNode, ClassNode, TraitNode
-} from "./hvy/treeBuilder";
+import { TextDocumentPositionParams, TextDocument, CompletionItem, CompletionItemKind } from 'vscode-languageserver';
+import { TreeBuilder } from "./hvy/treeBuilder";
+import { FileNode, FileSymbolCache, SymbolType, AccessModifierNode, ClassNode, TraitNode, MethodNode } from "./hvy/nodes";
 
 const fs = require('fs');
 
@@ -23,15 +21,15 @@ export class SuggestionBuilder
     private lineIndex: number;
     private charIndex: number;
 
-    private doc: ITextDocument;
+    private doc: TextDocument;
     private currentLine: string;
     private lastChar: string;
 
-    public prepare(textDocumentPosition: TextDocumentPosition, document: ITextDocument, workspaceTree: FileNode[])
+    public prepare(textDocumentPosition: TextDocumentPositionParams, document: TextDocument, workspaceTree: FileNode[])
     {
         this.workspaceTree = workspaceTree;
 
-        this.filePath = this.buildDocumentPath(textDocumentPosition.uri);
+        this.filePath = this.buildDocumentPath(textDocumentPosition.textDocument.uri);
         this.lineIndex = textDocumentPosition.position.line;
         this.charIndex = textDocumentPosition.position.character;
 
@@ -73,7 +71,7 @@ export class SuggestionBuilder
             toReturn = toReturn.concat(this.checkAccessorAndAddMembers(scope));
         } else if (this.lastChar == ":") {
             if (this.isSelf()) {
-                // Accessing via self::
+                // Accessing via self:: or static::
                 this.currentFileNode.classes.forEach(classNode => {
                     if (this.withinBlock(classNode)) {
                         // Add static members for this class
@@ -140,27 +138,15 @@ export class SuggestionBuilder
                         options.traits = true;
                         toReturn = this.buildSuggestionsForScope(scope, options);
                     } else {
-                        if (scope.name == "constructor") {
-                            // Within constructor
-                            // Suggestions
-                            //  / classes
-                            //  / local variables
-                            //  / parameters
-                            options.classes = true;
-                            options.localVariables = true;
-                            options.parameters = true;
-                            toReturn = this.buildSuggestionsForScope(scope, options);
-                        } else {
-                            // Within method
-                            // Suggestions
-                            //  / classes
-                            //  / local variables
-                            //  / parameters
-                            options.classes = true;
-                            options.localVariables = true;
-                            options.parameters = true;
-                            toReturn = this.buildSuggestionsForScope(scope, options);
-                        }
+                        // Within method or constructor
+                        // Suggestions
+                        //  / classes
+                        //  / local variables
+                        //  / parameters
+                        options.classes = true;
+                        options.localVariables = true;
+                        options.parameters = true;
+                        toReturn = this.buildSuggestionsForScope(scope, options);
                     }
                     break;
 
@@ -209,12 +195,6 @@ export class SuggestionBuilder
         if (options.topVariables) {
             this.currentFileNode.topLevelVariables.forEach(item => {
                 toReturn.push({ label: item.name, kind: CompletionItemKind.Variable, detail: `(variable) : ${item.type}` });
-            });
-        }
-
-        if (options.topFunctions) {
-            this.currentFileNode.functions.forEach(item => {
-                toReturn.push({ label: item.name, kind: CompletionItemKind.Function,  detail: `(function) : ${item.returns}`, insertText: item.name + "()" });
             });
         }
 
@@ -283,9 +263,26 @@ export class SuggestionBuilder
                     toReturn.push({ label: item.name, kind: CompletionItemKind.Module, detail: "(trait)" });
                 });
             }
+
+            if (options.topFunctions) {
+                fileNode.functions.forEach(item => {
+                    toReturn.push({ label: item.name, kind: CompletionItemKind.Function,  detail: `(function) : ${item.returns}`, insertText: this.getFunctionInsertText(item) });
+                });
+            }
         });
 
         return toReturn;
+    }
+
+    private getFunctionInsertText(node: MethodNode)
+    {
+        let text = node.name;
+
+        if (node.params.length == 0) {
+            text += "()";
+        }
+
+        return text;
     }
 
     private getScope() : Scope
@@ -393,7 +390,7 @@ export class SuggestionBuilder
     {
         var toReturn = null;
 
-        var fileNode = this.workspaceTree.forEach((fileNode) => {
+        this.workspaceTree.forEach((fileNode) => {
             fileNode.classes.forEach((classNode) => {
                 if (classNode.name.toLowerCase() == className.toLowerCase()) {
                     toReturn = classNode;
@@ -568,18 +565,20 @@ export class SuggestionBuilder
     {
         var toReturn = [];
 
-        classNode.constants.forEach((subNode) => {
-            let value = subNode.value;
-            if (subNode.type == "string") {
-                value = "\"" + value + "\"";
-            }
-            toReturn.push({ label: subNode.name, kind: CompletionItemKind.Value, detail: `(constant) : ${subNode.type} : ${value}` });
-        });
+        if (staticOnly == true) {
+            classNode.constants.forEach((subNode) => {
+                let value = subNode.value;
+                if (subNode.type == "string") {
+                    value = "\"" + value + "\"";
+                }
+                toReturn.push({ label: subNode.name, kind: CompletionItemKind.Value, detail: `(constant) : ${subNode.type} : ${value}` });
+            });
+        }
 
         classNode.methods.forEach((subNode) => {
             if (subNode.isStatic == staticOnly) {
                 var accessModifier = "(" + this.buildAccessModifierText(subNode.accessModifier);
-                var insertText = subNode.name + "()";
+                var insertText = this.getFunctionInsertText(subNode);
 
                 accessModifier = accessModifier + ` method) : ${subNode.returns}`;
 
@@ -600,9 +599,9 @@ export class SuggestionBuilder
                 var accessModifier = "(" + this.buildAccessModifierText(subNode.accessModifier) + ` property) : ${subNode.type}`;
                 var insertText = subNode.name;
 
-                if (!staticOnly) {
-                    // Strip the leading $
-                    insertText = subNode.name.substr(1, subNode.name.length - 1);
+                if (subNode.isStatic) {
+                    // Add a the leading $
+                    insertText = "$" + subNode.name;
                 }
 
                 if (includeProtected && subNode.accessModifier == AccessModifierNode.protected) {

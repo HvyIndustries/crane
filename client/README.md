@@ -16,9 +16,17 @@ Follow [@HvyIndustries](https://twitter.com/HvyIndustries) on Twitter for update
 
 For the best development experience, make sure you have the PHP linter enabled in your user settings, and set it to run `onType` instead of `onSave`!
 
+You can also set `php.suggest.basic` to `false` to disable VS Code's built-in php code completion and avoid duplicate suggestions.
+
 ---
 
-## What's new in v0.2.2 (latest release)
+## What's new in v0.3.0 (latest release)
+
+- Updated the php-parser library to 2.0.0 stable, which **fixes nearly all crashes and parsing errors**
+- Removed the Crane version indicator from the bottom right of the status bar
+- Fixed a bug where the indexing statusbar item would be hidden if you disabled the bug report link
+
+## What's new in v0.2.2
 
 - Added new setting `crane.ignoredPaths` that gives users the ability to ignore files/folders for parsing _(workaround for parser crashing issue)_
 - Added "what's new" section to readme to highlight new features/bug fixes

@@ -1,9 +1,21 @@
 <?php
 
+namespace PB\Test;
+
+require "test";
+
+use PB\Test\Something;
+
 $test = new Awesome();
 
-class Awesome
+function func(){}
+
+doSomething($param);
+
+class Awesome extends Awesome2
 {
+    const MYCONST = "test";
+
     public $strProp = "string";
     public $numProp = 14;
     public $arrayProp = array();
@@ -12,6 +24,15 @@ class Awesome
     );
     public $boolProp = TRuE;
     public $nullProp = NULL;
+    private static $stat;
+
+    public $nested1,
+           $nested2,
+           $nested3;
+
+    const CONST1='',
+          CONST2='',
+          CONST3='';
 
     /**
      * @param string $param1
@@ -20,7 +41,7 @@ class Awesome
      */
     public static function test($param1, Awesome $param2, $p2 = 'cat')
     {
-        $t = new Awesome();
+        $test = new Awesome();
         return new Awesome2();
     }
 
@@ -34,14 +55,22 @@ class Awesome
 
 class Awesome2
 {
+    public $pub;
+    protected $protect;
+    private $priv;
+
     public function ha(Awesome $a)
     {
         $a->test();
         echo "{$test->test}->test";
     }
 
-    public function he()
+    private function he()
     {
         $db = new PDO();
+    }
+
+    protected function prosta()
+    {
     }
 }

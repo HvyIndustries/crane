@@ -23,6 +23,23 @@
 			"sourceMaps": true,
 			"outDir": "${workspaceRoot}/out/test",
 			"preLaunchTask": "npm"
+		},
+		{
+			"name": "Server",
+			"type": "node",
+			"request": "attach",
+			"port": 6004,
+			"sourceMaps": true,
+			"outFiles": [ 
+				"${workspaceRoot}/server/*.js",
+				"${workspaceRoot}/server/**/*.js"
+			]
+		}
+	],
+	"compounds": [
+		{
+			"name": "Launch Client/Server",
+			"configurations": ["Server", "Launch Extension"]
 		}
 	]
 }

@@ -91,6 +91,15 @@ export class SuggestionBuilder
                 }
             }
         } else {
+
+            if (this.lastChar == "\\") {
+                // TODO - only suggest symbols within the namespace (check for a "\" in the name)
+                options.classes = true;
+                options.interfaces = true;
+                options.traits = true;
+                toReturn = this.buildSuggestionsForScope(scope, options);
+            }
+
             // Special cases for "extends", "implements", "use"
             let newIndex = this.currentLine.indexOf(" new ");
             let newNoSpaceIndex = this.currentLine.indexOf("=new ");
@@ -130,8 +139,9 @@ export class SuggestionBuilder
                 options.traits = true;
 
                 // This is a quick-fix to suggest classes as well
-                // TODO - only suggest classes within the namespace (check for a "\" in the name)
+                // TODO - only suggest symbols within the namespace (check for a "\" in the name)
                 options.classes = true;
+                options.interfaces = true;
 
                 toReturn = this.buildSuggestionsForScope(scope, options);
             }
@@ -316,7 +326,12 @@ export class SuggestionBuilder
         this.workspaceTree.forEach(fileNode => {
             if (options.classes) {
                 fileNode.classes.forEach(item => {
-                    toReturn.push({ label: item.name, kind: CompletionItemKind.Class, detail: "(class)" + this.getNamespace(item) });
+                    toReturn.push({
+                        label: item.name,
+                        kind: CompletionItemKind.Class,
+                        detail: "(class)" + this.getNamespace(item),
+                        insertText: this.getInsertTextWithNamespace(item)
+                    });
                 });
             }
 
@@ -348,7 +363,28 @@ export class SuggestionBuilder
         return toReturn;
     }
 
-    private getNamespace(node)
+    private getInsertTextWithNamespace(node): string
+    {
+        if (node.namespace) {
+            let namespaceSearch = node.namespace + "\\" + node.name;
+            let found = false;
+
+            this.currentFileNode.namespaceUsings.forEach(item => {
+                if (item.name == namespaceSearch) {
+                    found = true;
+                    return null;
+                }
+            });
+
+            if (!found) {
+                return namespaceSearch;
+            }
+        }
+
+        return null;
+    }
+
+    private getNamespace(node): string
     {
         if (node.namespace) {
             return " " + node.namespace;

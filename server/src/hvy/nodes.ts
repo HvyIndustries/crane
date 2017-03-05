@@ -14,6 +14,10 @@
 
 class BaseNode
 {
+    constructor(name = "") {
+        this.name = name;
+    }
+
     public name: string;
     public startPos: PositionInfo;
     public endPos: PositionInfo;
@@ -29,6 +33,7 @@ export class FileNode
     public classes: ClassNode[] = [];
     public interfaces: InterfaceNode[] = [];
     public traits: TraitNode[] = [];
+    public namespaces: NamespaceNode[] = [];
 
     // Any files that we're referencing with include(), require(), include_once() or require_once()
     public fileReferences: string[] = [];
@@ -68,6 +73,8 @@ export class NamespaceUsingNode extends BaseNode
 {
     public alias: string;
 }
+
+export class NamespaceNode extends BaseNode {}
 
 export class ClassNode extends BaseNode
 {

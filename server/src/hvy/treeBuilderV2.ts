@@ -34,6 +34,7 @@ export class TreeBuilderV2
         } else {
             switch (branch.kind) {
                 case "namespace":
+                    tree.namespaces.push(new NamespaceNode(branch.name));
                     this.processBranch(branch.children, tree, branch);
                     break;
 

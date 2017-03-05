@@ -100,15 +100,6 @@ export class SuggestionBuilder
 
             let specialCase = false;
 
-            if ((newIndex > -1 || newNoSpaceIndex > -1 || extendsIndex > -1)
-                && (newIndex < this.charIndex || newNoSpaceIndex < this.charIndex || extendsIndex < this.charIndex )) {
-                specialCase = true;
-
-                // Show only classes
-                options.classes = true;
-                toReturn = this.buildSuggestionsForScope(scope, options);
-            }
-
             if (implementsIndex > -1 && implementsIndex < this.charIndex) {
                 specialCase = true;
 
@@ -117,13 +108,21 @@ export class SuggestionBuilder
                 toReturn = this.buildSuggestionsForScope(scope, options);
             }
 
+            if (!specialCase && (newIndex > -1 || newNoSpaceIndex > -1 || extendsIndex > -1)
+                && (newIndex < this.charIndex || newNoSpaceIndex < this.charIndex || extendsIndex < this.charIndex )) {
+                specialCase = true;
+
+                // Show only classes
+                options.classes = true;
+                toReturn = this.buildSuggestionsForScope(scope, options);
+            }
+
             if (useIndex > -1 && useIndex < this.charIndex) {
                 specialCase = true;
 
-                // TODO -- If the line contains a "\" as well, show classes within that namespace
-
-                // Show only namespaces and traits
+                // Show namespaces and traits
                 options.namespaces = true;
+                options.classes = true;
                 options.traits = true;
                 toReturn = this.buildSuggestionsForScope(scope, options);
             }
@@ -730,6 +729,8 @@ class ScopeOptions
     public localVariables = false;
     public globalVariables = false;
     public parameters = false;
+
+    public withinNamespace: string = null;
 }
 
 enum ScopeLevel

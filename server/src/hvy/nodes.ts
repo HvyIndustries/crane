@@ -34,6 +34,7 @@ export class FileNode
     public interfaces: InterfaceNode[] = [];
     public traits: TraitNode[] = [];
     public namespaces: NamespaceNode[] = [];
+    public namespaceParts: NamespacePart[] = [];
 
     // Any files that we're referencing with include(), require(), include_once() or require_once()
     public fileReferences: string[] = [];

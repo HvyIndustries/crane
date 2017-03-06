@@ -248,39 +248,9 @@ export class SuggestionBuilder
 
     private buildSuggestionsForNamespaceOrUseStatement(namespaceOnly = false): CompletionItem[]
     {
-        let fullyQualifiedNamespaces: string[] = [];
         let namespaces: NamespacePart[] = [];
-
-        // build up a list of all namespaces
         this.workspaceTree.forEach(fileNode => {
-            fileNode.namespaces.forEach(namespaceNode => {
-                fullyQualifiedNamespaces.push(namespaceNode.name);
-            });
-        });
-
-        // TODO -- move this logic into the treebuilder
-        fullyQualifiedNamespaces.forEach(namespace => {
-            if (typeof namespace === 'string' || namespace instanceof String) {
-                // break down the list into parts separated by "\"
-                let parts = namespace.split("\\");
-                let nsPart = new NamespacePart(parts[0]);
-                let exists = false;
-
-                namespaces.forEach(toplevelPart => {
-                    if (toplevelPart.name == parts[0]) {
-                        nsPart = toplevelPart;
-                        exists = true;
-                        return;
-                    }
-                });
-
-                parts.splice(0, 1);
-                this.buildNamespacePart(parts, nsPart);
-
-                if (!exists) {
-                    namespaces.push(nsPart);
-                }
-            }
+            namespaces = namespaces.concat(fileNode.namespaceParts);
         });
 
         let line = this.currentLine;
@@ -358,29 +328,6 @@ export class SuggestionBuilder
         }
 
         return suggestions;
-    }
-
-    private buildNamespacePart(parts:string[], nsPart: NamespacePart)
-    {
-        if (parts.length > 0) {
-            let part = new NamespacePart(parts[0]);
-            let exists = false;
-
-            nsPart.children.forEach(subPart => {
-                if (subPart.name == parts[0]) {
-                    part = subPart;
-                    exists = true;
-                    return;
-                }
-            });
-
-            parts.splice(0, 1);
-            this.buildNamespacePart(parts, part);
-
-            if (!exists) {
-                nsPart.children.push(part);
-            }
-        }
     }
 
     private buildSuggestionsForScope(scope: Scope, options: ScopeOptions) : CompletionItem[]

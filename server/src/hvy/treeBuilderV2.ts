@@ -20,7 +20,8 @@ import {
     PositionInfo,
     VariableNode,
     NamespaceUsingNode,
-    NamespaceNode
+    NamespaceNode,
+    NamespacePart
 } from './nodes';
 
 export class TreeBuilderV2
@@ -77,6 +78,66 @@ export class TreeBuilderV2
         }
 
         return tree;
+    }
+
+    public buildNamespaceParts(tree: FileNode)
+    {
+        let namespaces: NamespacePart[] = [];
+        let fullyQualifiedNamespaces: string[] = [];
+
+        // build up a list of all namespaces in the file
+        tree.namespaces.forEach(namespaceNode => {
+            fullyQualifiedNamespaces.push(namespaceNode.name);
+        });
+
+        fullyQualifiedNamespaces.forEach(namespace => {
+            if (typeof namespace === 'string' || namespace instanceof String) {
+                // break down the list into parts separated by "\"
+                let parts = namespace.split("\\");
+                let nsPart = new NamespacePart(parts[0]);
+                let exists = false;
+
+                namespaces.forEach(toplevelPart => {
+                    if (toplevelPart.name == parts[0]) {
+                        nsPart = toplevelPart;
+                        exists = true;
+                        return;
+                    }
+                });
+
+                parts.splice(0, 1);
+                this.buildNamespacePart(parts, nsPart);
+
+                if (!exists) {
+                    namespaces.push(nsPart);
+                }
+            }
+        });
+
+        tree.namespaceParts = namespaces;
+    }
+
+    private buildNamespacePart(parts:string[], nsPart: NamespacePart)
+    {
+        if (parts.length > 0) {
+            let part = new NamespacePart(parts[0]);
+            let exists = false;
+
+            nsPart.children.forEach(subPart => {
+                if (subPart.name == parts[0]) {
+                    part = subPart;
+                    exists = true;
+                    return;
+                }
+            });
+
+            parts.splice(0, 1);
+            this.buildNamespacePart(parts, part);
+
+            if (!exists) {
+                nsPart.children.push(part);
+            }
+        }
     }
 
     private buildfileInclude(branch, context: FileNode)

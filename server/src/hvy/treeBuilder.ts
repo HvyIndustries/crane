@@ -90,6 +90,7 @@ export class TreeBuilder
             tree.path = filePath;
 
             tree = treeBuilderV2.processBranch(ast.children, tree, null);
+            treeBuilderV2.buildNamespaceParts(tree);
 
             resolve(tree);
         });

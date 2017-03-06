@@ -121,7 +121,7 @@ export default class Storage {
                         var gzip = zlib.createGzip();
                         var inp = fs.createReadStream(filename + '.tmp');
                         var out = fs.createWriteStream(filename);
-                        inp.pipe(gzip).pipe(out).on('close', function () {
+                        inp.pipe(gzip).pipe(out).on('close', () => {
                             try {
                                 fs.unlinkSync(filename + '.tmp');
                                 this.processSaveResult(true);

@@ -20,9 +20,9 @@ import { FileNode, FileSymbolCache, SymbolType, AccessModifierNode, ClassNode } 
 import { Debug } from './util/Debug';
 import { SuggestionBuilder } from './suggestionBuilder';
 
-const fs = require("fs");
+import Storage from './util/Storage';
+
 const util = require('util');
-const zlib = require('zlib');
 
 // Glob for file searching
 const glob = require("glob");
@@ -39,6 +39,8 @@ Debug.SetConnection(connection);
 let treeBuilder: TreeBuilder = new TreeBuilder();
 treeBuilder.SetConnection(connection);
 let workspaceTree: FileNode[] = [];
+
+let cache:Storage = new Storage();
 
 // Prevent garbage collection of essential objects
 let timer = setInterval(() => {
@@ -208,24 +210,14 @@ connection.onRequest(buildFromFiles, (project) => {
 var buildFromProject: RequestType<{treePath:string, enableCache:boolean}, any, any, any> = new RequestType("buildFromProject");
 connection.onRequest(buildFromProject, (data) => {
     enableCache = data.enableCache;
-    fs.readFile(data.treePath, (err, data) => {
+    cache.read(data.treePath, (err, data) => {
         if (err) {
             Debug.error('Could not read cache file');
             Debug.error((util.inspect(err, false, null)));
         } else {
-            Debug.info('Unzipping the file');
-            var treeStream = new Buffer(data);
-            zlib.gunzip(treeStream, (err, buffer) => {
-                if (err) {
-                    Debug.error('Could not unzip cache file');
-                    Debug.error((util.inspect(err, false, null)));
-                } else {
-                    Debug.info('Cache file successfully read');
-                    workspaceTree = JSON.parse(buffer.toString());
-                    Debug.info('Loaded');
-                    notifyClientOfWorkComplete();
-                }
-            });
+            Debug.info('Cache file successfully read');
+            workspaceTree = data;
+            notifyClientOfWorkComplete();
         }
     });
 });
@@ -379,21 +371,11 @@ function saveProjectTree(projectPath: string, treeFile: string): Promise<boolean
         if (!enableCache) {
             resolve(false);
         } else {
-            Debug.info('Packing tree file: ' + treeFile);
-            fq.writeFile(`${projectPath}/tree.tmp`, JSON.stringify(workspaceTree), (err) => {
-                if (err) {
-                    Debug.error('Could not write to cache file');
-                    Debug.error(util.inspect(err, false, null));
-                    resolve(false);
-                } else {
-                    var gzip = zlib.createGzip();
-                    var inp = fs.createReadStream(`${projectPath}/tree.tmp`);
-                    var out = fs.createWriteStream(treeFile);
-                    inp.pipe(gzip).pipe(out).on('close', function () {
-                        fs.unlinkSync(`${projectPath}/tree.tmp`);
-                    });
-                    Debug.info('Cache file updated');
+            cache.save(treeFile, workspaceTree, (result) => {
+                if (result === true) {
                     resolve(true);
+                } else {
+                    reject(result);
                 }
             });
         }

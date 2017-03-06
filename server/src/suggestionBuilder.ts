@@ -103,6 +103,10 @@ export class SuggestionBuilder
             let useIndex = this.currentLine.indexOf("use ");
             let namespaceIndex = this.currentLine.indexOf("namespace ");
 
+            let newNonNamespaceIndex = this.currentLine.indexOf("new \\");
+            let extendsNonNamespaceIndex = this.currentLine.indexOf("extends \\");
+            let implementsNonNamespaceIndex = this.currentLine.indexOf("implements \\");
+
             let classIndex = this.currentLine.indexOf("class ");
             let traitIndex = this.currentLine.indexOf("trait ");
             let interfaceIndex = this.currentLine.indexOf("interface ");
@@ -113,6 +117,11 @@ export class SuggestionBuilder
                 specialCase = true;
 
                 // TODO -- use this.buildSuggestionsForNamespaceOrUseStatement() (issue #232)
+
+                if (implementsNonNamespaceIndex > -1 && implementsNonNamespaceIndex < this.charIndex) {
+                    options.noNamespaceOnly = true;
+                    options.includeLeadingSlash = false;
+                }
 
                 // Show only interfaces
                 options.interfaces = true;
@@ -125,12 +134,18 @@ export class SuggestionBuilder
 
                 // TODO -- use this.buildSuggestionsForNamespaceOrUseStatement() (issue #232)
 
+                if ((newNonNamespaceIndex > -1 && newNonNamespaceIndex < this.charIndex)
+                    || (extendsNonNamespaceIndex > -1 && extendsNonNamespaceIndex < this.charIndex)) {
+                    options.noNamespaceOnly = true;
+                    options.includeLeadingSlash = false;
+                }
+
                 // Show only classes
                 options.classes = true;
                 toReturn = this.buildSuggestionsForScope(scope, options);
             }
 
-            if (this.lastChar == "\\" || (useIndex > -1 && useIndex < this.charIndex)) {
+            if (!specialCase && (this.lastChar == "\\" || (useIndex > -1 && useIndex < this.charIndex))) {
                 specialCase = true;
                 toReturn = this.buildSuggestionsForNamespaceOrUseStatement(false);
             }
@@ -275,11 +290,25 @@ export class SuggestionBuilder
         let useStatement = (line.indexOf("use ") > -1);
         let namespaceDefinition = (line.indexOf("namespace ") > -1);
 
+        line = line.trim();
+
         line = line.replace("namespace ", "");
         line = line.replace("use ", "");
         let lineParts = line.split("\\");
 
         let suggestions: CompletionItem[] = [];
+
+        if (line.charAt(0) == "\\") {
+            // return non-namespaced classes only
+            let scope = new Scope(null, null, null);
+            let options = new ScopeOptions();
+            options.classes = true;
+            options.interfaces = true;
+            options.traits = true;
+            options.noNamespaceOnly = true
+            options.includeLeadingSlash = false;
+            return this.buildSuggestionsForScope(scope, options);
+        }
 
         let parent = namespaces;
 
@@ -374,7 +403,7 @@ export class SuggestionBuilder
             });
         }
 
-        if (options.classes) {
+        if (options.classes && !options.noNamespaceOnly) {
             this.currentFileNode.namespaceUsings.forEach(item => {
                 if (item.alias != null) {
                     toReturn.push({ label: item.alias, kind: CompletionItemKind.Class, detail: "(class) " + item.name });
@@ -432,24 +461,61 @@ export class SuggestionBuilder
         this.workspaceTree.forEach(fileNode => {
             if (options.classes) {
                 fileNode.classes.forEach(item => {
-                    toReturn.push({
-                        label: item.name,
-                        kind: CompletionItemKind.Class,
-                        detail: "(class)" + this.getNamespace(item),
-                        insertText: this.getInsertTextWithNamespace(item)
-                    });
+                    let include = true;
+                    if (options.noNamespaceOnly) {
+                        if (item.namespace) {
+                            include = false;
+                        }
+                    }
+
+                    if (include) {
+                        toReturn.push({
+                            label: item.name,
+                            kind: CompletionItemKind.Class,
+                            detail: "(class)" + this.getNamespace(item),
+                            insertText: this.getInsertTextWithNamespace(item, options)
+                        });
+                    }
                 });
             }
 
             if (options.interfaces) {
                 fileNode.interfaces.forEach(item => {
-                    toReturn.push({ label: item.name, kind: CompletionItemKind.Interface, detail: "(interface)" + this.getNamespace(item) });
+                    let include = true;
+                    if (options.noNamespaceOnly) {
+                        if (item.namespace) {
+                            include = false;
+                        }
+                    }
+
+                    if (include) {
+                        toReturn.push({
+                            label: item.name,
+                            kind: CompletionItemKind.Interface,
+                            detail: "(interface)" + this.getNamespace(item),
+                            insertText: this.getInsertTextWithNamespace(item, options)
+                        });
+                    }
                 });
             }
 
             if (options.traits) {
                 fileNode.traits.forEach(item => {
-                    toReturn.push({ label: item.name, kind: CompletionItemKind.Class, detail: "(trait)" + this.getNamespace(item) });
+                    let include = true;
+                    if (options.noNamespaceOnly) {
+                        if (item.namespace) {
+                            include = false;
+                        }
+                    }
+
+                    if (include) {
+                        toReturn.push({
+                            label: item.name,
+                            kind: CompletionItemKind.Class,
+                            detail: "(trait)" + this.getNamespace(item),
+                            insertText: this.getInsertTextWithNamespace(item, options)
+                        });
+                    }
                 });
             }
 
@@ -469,7 +535,7 @@ export class SuggestionBuilder
         return toReturn;
     }
 
-    private getInsertTextWithNamespace(node): string
+    private getInsertTextWithNamespace(node, options: ScopeOptions): string
     {
         if (node.namespace) {
             let namespaceSearch = node.namespace + "\\" + node.name;
@@ -485,6 +551,13 @@ export class SuggestionBuilder
             if (!found) {
                 return namespaceSearch;
             }
+
+            return null;
+        }
+
+        if (this.currentFileNode.namespaces.length > 0
+            && options.includeLeadingSlash) {
+            return "\\" + node.name;
         }
 
         return null;
@@ -909,6 +982,9 @@ class ScopeOptions
     public localVariables = false;
     public globalVariables = false;
     public parameters = false;
+
+    public noNamespaceOnly = false;
+    public includeLeadingSlash = true;
 
     public withinNamespace: string = null;
 }

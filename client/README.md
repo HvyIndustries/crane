@@ -20,7 +20,19 @@ You can also set `php.suggest.basic` to `false` to disable VS Code's built-in ph
 
 ---
 
-## What's new in v0.3.0 (latest release)
+## What's new in v0.3.1 (latest release)
+
+- **Improved namespace support**
+  - Crane will now suggest scope-aware namespace parts in `namespace` and `use` statements
+  - Crane will now suggest classes that have been aliased in `use` statements
+  - When extending a class, Crane now only suggests classes
+  - When implementing an interface, Crane now only suggest interfaces
+  - Crane now doesn't suggest anything when declaring the name of a new class, trait or interface
+  - Crane will now insert the fully qualified namespace of a class if there is no `use` statement for it
+  - Crane now suggests non-namespaced classes after typing `\` (eg. `new \`) when inside a namespace
+- Fix several bugs introduced in v0.3.0
+
+## What's new in v0.3.0
 
 - Updated the php-parser library to 2.0.0 stable, which **fixes nearly all crashes and parsing errors**
 - Removed the Crane version indicator from the bottom right of the status bar

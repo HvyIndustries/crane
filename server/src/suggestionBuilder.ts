@@ -8,7 +8,11 @@
 
 import { TextDocumentPositionParams, TextDocument, CompletionItem, CompletionItemKind } from 'vscode-languageserver';
 import { TreeBuilder } from "./hvy/treeBuilder";
-import { FileNode, FileSymbolCache, SymbolType, AccessModifierNode, ClassNode, TraitNode, MethodNode } from "./hvy/nodes";
+import {
+    FileNode,FileSymbolCache, SymbolType,
+    AccessModifierNode, ClassNode, TraitNode,
+    MethodNode, NamespaceNode, NamespacePart
+} from "./hvy/nodes";
 
 const fs = require('fs');
 
@@ -91,68 +95,136 @@ export class SuggestionBuilder
                 }
             }
         } else {
-            switch (scope.level) {
-                case ScopeLevel.Root:
-                    if (scope.name == null) {
-                        // Top level
-                        // Suggestions:
-                        //  / other top level variables/constants
-                        //  / top level functions
-                        //  / classes/interfaces/traits
-                        //  - namespaces (after 'use')
-                        options.topConstants = true;
-                        options.topVariables = true;
-                        options.topFunctions = true;
-                        options.classes = true;
-                        options.interfaces = true;
-                        options.traits = true;
-                        options.namespaces = true;
-                        toReturn = this.buildSuggestionsForScope(scope, options);
-                    } else {
-                        // Top level function
-                        // Suggestions:
-                        //  / other top level functions
-                        //  / local scope variables
-                        //  / parameters
-                        //  / variables included with 'global'
-                        //  / classes
-                        options.topFunctions = true;
-                        options.localVariables = true;
-                        options.parameters = true;
-                        options.globalVariables = true;
-                        options.classes = true;
-                        toReturn = this.buildSuggestionsForScope(scope, options);
-                    }
-                    break;
+            // Special cases for "extends", "implements", "use"
+            let newIndex = this.currentLine.indexOf(" new ");
+            let newNoSpaceIndex = this.currentLine.indexOf("=new ");
+            let extendsIndex = this.currentLine.indexOf(" extends ");
+            let implementsIndex = this.currentLine.indexOf(" implements ");
+            let useIndex = this.currentLine.indexOf("use ");
+            let namespaceIndex = this.currentLine.indexOf("namespace ");
 
-                case ScopeLevel.Trait:
-                case ScopeLevel.Class:
-                    if (scope.name == null) {
-                        // Within class, not in method or constructor
-                        // Suggestions
-                        //  / classes (after '=' or 'extends')
-                        //  / interfaces (after 'implements')
-                        //  / traits (after 'use')
-                        options.classes = true;
-                        options.interfaces = true;
-                        options.traits = true;
-                        toReturn = this.buildSuggestionsForScope(scope, options);
-                    } else {
-                        // Within method or constructor
-                        // Suggestions
-                        //  / classes
-                        //  / local variables
-                        //  / parameters
-                        options.classes = true;
-                        options.localVariables = true;
-                        options.parameters = true;
-                        toReturn = this.buildSuggestionsForScope(scope, options);
-                    }
-                    break;
+            let newNonNamespaceIndex = this.currentLine.indexOf("new \\");
+            let extendsNonNamespaceIndex = this.currentLine.indexOf("extends \\");
+            let implementsNonNamespaceIndex = this.currentLine.indexOf("implements \\");
 
-                case ScopeLevel.Interface:
-                default:
-                    break;
+            let classIndex = this.currentLine.indexOf("class ");
+            let traitIndex = this.currentLine.indexOf("trait ");
+            let interfaceIndex = this.currentLine.indexOf("interface ");
+
+            let specialCase = false;
+
+            if (implementsIndex > -1 && implementsIndex < this.charIndex) {
+                specialCase = true;
+
+                // TODO -- use this.buildSuggestionsForNamespaceOrUseStatement() (issue #232)
+
+                if (implementsNonNamespaceIndex > -1 && implementsNonNamespaceIndex < this.charIndex) {
+                    options.noNamespaceOnly = true;
+                    options.includeLeadingSlash = false;
+                }
+
+                // Show only interfaces
+                options.interfaces = true;
+                toReturn = this.buildSuggestionsForScope(scope, options);
+            }
+
+            if (!specialCase && (newIndex > -1 || newNoSpaceIndex > -1 || extendsIndex > -1)
+                && (newIndex < this.charIndex || newNoSpaceIndex < this.charIndex || extendsIndex < this.charIndex )) {
+                specialCase = true;
+
+                // TODO -- use this.buildSuggestionsForNamespaceOrUseStatement() (issue #232)
+
+                if ((newNonNamespaceIndex > -1 && newNonNamespaceIndex < this.charIndex)
+                    || (extendsNonNamespaceIndex > -1 && extendsNonNamespaceIndex < this.charIndex)) {
+                    options.noNamespaceOnly = true;
+                    options.includeLeadingSlash = false;
+                }
+
+                // Show only classes
+                options.classes = true;
+                toReturn = this.buildSuggestionsForScope(scope, options);
+            }
+
+            if (!specialCase && (this.lastChar == "\\" || (useIndex > -1 && useIndex < this.charIndex))) {
+                specialCase = true;
+                toReturn = this.buildSuggestionsForNamespaceOrUseStatement(false);
+            }
+
+            if (namespaceIndex > -1 && namespaceIndex < this.charIndex) {
+                specialCase = true;
+                toReturn = this.buildSuggestionsForNamespaceOrUseStatement(true);
+            }
+
+            if (!specialCase
+                && (classIndex > -1 || traitIndex > -1 || interfaceIndex > -1)
+                && (classIndex < this.charIndex || traitIndex < this.charIndex || interfaceIndex < this.charIndex)) {
+                return null;
+            }
+
+            if (!specialCase) {
+                switch (scope.level) {
+                    case ScopeLevel.Root:
+                        if (scope.name == null) {
+                            // Top level
+                            // Suggestions:
+                            //  / other top level variables/constants
+                            //  / top level functions
+                            //  / classes/interfaces/traits
+                            //  - namespaces (after 'use')
+                            options.topConstants = true;
+                            options.topVariables = true;
+                            options.topFunctions = true;
+                            options.classes = true;
+                            options.interfaces = true;
+                            options.traits = true;
+                            options.namespaces = true;
+                            toReturn = this.buildSuggestionsForScope(scope, options);
+                        } else {
+                            // Top level function
+                            // Suggestions:
+                            //  / other top level functions
+                            //  / local scope variables
+                            //  / parameters
+                            //  / variables included with 'global'
+                            //  / classes
+                            options.topFunctions = true;
+                            options.localVariables = true;
+                            options.parameters = true;
+                            options.globalVariables = true;
+                            options.classes = true;
+                            toReturn = this.buildSuggestionsForScope(scope, options);
+                        }
+                        break;
+
+                    case ScopeLevel.Trait:
+                    case ScopeLevel.Class:
+                        if (scope.name == null) {
+                            // Within class, not in method or constructor
+                            // Suggestions
+                            //  / classes (after '=' or 'extends')
+                            //  / interfaces (after 'implements')
+                            //  / traits (after 'use')
+                            options.classes = true;
+                            options.interfaces = true;
+                            options.traits = true;
+                            toReturn = this.buildSuggestionsForScope(scope, options);
+                        } else {
+                            // Within method or constructor
+                            // Suggestions
+                            //  / classes
+                            //  / local variables
+                            //  / parameters
+                            options.classes = true;
+                            options.localVariables = true;
+                            options.parameters = true;
+                            toReturn = this.buildSuggestionsForScope(scope, options);
+                        }
+                        break;
+
+                    case ScopeLevel.Interface:
+                    default:
+                        break;
+                }
             }
         }
 
@@ -172,6 +244,90 @@ export class SuggestionBuilder
         });
 
         return filtered;
+    }
+
+    private buildSuggestionsForNamespaceOrUseStatement(namespaceOnly = false): CompletionItem[]
+    {
+        let namespaces: NamespacePart[] = [];
+        this.workspaceTree.forEach(fileNode => {
+            namespaces = namespaces.concat(fileNode.namespaceParts);
+        });
+
+        let line = this.currentLine;
+
+        // TODO -- update this logic to handle use cases other than "use" and "namespace" (issue #232)
+
+        let useStatement = (line.indexOf("use ") > -1);
+        let namespaceDefinition = (line.indexOf("namespace ") > -1);
+
+        line = line.trim();
+
+        line = line.replace("namespace ", "");
+        line = line.replace("use ", "");
+        let lineParts = line.split("\\");
+
+        let suggestions: CompletionItem[] = [];
+
+        if (line.charAt(0) == "\\" || this.currentFileNode.namespaces.length == 0) {
+            let scope = new Scope(null, null, null);
+            let options = new ScopeOptions();
+            options.classes = true;
+            options.interfaces = true;
+            options.traits = true;
+
+            if (line.charAt(0) == "\\") {
+                // We are looking for non-namespaced classes only
+                options.noNamespaceOnly = true
+            }
+
+            options.includeLeadingSlash = false;
+            return this.buildSuggestionsForScope(scope, options);
+        }
+
+        let parent = namespaces;
+
+        lineParts.forEach(part => {
+            let needChildren = false;
+            parent.forEach(namespace => {
+                if (namespace.name == part) {
+                    parent = namespace.children;
+                    needChildren = true;
+                    return;
+                }
+            });
+
+            if (!needChildren) {
+                parent.forEach(item => {
+                    suggestions.push({ label: item.name, kind: CompletionItemKind.Module, detail: "(namespace)" });
+                });
+            }
+        });
+
+        // TODO -- update the code below to include classes, traits an interfaces as required (introduce new bool params)
+
+        // Get namespace-aware suggestions for classes, traits and interfaces
+        if (!namespaceOnly) {
+            let namespaceToSearch = line.slice(0, line.length - 1);
+            this.workspaceTree.forEach(fileNode => {
+                fileNode.classes.forEach(classNode => {
+                    if (classNode.namespace == namespaceToSearch) {
+                        suggestions.push({ label: classNode.name, kind: CompletionItemKind.Class, detail: "(class)" });
+                    }
+                });
+                fileNode.traits.forEach(traitNode => {
+                    if (traitNode.namespace == namespaceToSearch) {
+                        suggestions.push({ label: traitNode.name, kind: CompletionItemKind.Class, detail: "(trait)" });
+                    }
+                });
+                fileNode.interfaces.forEach(interfaceNode => {
+                    if (interfaceNode.namespace == namespaceToSearch) {
+                        suggestions.push({ label: interfaceNode.name, kind: CompletionItemKind.Interface, detail: "(interface)" });
+                    }
+                });
+            });
+        }
+
+        return suggestions;
     }
 
     private buildSuggestionsForScope(scope: Scope, options: ScopeOptions) : CompletionItem[]
@@ -195,6 +351,14 @@ export class SuggestionBuilder
         if (options.topVariables) {
             this.currentFileNode.topLevelVariables.forEach(item => {
                 toReturn.push({ label: item.name, kind: CompletionItemKind.Variable, detail: `(variable) : ${item.type}` });
+            });
+        }
+
+        if (options.classes && !options.noNamespaceOnly) {
+            this.currentFileNode.namespaceUsings.forEach(item => {
+                if (item.alias != null) {
+                    toReturn.push({ label: item.alias, kind: CompletionItemKind.Class, detail: "(class) " + item.name });
+                }
             });
         }
 
@@ -248,19 +412,61 @@ export class SuggestionBuilder
         this.workspaceTree.forEach(fileNode => {
             if (options.classes) {
                 fileNode.classes.forEach(item => {
-                    toReturn.push({ label: item.name, kind: CompletionItemKind.Class, detail: "(class)" });
+                    let include = true;
+                    if (options.noNamespaceOnly) {
+                        if (item.namespace) {
+                            include = false;
+                        }
+                    }
+
+                    if (include) {
+                        toReturn.push({
+                            label: item.name,
+                            kind: CompletionItemKind.Class,
+                            detail: "(class)" + this.getNamespace(item),
+                            insertText: this.getInsertTextWithNamespace(item, options)
+                        });
+                    }
                 });
             }
 
             if (options.interfaces) {
                 fileNode.interfaces.forEach(item => {
-                    toReturn.push({ label: item.name, kind: CompletionItemKind.Interface, detail: "(interface)" });
+                    let include = true;
+                    if (options.noNamespaceOnly) {
+                        if (item.namespace) {
+                            include = false;
+                        }
+                    }
+
+                    if (include) {
+                        toReturn.push({
+                            label: item.name,
+                            kind: CompletionItemKind.Interface,
+                            detail: "(interface)" + this.getNamespace(item),
+                            insertText: this.getInsertTextWithNamespace(item, options)
+                        });
+                    }
                 });
             }
 
             if (options.traits) {
                 fileNode.traits.forEach(item => {
-                    toReturn.push({ label: item.name, kind: CompletionItemKind.Module, detail: "(trait)" });
+                    let include = true;
+                    if (options.noNamespaceOnly) {
+                        if (item.namespace) {
+                            include = false;
+                        }
+                    }
+
+                    if (include) {
+                        toReturn.push({
+                            label: item.name,
+                            kind: CompletionItemKind.Class,
+                            detail: "(trait)" + this.getNamespace(item),
+                            insertText: this.getInsertTextWithNamespace(item, options)
+                        });
+                    }
                 });
             }
 
@@ -269,9 +475,52 @@ export class SuggestionBuilder
                     toReturn.push({ label: item.name, kind: CompletionItemKind.Function,  detail: `(function) : ${item.returns}`, insertText: this.getFunctionInsertText(item) });
                 });
             }
+
+            if (options.namespaces) {
+                fileNode.namespaces.forEach(item => {
+                    toReturn.push({ label: item.name, kind: CompletionItemKind.Module,  detail: `(namespace)` });
+                });
+            }
         });
 
         return toReturn;
+    }
+
+    private getInsertTextWithNamespace(node, options: ScopeOptions): string
+    {
+        if (node.namespace) {
+            let namespaceSearch = node.namespace + "\\" + node.name;
+            let found = false;
+
+            this.currentFileNode.namespaceUsings.forEach(item => {
+                if (item.name == namespaceSearch) {
+                    found = true;
+                    return null;
+                }
+            });
+
+            if (!found) {
+                return namespaceSearch;
+            }
+
+            return null;
+        }
+
+        if (this.currentFileNode.namespaces.length > 0
+            && options.includeLeadingSlash) {
+            return "\\" + node.name;
+        }
+
+        return null;
+    }
+
+    private getNamespace(node): string
+    {
+        if (node.namespace) {
+            return " " + node.namespace;
+        }
+
+        return "";
     }
 
     private getFunctionInsertText(node: MethodNode)
@@ -438,6 +687,10 @@ export class SuggestionBuilder
         var toReturn: CompletionItem[] = [];
         var rawParts = this.currentLine.trim().match(/\$\S*(?=->)/gm);
         var parts: string[] = [];
+
+        if (rawParts == null) {
+            return null;
+        }
 
         var rawLast = rawParts.length - 1;
         if (rawParts[rawLast].indexOf("->") > -1) {
@@ -680,6 +933,11 @@ class ScopeOptions
     public localVariables = false;
     public globalVariables = false;
     public parameters = false;
+
+    public noNamespaceOnly = false;
+    public includeLeadingSlash = true;
+
+    public withinNamespace: string = null;
 }
 
 enum ScopeLevel

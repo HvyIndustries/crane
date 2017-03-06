@@ -18,21 +18,25 @@ import {
     ParameterNode,
     AccessModifierNode,
     PositionInfo,
-    VariableNode
+    VariableNode,
+    NamespaceUsingNode,
+    NamespaceNode,
+    NamespacePart
 } from './nodes';
 
 export class TreeBuilderV2
 {
-    public processBranch(branch, tree: FileNode) : FileNode
+    public processBranch(branch, tree: FileNode, parent) : FileNode
     {
         if (Array.isArray(branch)) {
             branch.forEach(element => {
-                this.processBranch(element, tree);
+                this.processBranch(element, tree, parent);
             });
         } else {
             switch (branch.kind) {
                 case "namespace":
-                    this.processBranch(branch.children, tree);
+                    tree.namespaces.push(new NamespaceNode(branch.name));
+                    this.processBranch(branch.children, tree, branch);
                     break;
 
                 case "include":
@@ -60,20 +64,80 @@ export class TreeBuilderV2
                     break;
 
                 case "class":
-                    this.buildClass(branch, tree.classes);
+                    this.buildClass(branch, tree.classes, parent);
                     break;
 
                 case "trait":
-                    this.buildTrait(branch, tree.traits);
+                    this.buildTrait(branch, tree.traits, parent);
                     break;
 
                 case "interface":
-                    this.buildInterface(branch, tree.interfaces);
+                    this.buildInterface(branch, tree.interfaces, parent);
                     break;
             }
         }
 
         return tree;
+    }
+
+    public buildNamespaceParts(tree: FileNode)
+    {
+        let namespaces: NamespacePart[] = [];
+        let fullyQualifiedNamespaces: string[] = [];
+
+        // build up a list of all namespaces in the file
+        tree.namespaces.forEach(namespaceNode => {
+            fullyQualifiedNamespaces.push(namespaceNode.name);
+        });
+
+        fullyQualifiedNamespaces.forEach(namespace => {
+            if (typeof namespace === 'string' || namespace instanceof String) {
+                // break down the list into parts separated by "\"
+                let parts = namespace.split("\\");
+                let nsPart = new NamespacePart(parts[0]);
+                let exists = false;
+
+                namespaces.forEach(toplevelPart => {
+                    if (toplevelPart.name == parts[0]) {
+                        nsPart = toplevelPart;
+                        exists = true;
+                        return;
+                    }
+                });
+
+                parts.splice(0, 1);
+                this.buildNamespacePart(parts, nsPart);
+
+                if (!exists) {
+                    namespaces.push(nsPart);
+                }
+            }
+        });
+
+        tree.namespaceParts = namespaces;
+    }
+
+    private buildNamespacePart(parts:string[], nsPart: NamespacePart)
+    {
+        if (parts.length > 0) {
+            let part = new NamespacePart(parts[0]);
+            let exists = false;
+
+            nsPart.children.forEach(subPart => {
+                if (subPart.name == parts[0]) {
+                    part = subPart;
+                    exists = true;
+                    return;
+                }
+            });
+
+            parts.splice(0, 1);
+            this.buildNamespacePart(parts, part);
+
+            if (!exists) {
+                nsPart.children.push(part);
+            }
+        }
     }
 
     private buildfileInclude(branch, context: FileNode)
@@ -96,8 +160,11 @@ export class TreeBuilderV2
     {
         branch.items.forEach(item => {
             if (item.name) {
-                // TODO -- handle namespace aliases (eg "use HVY\test as testAlias;")
-                context.namespaceUsings.push(item.name);
+                let node = new NamespaceUsingNode(item.name);
+                // Handle namespace aliases (eg "use HVY\test as testAlias;"
+                node.alias = item.alias;
+
+                context.namespaceUsings.push(node);
             }
         });
     }
@@ -122,13 +189,20 @@ export class TreeBuilderV2
         }
     }
 
-    private buildInterface(branch, context: Array<any>)
+    private buildNamespace(node, parent)
+    {
+        if (parent != null && parent.kind == "namespace") {
+            node.namespace = parent.name;
+        }
+    }
+
+    private buildInterface(branch, context: Array<any>, parent)
     {
         let interfaceNode: InterfaceNode = new InterfaceNode();
 
         interfaceNode.name = branch.name;
 
-        // TODO -- add namespace info
+        this.buildNamespace(interfaceNode, parent);
 
         if (branch.extends != null) {
             branch.extends.forEach(item => {
@@ -136,16 +210,18 @@ export class TreeBuilderV2
             });
         }
 
-        branch.body.forEach(interfaceBodyBranch => {
-            switch (interfaceBodyBranch.kind) {
-                case "classconstant":
-                    this.buildConstant(interfaceBodyBranch, interfaceNode.constants);
-                    break;
-                case "method":
-                    this.buildMethod(interfaceBodyBranch, interfaceNode.methods);
-                    break;
-            }
-        });
+        if (branch.body) {
+            branch.body.forEach(interfaceBodyBranch => {
+                switch (interfaceBodyBranch.kind) {
+                    case "classconstant":
+                        this.buildConstant(interfaceBodyBranch, interfaceNode.constants);
+                        break;
+                    case "method":
+                        this.buildMethod(interfaceBodyBranch, interfaceNode.methods);
+                        break;
+                }
+            });
+        }
 
         interfaceNode.startPos = this.buildPosition(branch.loc.start);
         interfaceNode.endPos = this.buildPosition(branch.loc.end);
@@ -153,13 +229,13 @@ export class TreeBuilderV2
         context.push(interfaceNode);
     }
 
-    private buildTrait(branch, context: Array<any>)
+    private buildTrait(branch, context: Array<any>, parent)
     {
         let traitNode: TraitNode = new TraitNode();
 
         traitNode.name = branch.name;
 
-        // TODO -- add namespace info
+        this.buildNamespace(traitNode, parent);
 
         if (branch.extends != null) {
             traitNode.extends = branch.extends.name;
@@ -171,9 +247,11 @@ export class TreeBuilderV2
             });
         }
 
-        branch.body.forEach(classBodyBranch => {
-            this.buildClassBody(classBodyBranch, traitNode);
-        });
+        if (branch.body) {
+            branch.body.forEach(classBodyBranch => {
+                this.buildClassBody(classBodyBranch, traitNode);
+            });
+        }
 
         traitNode.startPos = this.buildPosition(branch.loc.start);
         traitNode.endPos = this.buildPosition(branch.loc.end);
@@ -181,13 +259,13 @@ export class TreeBuilderV2
         context.push(traitNode);
     }
 
-    private buildClass(branch, context: Array<any>)
+    private buildClass(branch, context: Array<any>, parent)
     {
         let classNode: ClassNode = new ClassNode();
 
         classNode.name = branch.name;
 
-        // TODO -- add namespace info
+        this.buildNamespace(classNode, parent);
 
         if (branch.extends != null) {
             classNode.extends = branch.extends.name;
@@ -202,9 +280,11 @@ export class TreeBuilderV2
         classNode.isAbstract = branch.isAbstract;
         classNode.isFinal = branch.isFinal;
 
-        branch.body.forEach(classBodyBranch => {
-            this.buildClassBody(classBodyBranch, classNode);
-        });
+        if (branch.body) {
+            branch.body.forEach(classBodyBranch => {
+                this.buildClassBody(classBodyBranch, classNode);
+            });
+        }
 
         classNode.startPos = this.buildPosition(branch.loc.start);
         classNode.endPos = this.buildPosition(branch.loc.end);

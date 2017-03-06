@@ -9,7 +9,7 @@
     },
     "icon": "images/php-256.png",
     "license": "MIT",
-    "version": "0.3.0",
+    "version": "0.3.1",
     "publisher": "HvyIndustries",
     "engines": {
         "vscode": "^1.8.0"
@@ -126,7 +126,7 @@
     "dependencies": {
         "fstream": "^1.0.9",
         "mkdirp": "^0.5.1",
-        "php-parser": "^2.0.0",
+        "php-parser": "^2.0.1",
         "rimraf": "^2.5.2",
         "unzip": "^0.1.11",
         "vscode-languageclient": "^3.1.0"

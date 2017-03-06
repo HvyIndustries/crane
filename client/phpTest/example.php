@@ -13,6 +13,10 @@ require_once $folder . "/file.php";
 const MYCONST = "myConst";
 const MYOTHERCONST = "myOtherConst";
 
+use PB\Test3\Sub\Deep\Awesome;
+
+$t = new PB\Test3\Sub\Deep\Awesome2();
+
 $topLevelVariable = "toplevel";
 $numVar = 2.4;
 

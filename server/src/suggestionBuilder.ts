@@ -298,14 +298,18 @@ export class SuggestionBuilder
 
         let suggestions: CompletionItem[] = [];
 
-        if (line.charAt(0) == "\\") {
-            // return non-namespaced classes only
+        if (line.charAt(0) == "\\" || this.currentFileNode.namespaces.length == 0) {
             let scope = new Scope(null, null, null);
             let options = new ScopeOptions();
             options.classes = true;
             options.interfaces = true;
             options.traits = true;
-            options.noNamespaceOnly = true
+
+            if (line.charAt(0) == "\\") {
+                // We are looking for non-namespaced classes only
+                options.noNamespaceOnly = true
+            }
+
             options.includeLeadingSlash = false;
             return this.buildSuggestionsForScope(scope, options);
         }

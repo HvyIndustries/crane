@@ -20,11 +20,7 @@ import { FileNode, FileSymbolCache, SymbolType, AccessModifierNode, ClassNode } 
 import { Debug } from './util/Debug';
 import { SuggestionBuilder } from './suggestionBuilder';
 
-import { 
-    save as cacheSave,
-    onError as cacheError,
-    read as cacheRead
-} from './util/Storage';
+import Storage from './util/Storage';
 
 const util = require('util');
 
@@ -43,6 +39,8 @@ Debug.SetConnection(connection);
 let treeBuilder: TreeBuilder = new TreeBuilder();
 treeBuilder.SetConnection(connection);
 let workspaceTree: FileNode[] = [];
+
+let cache:Storage = new Storage();
 
 // Prevent garbage collection of essential objects
 let timer = setInterval(() => {
@@ -213,7 +211,7 @@ connection.onRequest(buildFromFiles, (project) => {
 var buildFromProject: RequestType<{treePath:string, enableCache:boolean}, any, any, any> = new RequestType("buildFromProject");
 connection.onRequest(buildFromProject, (data) => {
     enableCache = data.enableCache;
-    cacheRead(data.treePath, (err, data) => {
+    cache.read(data.treePath, (err, data) => {
         if (err) {
             Debug.error('Could not read cache file');
             Debug.error((util.inspect(err, false, null)));
@@ -374,7 +372,7 @@ function saveProjectTree(projectPath: string, treeFile: string): Promise<boolean
         if (!enableCache) {
             resolve(false);
         } else {
-            cacheSave(treeFile, workspaceTree, (result) => {
+            cache.save(treeFile, workspaceTree, (result) => {
                 if (result === true) {
                     resolve(true);
                 } else {

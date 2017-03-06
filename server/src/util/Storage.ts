@@ -8,129 +8,134 @@ const fs = require("fs");
 const zlib = require('zlib');
 const util = require('util');
 
-let isProcessing = false;
-let waitProcessing = null;
-let waitInterval = 5000;
-let errHandler = null;
-let pendingCb = [];
-
 /**
- * Requests to flush the specified tree structure
+ * This class can handle cache
  */
-export function onError(cb: (err: Error) => void): void {
-    errHandler = cb;
-};
+export default class Storage {
+    protected isProcessing = false;
+    protected waitProcessing = null;
+    public waitInterval = 5000;
+    protected errHandler = null;
+    protected pendingCb = [];
 
-/**
- * Raise an error
- */
-function raiseError(err: Error): void {
-    if (errHandler) {
-        errHandler(err);
-    } else {
-        console.error(err.stack ? err.stack : err);
-    }
-};
+    /**
+     * Requests to flush the specified tree structure
+     */
+    public onError(cb: (err: Error) => void): void {
+        this.errHandler = cb;
+    };
 
-/**
- * Reads the specified filename
- */
-export function read(filename: string, cb: (err?: Error, tree?:any) => void): void {
-    if (isProcessing) {
-        // bad things may happen, so delay it by 1 sec
-        setTimeout(() => {
-            read(filename, cb);
-        }, 1000);
-    } else {
-        // reads the file
-        fs.readFile(filename, (err, data) => {
-            if (err) {
-                raiseError(err);
-                cb(err, null);
-            } else {
-                var treeStream = new Buffer(data);
-                zlib.gunzip(treeStream, (err, buffer) => {
-                    if (err) {
-                        raiseError(err);
-                        cb(err, null);
-                    } else {
-                        try {
-                            var tree = JSON.parse(buffer.toString());
-                        } catch(e) {
-                            raiseError(e);
-                            return cb(e, null);
-                        }
-                        cb(null, tree);
-                    }
-                });
-            }
-        });
-    }
-};
+    /**
+     * Raise an error
+     */
+    protected raiseError(err: Error): void {
+        if (this.errHandler) {
+            this.errHandler(err);
+        } else {
+            console.error(err.stack ? err.stack : err);
+        }
+    };
 
-/**
- * Requests to flush the specified tree structure
- */
-export function save(filename: string, tree: any, cb?: (result: boolean|Error) => void): void {
-    if (waitProcessing) {
-        clearTimeout(waitProcessing);
-    }
-    if (cb && pendingCb.indexOf(cb) === -1) {
-        pendingCb.push(cb);
-    }
-    waitProcessing = setTimeout(
-        processSave.bind(this, filename, tree),
-        waitInterval
-    );
-};
-
-/**
- * Flushing the error state
- */
-function processSaveResult(result: Boolean|Error): void {
-    isProcessing = false;
-    if (result instanceof Error) {
-        raiseError(result);
-    }
-    pendingCb.forEach((item) => {
-        item(result);
-    });
-    pendingCb = [];
-}
-
-/**
- * The real function that writes file
- */
-function processSave(filename, tree) {
-    if (isProcessing) {
-        // wait until current flush is finished
-        return save(filename, tree);
-    }
-    isProcessing = true;
-    try {
-        var output = JSON.stringify(tree);
-        fs.writeFile(filename + '.tmp', output, (err) => {
-            if (err) {
-                processSaveResult(err);
-            } else {
-                try {
-                    var gzip = zlib.createGzip();
-                    var inp = fs.createReadStream(filename + '.tmp');
-                    var out = fs.createWriteStream(filename);
-                    inp.pipe(gzip).pipe(out).on('close', function () {
-                        try {
-                            fs.unlinkSync(filename + '.tmp');
-                            processSaveResult(true);
-                        } catch(e) {
-                            processSaveResult(e);
+    /**
+     * Reads the specified filename
+     */
+    public read(filename: string, cb: (err?: Error, tree?:any) => void): void {
+        if (this.isProcessing) {
+            // bad things may happen, so delay it by 1 sec
+            setTimeout(() => {
+                this.read(filename, cb);
+            }, 250);
+        } else {
+            // reads the file
+            fs.readFile(filename, (err, data) => {
+                if (err) {
+                    this.raiseError(err);
+                    cb(err, null);
+                } else {
+                    var treeStream = new Buffer(data);
+                    zlib.gunzip(treeStream, (err, buffer) => {
+                        if (err) {
+                            this.raiseError(err);
+                            cb(err, null);
+                        } else {
+                            try {
+                                var tree = JSON.parse(buffer.toString());
+                            } catch(e) {
+                                this.raiseError(e);
+                                return cb(e, null);
+                            }
+                            cb(null, tree);
                         }
                     });
-                } catch(e) {
-                    processSaveResult(e);
                 }
-            }
+            });
+        }
+    };
+
+    /**
+     * Requests to flush the specified tree structure
+     */
+    public save(filename: string, tree: any, cb?: (result: boolean|Error) => void): void {
+        if (this.waitProcessing) {
+            clearTimeout(this.waitProcessing);
+        }
+        if (cb && this.pendingCb.indexOf(cb) === -1) {
+            this.pendingCb.push(cb);
+        }
+        this.waitProcessing = setTimeout(
+            this.processSave.bind(this, filename, tree),
+            this.waitInterval
+        );
+    };
+
+    /**
+     * Flushing the error state
+     */
+    protected processSaveResult(result: Boolean|Error): void {
+        this.isProcessing = false;
+        if (result instanceof Error) {
+            this.raiseError(result);
+        }
+        this.pendingCb.forEach((item) => {
+            item(result);
         });
-    } catch(e) {
-        processSaveResult(e);
+        this.pendingCb = [];
+    }
+
+    /**
+     * The real function that writes file
+     */
+    protected processSave(filename, tree) {
+        if (this.isProcessing) {
+            // wait until current flush is finished
+            return this.save(filename, tree);
+        }
+        this.isProcessing = true;
+        try {
+            var output = JSON.stringify(tree);
+            fs.writeFile(filename + '.tmp', output, (err) => {
+                if (err) {
+                    this.processSaveResult(err);
+                } else {
+                    try {
+                        var gzip = zlib.createGzip();
+                        var inp = fs.createReadStream(filename + '.tmp');
+                        var out = fs.createWriteStream(filename);
+                        inp.pipe(gzip).pipe(out).on('close', function () {
+                            try {
+                                fs.unlinkSync(filename + '.tmp');
+                                this.processSaveResult(true);
+                            } catch(e) {
+                                this.processSaveResult(e);
+                            }
+                        });
+                    } catch(e) {
+                        this.processSaveResult(e);
+                    }
+                }
+            });
+        } catch(e) {
+            this.processSaveResult(e);
+        }
     }
 }

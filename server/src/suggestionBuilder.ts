@@ -8,7 +8,11 @@
 
 import { TextDocumentPositionParams, TextDocument, CompletionItem, CompletionItemKind } from 'vscode-languageserver';
 import { TreeBuilder } from "./hvy/treeBuilder";
-import { FileNode, FileSymbolCache, SymbolType, AccessModifierNode, ClassNode, TraitNode, MethodNode } from "./hvy/nodes";
+import {
+    FileNode,FileSymbolCache, SymbolType,
+    AccessModifierNode, ClassNode, TraitNode,
+    MethodNode, NamespaceNode, NamespacePart
+} from "./hvy/nodes";
 
 const fs = require('fs');
 
@@ -91,15 +95,6 @@ export class SuggestionBuilder
                 }
             }
         } else {
-
-            if (this.lastChar == "\\") {
-                // TODO - only suggest symbols within the namespace (check for a "\" in the name)
-                options.classes = true;
-                options.interfaces = true;
-                options.traits = true;
-                toReturn = this.buildSuggestionsForScope(scope, options);
-            }
-
             // Special cases for "extends", "implements", "use"
             let newIndex = this.currentLine.indexOf(" new ");
             let newNoSpaceIndex = this.currentLine.indexOf("=new ");
@@ -117,6 +112,8 @@ export class SuggestionBuilder
             if (implementsIndex > -1 && implementsIndex < this.charIndex) {
                 specialCase = true;
 
+                // TODO -- use this.buildSuggestionsForNamespaceOrUseStatement() (issue #232)
+
                 // Show only interfaces
                 options.interfaces = true;
                 toReturn = this.buildSuggestionsForScope(scope, options);
@@ -126,31 +123,21 @@ export class SuggestionBuilder
                 && (newIndex < this.charIndex || newNoSpaceIndex < this.charIndex || extendsIndex < this.charIndex )) {
                 specialCase = true;
 
+                // TODO -- use this.buildSuggestionsForNamespaceOrUseStatement() (issue #232)
+
                 // Show only classes
                 options.classes = true;
                 toReturn = this.buildSuggestionsForScope(scope, options);
             }
 
-            if (useIndex > -1 && useIndex < this.charIndex) {
+            if (this.lastChar == "\\" || (useIndex > -1 && useIndex < this.charIndex)) {
                 specialCase = true;
-
-                // Show namespaces and traits
-                options.namespaces = true;
-                options.traits = true;
-
-                // This is a quick-fix to suggest classes as well
-                // TODO - only suggest symbols within the namespace (check for a "\" in the name)
-                options.classes = true;
-                options.interfaces = true;
-
-                toReturn = this.buildSuggestionsForScope(scope, options);
+                toReturn = this.buildSuggestionsForNamespaceOrUseStatement(false);
             }
 
             if (namespaceIndex > -1 && namespaceIndex < this.charIndex) {
                 specialCase = true;
-
-                options.namespaces = true;
-                toReturn = this.buildSuggestionsForScope(scope, options);
+                toReturn = this.buildSuggestionsForNamespaceOrUseStatement(true);
             }
 
             if (!specialCase
@@ -242,6 +229,125 @@ export class SuggestionBuilder
         });
 
         return filtered;
+    }
+
+    private buildSuggestionsForNamespaceOrUseStatement(namespaceOnly = false): CompletionItem[]
+    {
+        let fullyQualifiedNamespaces: string[] = [];
+        let namespaces: NamespacePart[] = [];
+
+        // build up a list of all namespaces
+        this.workspaceTree.forEach(fileNode => {
+            fileNode.namespaces.forEach(namespaceNode => {
+                fullyQualifiedNamespaces.push(namespaceNode.name);
+            });
+        });
+
+        // TODO -- move this logic into the treebuilder
+        fullyQualifiedNamespaces.forEach(namespace => {
+            if (typeof namespace === 'string' || namespace instanceof String) {
+                // break down the list into parts separated by "\"
+                let parts = namespace.split("\\");
+                let nsPart = new NamespacePart(parts[0]);
+                let exists = false;
+
+                namespaces.forEach(toplevelPart => {
+                    if (toplevelPart.name == parts[0]) {
+                        nsPart = toplevelPart;
+                        exists = true;
+                        return;
+                    }
+                });
+
+                parts.splice(0, 1);
+                this.buildNamespacePart(parts, nsPart);
+
+                if (!exists) {
+                    namespaces.push(nsPart);
+                }
+            }
+        });
+
+        let line = this.currentLine;
+
+        // TODO -- update this logic to handle use cases other than "use" and "namespace" (issue #232)
+
+        let useStatement = (line.indexOf("use ") > -1);
+        let namespaceDefinition = (line.indexOf("namespace ") > -1);
+
+        line = line.replace("namespace ", "");
+        line = line.replace("use ", "");
+        let lineParts = line.split("\\");
+
+        let suggestions: CompletionItem[] = [];
+
+        let parent = namespaces;
+
+        lineParts.forEach(part => {
+            let needChildren = false;
+            parent.forEach(namespace => {
+                if (namespace.name == part) {
+                    parent = namespace.children;
+                    needChildren = true;
+                    return;
+                }
+            });
+
+            if (!needChildren) {
+                parent.forEach(item => {
+                    suggestions.push({ label: item.name, kind: CompletionItemKind.Module, detail: "(namespace)" });
+                });
+            }
+        });
+
+        // TODO -- update the code below to include classes, traits an interfaces as required (introduce new bool params)
+
+        // Get namespace-aware suggestions for classes, traits and interfaces
+        if (!namespaceOnly) {
+            let namespaceToSearch = line.slice(0, line.length - 1);
+            this.workspaceTree.forEach(fileNode => {
+                fileNode.classes.forEach(classNode => {
+                    if (classNode.namespace == namespaceToSearch) {
+                        suggestions.push({ label: classNode.name, kind: CompletionItemKind.Class, detail: "(class)" });
+                    }
+                });
+                fileNode.traits.forEach(traitNode => {
+                    if (traitNode.namespace == namespaceToSearch) {
+                        suggestions.push({ label: traitNode.name, kind: CompletionItemKind.Class, detail: "(trait)" });
+                    }
+                });
+                fileNode.interfaces.forEach(interfaceNode => {
+                    if (interfaceNode.namespace == namespaceToSearch) {
+                        suggestions.push({ label: interfaceNode.name, kind: CompletionItemKind.Interface, detail: "(interface)" });
+                    }
+                });
+            });
+        }
+
+        return suggestions;
+    }
+
+    private buildNamespacePart(parts:string[], nsPart: NamespacePart)
+    {
+        if (parts.length > 0) {
+            let part = new NamespacePart(parts[0]);
+            let exists = false;
+
+            nsPart.children.forEach(subPart => {
+                if (subPart.name == parts[0]) {
+                    part = subPart;
+                    exists = true;
+                    return;
+                }
+            });
+
+            parts.splice(0, 1);
+            this.buildNamespacePart(parts, part);
+
+            if (!exists) {
+                nsPart.children.push(part);
+            }
+        }
     }
 
     private buildSuggestionsForScope(scope: Scope, options: ScopeOptions) : CompletionItem[]

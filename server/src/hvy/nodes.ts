@@ -56,6 +56,22 @@ export class LineCache
     public value: string;
 }
 
+export class NamespaceCache
+{
+    public namespaces: NamespacePart[] = [];
+}
+
+export class NamespacePart
+{
+    constructor(name = null)
+    {
+        this.name = name;
+    }
+
+    public name: string;
+    public children: NamespacePart[] = [];
+}
+
 export enum SymbolType
 {
     Unknown,
@@ -98,7 +114,7 @@ export class InterfaceNode extends BaseNode
     public extends: string[] = [];
     public constants: ConstantNode[] = [];
     public methods: MethodNode[] = [];
-    public namespace: string[] = [];
+    public namespace: string;
 }
 
 export class MethodNode extends BaseNode

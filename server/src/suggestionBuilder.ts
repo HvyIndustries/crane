@@ -664,6 +664,10 @@ export class SuggestionBuilder
         var rawParts = this.currentLine.trim().match(/\$\S*(?=->)/gm);
         var parts: string[] = [];
 
+        if (rawParts == null) {
+            return null;
+        }
+
         var rawLast = rawParts.length - 1;
         if (rawParts[rawLast].indexOf("->") > -1) {
             rawParts.forEach(part => {

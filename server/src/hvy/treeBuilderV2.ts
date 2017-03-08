@@ -171,14 +171,14 @@ export class TreeBuilderV2
 
     private buildAssignment(branch, context: Array<any>)
     {
-        if (branch.left.kind == "variable") {
+        if (branch.left && branch.left.kind == "variable") {
             let node = new VariableNode();
 
             node.name = "$" + branch.left.name;
             node.startPos = this.buildPosition(branch.loc.start);
             node.endPos = this.buildPosition(branch.loc.end);
 
-            if (branch.right.kind == "new") {
+            if (branch.right && branch.right.kind == "new") {
                 if (branch.right.what && branch.right.what.name) {
                     node.type = branch.right.what.name;
                     node.value = branch.right.what.name;

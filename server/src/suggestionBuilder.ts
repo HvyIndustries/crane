@@ -71,6 +71,12 @@ export class SuggestionBuilder
         var toReturn: CompletionItem[] = [];
         var options = new ScopeOptions();
 
+        // Don't add suggestions if we're in a comment
+        let commentIndex = this.currentLine.indexOf("//");
+        if (commentIndex > -1 && commentIndex < this.charIndex) {
+            return null;
+        }
+
         if (this.lastChar == ">") {
             toReturn = toReturn.concat(this.checkAccessorAndAddMembers(scope));
         } else if (this.lastChar == ":") {

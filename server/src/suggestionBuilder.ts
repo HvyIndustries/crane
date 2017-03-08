@@ -495,11 +495,19 @@ export class SuggestionBuilder
     private getInsertTextWithNamespace(node, options: ScopeOptions): string
     {
         if (node.namespace) {
+            let namespace = node.namespace;
             let namespaceSearch = node.namespace + "\\" + node.name;
             let found = false;
 
             this.currentFileNode.namespaceUsings.forEach(item => {
                 if (item.name == namespaceSearch) {
+                    found = true;
+                    return null;
+                }
+            });
+
+            this.currentFileNode.namespaces.forEach(item => {
+                if (item.name == namespace) {
                     found = true;
                     return null;
                 }

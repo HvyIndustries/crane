@@ -129,6 +129,7 @@
         "php-parser": "^2.0.1",
         "rimraf": "^2.5.2",
         "unzip": "^0.1.11",
+        "opn": "^4.0.2",
         "vscode-languageclient": "^3.1.0"
     }
 }

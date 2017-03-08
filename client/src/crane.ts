@@ -9,7 +9,7 @@
 import {
     Disposable, workspace, window, TextDocument,
     TextEditor, StatusBarAlignment, StatusBarItem,
-    FileSystemWatcher
+    FileSystemWatcher, version as vsCodeVersion
 } from 'vscode';
 import { LanguageClient, RequestType, NotificationType } from 'vscode-languageclient';
 import { ThrottledDelayer } from './utils/async';
@@ -17,13 +17,11 @@ import { Cranefs } from './utils/Cranefs';
 import { Debug } from './utils/Debug';
 import { Config } from './utils/Config';
 
-const exec = require('child_process').exec;
+const opn = require('opn');
 const util = require('util');
 
 let craneSettings = workspace.getConfiguration("crane");
 const cranefs: Cranefs = new Cranefs();
-
-console.log(process.platform)
 
 export default class Crane
 {
@@ -183,25 +181,52 @@ export default class Crane
     }
 
     public reportBug() {
-        Crane.openLinkInBrowser("https://github.com/HvyIndustries/crane/issues");
+        let message = '';
+        message = 'Platform : ' + process.platform + '\n';
+        message += 'VSCode Version : ' + vsCodeVersion + '\n';
+        message += 'Crane Version : ' + Config.version + '\n';
+        message += '---\n\n';
+        message += 'Please explain here what you intended to do, the expected behaviour, and the observed results or errors.\n\n';
+        message += 'In order to help us to fix it, try to explain how to reproduce the error, and give us code samples that can help us to reproduce the same behaviour';
+        Crane.openLinkInBrowser(
+            "https://github.com/HvyIndustries/crane/issues/new", {
+                body: message
+            }
+        );
     }
 
-    public static openLinkInBrowser(link: string) {
-        var openCommand: string = "";
-
-        switch (process.platform) {
-            case 'darwin':
-            case 'linux':
-                openCommand = 'open ';
-                break;
-            case 'win32':
-                openCommand = 'start ';
-                break;
-            default:
-                return;
+    /**
+     * Opens the specified URL and appends the specified object (if defined)
+     * as query string parameters
+     */
+    public static openLinkInBrowser(link: string, args?: any, hash?: string): Thenable<void> {
+        let qs = [];
+        if (args) {
+            // check arguments
+            for(let name in args) {
+                if (args.hasOwnProperty(name)) {
+                    qs.push(
+                        name + '=' + encodeURIComponent(args[name])
+                    );
+                }
+            }
         }
-
-        exec(openCommand + link);
+        // append the query string if defined
+        if (qs.length > 0) {
+            if (link.indexOf('?') > -1) {
+                link += '&' + qs.join('&');
+            } else {
+                link += '?' + qs.join('&');
+            }
+        }
+        // appends the hash directive
+        if (hash) {
+            if (hash[0] != '#') {
+                hash = '#' + hash;
+            }
+            link += hash;
+        }
+        return opn(link);
     }
 
     public handleFileSave() {

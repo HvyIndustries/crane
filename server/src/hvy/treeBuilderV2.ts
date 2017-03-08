@@ -26,8 +26,12 @@ import {
 
 export class TreeBuilderV2
 {
+    private tree: FileNode;
+
     public processBranch(branch, tree: FileNode, parent) : FileNode
     {
+        this.tree = tree;
+
         if (Array.isArray(branch)) {
             branch.forEach(element => {
                 this.processBranch(element, tree, parent);
@@ -180,13 +184,49 @@ export class TreeBuilderV2
 
             if (branch.right && branch.right.kind == "new") {
                 if (branch.right.what && branch.right.what.name) {
-                    node.type = branch.right.what.name;
                     node.value = branch.right.what.name;
+
+                    if (branch.right.what.kind == "identifier") {
+                        // Get FQN (check namespace + check usings)
+                        node.type = this.getFQNFromClassname(branch.right.what.name);
+                    } else {
+                        node.type = branch.right.what.name;
+                    }
                 }
             }
 
             context.push(node);
         }
+    }
+
+    private getFQNFromClassname(classname:string)
+    {
+        var nameFound = false;
+        var type = classname;
+
+        if (classname.startsWith("\\")) {
+            // Assume FQN already
+            nameFound = true;
+        } else {
+            // Check if we are "use"ing this class
+            this.tree.namespaceUsings.forEach(item => {
+                if (
+                    item.name.endsWith("\\" + classname)
+                    || item.alias == classname
+                ) {
+                    // Class found, add namespace to name (handling alias)
+                    type = item.name;
+                    nameFound = true;
+                    return;
+                }
+            });
+
+            if (!nameFound && this.tree.namespaces.length > 0) {
+                type = "\\" + this.tree.namespaces[0].name + "\\" + classname;
+            }
+        }
+
+        return type;
     }
 
     private buildNamespace(node, parent)
@@ -238,7 +278,7 @@ export class TreeBuilderV2
         this.buildNamespace(traitNode, parent);
 
         if (branch.extends != null) {
-            traitNode.extends = branch.extends.name;
+            traitNode.extends = this.getFQNFromClassname(branch.extends.name);
         }
 
         if (branch.implements != null) {
@@ -268,7 +308,7 @@ export class TreeBuilderV2
         this.buildNamespace(classNode, parent);
 
         if (branch.extends != null) {
-            classNode.extends = branch.extends.name;
+            classNode.extends = this.getFQNFromClassname(branch.extends.name);
         }
 
         if (branch.implements != null) {
@@ -475,7 +515,7 @@ export class TreeBuilderV2
     private buildTraitUse(branch, classNode: ClassNode)
     {
         branch.traits.forEach(traitItem => {
-            classNode.traits.push(traitItem.name);
+            classNode.traits.push(this.getFQNFromClassname(traitItem.name));
         });
     }
 

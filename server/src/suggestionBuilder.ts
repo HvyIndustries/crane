@@ -649,13 +649,53 @@ export class SuggestionBuilder
         return path;
     }
 
+    private getNamespaceInfoFromFQNClassname(className: string)
+    {
+        // Catch cases where classname does not have a namespace
+        if (className.indexOf("\\") == -1) {
+            return {
+                namespace: null,
+                classname: className
+            };
+        }
+
+        let classParts = className.split("\\");
+
+        // Remove the class name
+        let rawClassname = classParts.pop();
+
+        // Rebuild the namespace without the classname
+        let namespace = classParts.join("\\");
+
+        if (namespace.charAt(0) == "\\" && namespace.length >= 2) {
+            // Strip off the leading backslash
+            namespace = namespace.substr(1, namespace.length);
+        }
+
+        if (namespace == "") {
+            namespace = null;
+        }
+
+        return {
+            namespace: namespace,
+            classname: rawClassname
+        };
+    }
+
     private getClassNodeFromTree(className: string) : ClassNode
     {
         var toReturn = null;
 
+        let namespaceInfo = this.getNamespaceInfoFromFQNClassname(className);
+        var namespace = namespaceInfo.namespace;
+        var rawClassname = namespaceInfo.classname
+
         this.workspaceTree.forEach((fileNode) => {
             fileNode.classes.forEach((classNode) => {
-                if (classNode.name.toLowerCase() == className.toLowerCase()) {
+                if (
+                    classNode.name.toLowerCase() == rawClassname.toLowerCase()
+                    && classNode.namespace == namespace
+                ) {
                     toReturn = classNode;
                 }
             });
@@ -668,9 +708,16 @@ export class SuggestionBuilder
     {
         var toReturn = null;
 
+        let namespaceInfo = this.getNamespaceInfoFromFQNClassname(traitName);
+        var namespace = namespaceInfo.namespace;
+        var rawTraitname = namespaceInfo.classname
+
         var fileNode = this.workspaceTree.forEach((fileNode) => {
             fileNode.traits.forEach((traitNode) => {
-                if (traitNode.name.toLowerCase() == traitName.toLowerCase()) {
+                if (
+                    traitNode.name.toLowerCase() == rawTraitname.toLowerCase()
+                    && traitNode.namespace == namespace
+                ) {
                     toReturn = traitNode;
                 }
             });
@@ -728,6 +775,11 @@ export class SuggestionBuilder
             this.currentFileNode.classes.forEach(classNode => {
                 if (this.withinBlock(classNode)) {
                     toReturn = this.addClassMembers(classNode, false, true, true);
+                }
+            });
+            this.currentFileNode.traits.forEach(traitNode => {
+                if (this.withinBlock(traitNode)) {
+                    toReturn = this.addClassMembers(traitNode, false, true, true);
                 }
             });
         } else {

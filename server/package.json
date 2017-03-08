@@ -14,7 +14,7 @@
     "dependencies": {
         "filequeue": "^0.5.0",
         "glob": "7.0.3",
-        "php-parser": "^2.0.1",
+        "php-parser": "^2.0.2",
         "vscode-languageserver": "^3.1.0"
     },
     "devDependencies": {

@@ -126,7 +126,7 @@
     "dependencies": {
         "fstream": "^1.0.9",
         "mkdirp": "^0.5.1",
-        "php-parser": "^2.0.1",
+        "php-parser": "^2.0.2",
         "rimraf": "^2.5.2",
         "unzip": "^0.1.11",
         "opn": "^4.0.2",

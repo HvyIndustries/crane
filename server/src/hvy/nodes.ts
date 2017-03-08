@@ -14,6 +14,10 @@
 
 class BaseNode
 {
+    constructor(name = "") {
+        this.name = name;
+    }
+
     public name: string;
     public startPos: PositionInfo;
     public endPos: PositionInfo;
@@ -29,6 +33,8 @@ export class FileNode
     public classes: ClassNode[] = [];
     public interfaces: InterfaceNode[] = [];
     public traits: TraitNode[] = [];
+    public namespaces: NamespaceNode[] = [];
+    public namespaceParts: NamespacePart[] = [];
 
     // Any files that we're referencing with include(), require(), include_once() or require_once()
     public fileReferences: string[] = [];
@@ -51,6 +57,22 @@ export class LineCache
     public value: string;
 }
 
+export class NamespaceCache
+{
+    public namespaces: NamespacePart[] = [];
+}
+
+export class NamespacePart
+{
+    constructor(name = null)
+    {
+        this.name = name;
+    }
+
+    public name: string;
+    public children: NamespacePart[] = [];
+}
+
 export enum SymbolType
 {
     Unknown,
@@ -66,9 +88,10 @@ export enum SymbolType
 
 export class NamespaceUsingNode extends BaseNode
 {
-    // The parent parts in the correct order (eg. use [Parent1]\[Parent1]\Namespace)
-    public parents: string[] = [];
+    public alias: string;
 }
+
+export class NamespaceNode extends BaseNode {}
 
 export class ClassNode extends BaseNode
 {
@@ -81,7 +104,7 @@ export class ClassNode extends BaseNode
     public methods: MethodNode[] = [];
     public constants: ConstantNode[] = [];
     public traits: string[] = [];
-    public namespaceParts: string[] = [];
+    public namespace: string;
     public construct: ConstructorNode;
 }
 
@@ -92,7 +115,7 @@ export class InterfaceNode extends BaseNode
     public extends: string[] = [];
     public constants: ConstantNode[] = [];
     public methods: MethodNode[] = [];
-    public namespace: string[] = [];
+    public namespace: string;
 }
 
 export class MethodNode extends BaseNode

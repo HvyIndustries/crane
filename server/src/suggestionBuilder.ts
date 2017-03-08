@@ -500,7 +500,7 @@ export class SuggestionBuilder
             });
 
             if (!found) {
-                return namespaceSearch;
+                return "\\" + namespaceSearch;
             }
 
             return null;

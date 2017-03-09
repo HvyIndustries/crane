@@ -23,6 +23,7 @@ import {
     NamespaceNode,
     NamespacePart
 } from './nodes';
+import { Namespaces } from "../util/namespaces";
 
 export class TreeBuilderV2
 {
@@ -188,7 +189,7 @@ export class TreeBuilderV2
 
                     if (branch.right.what.kind == "identifier") {
                         // Get FQN (check namespace + check usings)
-                        node.type = this.getFQNFromClassname(branch.right.what.name);
+                        node.type = Namespaces.getFQNFromClassname(branch.right.what.name, this.tree);
                     } else {
                         node.type = branch.right.what.name;
                     }
@@ -197,36 +198,6 @@ export class TreeBuilderV2
 
             context.push(node);
         }
-    }
-
-    private getFQNFromClassname(classname:string)
-    {
-        var nameFound = false;
-        var type = classname;
-
-        if (classname.startsWith("\\")) {
-            // Assume FQN already
-            nameFound = true;
-        } else {
-            // Check if we are "use"ing this class
-            this.tree.namespaceUsings.forEach(item => {
-                if (
-                    item.name.endsWith("\\" + classname)
-                    || item.alias == classname
-                ) {
-                    // Class found, add namespace to name (handling alias)
-                    type = item.name;
-                    nameFound = true;
-                    return;
-                }
-            });
-
-            if (!nameFound && this.tree.namespaces.length > 0) {
-                type = "\\" + this.tree.namespaces[0].name + "\\" + classname;
-            }
-        }
-
-        return type;
     }
 
     private buildNamespace(node, parent)
@@ -278,7 +249,7 @@ export class TreeBuilderV2
         this.buildNamespace(traitNode, parent);
 
         if (branch.extends != null) {
-            traitNode.extends = this.getFQNFromClassname(branch.extends.name);
+            traitNode.extends = Namespaces.getFQNFromClassname(branch.extends.name, this.tree);
         }
 
         if (branch.implements != null) {
@@ -308,7 +279,7 @@ export class TreeBuilderV2
         this.buildNamespace(classNode, parent);
 
         if (branch.extends != null) {
-            classNode.extends = this.getFQNFromClassname(branch.extends.name);
+            classNode.extends = Namespaces.getFQNFromClassname(branch.extends.name, this.tree);
         }
 
         if (branch.implements != null) {
@@ -515,7 +486,7 @@ export class TreeBuilderV2
     private buildTraitUse(branch, classNode: ClassNode)
     {
         branch.traits.forEach(traitItem => {
-            classNode.traits.push(this.getFQNFromClassname(traitItem.name));
+            classNode.traits.push(Namespaces.getFQNFromClassname(traitItem.name, this.tree));
         });
     }
 

@@ -13,6 +13,8 @@ import {
     AccessModifierNode, ClassNode, TraitNode,
     MethodNode, NamespaceNode, NamespacePart
 } from "./hvy/nodes";
+import { Files } from "./util/Files";
+import { Namespaces } from "./util/namespaces";
 
 const fs = require('fs');
 
@@ -631,62 +633,14 @@ export class SuggestionBuilder
 
     private buildDocumentPath(uri: string) : string
     {
-        var path = uri;
-        path = path.replace("file:///", "");
-        path = path.replace("%3A", ":");
-
-        // Handle Windows and Unix paths
-        switch (process.platform) {
-            case 'darwin':
-            case 'linux':
-                path = "/" + path;
-                break;
-            case 'win32':
-                path = path.replace(/\//g, "\\");
-                break;
-        }
-
-        return path;
-    }
-
-    private getNamespaceInfoFromFQNClassname(className: string)
-    {
-        // Catch cases where classname does not have a namespace
-        if (className.indexOf("\\") == -1) {
-            return {
-                namespace: null,
-                classname: className
-            };
-        }
-
-        let classParts = className.split("\\");
-
-        // Remove the class name
-        let rawClassname = classParts.pop();
-
-        // Rebuild the namespace without the classname
-        let namespace = classParts.join("\\");
-
-        if (namespace.charAt(0) == "\\" && namespace.length >= 2) {
-            // Strip off the leading backslash
-            namespace = namespace.substr(1, namespace.length);
-        }
-
-        if (namespace == "") {
-            namespace = null;
-        }
-
-        return {
-            namespace: namespace,
-            classname: rawClassname
-        };
+        return Files.getPathFromUri(uri);
     }
 
     private getClassNodeFromTree(className: string) : ClassNode
     {
         var toReturn = null;
 
-        let namespaceInfo = this.getNamespaceInfoFromFQNClassname(className);
+        let namespaceInfo = Namespaces.getNamespaceInfoFromFQNClassname(className);
         var namespace = namespaceInfo.namespace;
         var rawClassname = namespaceInfo.classname
 
@@ -708,7 +662,7 @@ export class SuggestionBuilder
     {
         var toReturn = null;
 
-        let namespaceInfo = this.getNamespaceInfoFromFQNClassname(traitName);
+        let namespaceInfo = Namespaces.getNamespaceInfoFromFQNClassname(traitName);
         var namespace = namespaceInfo.namespace;
         var rawTraitname = namespaceInfo.classname
 

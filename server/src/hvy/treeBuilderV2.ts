@@ -25,9 +25,13 @@ import {
 } from './nodes';
 import { Namespaces } from "../util/namespaces";
 
+const docParser = require("doc-parser");
+var docReader = new docParser();
+
 export class TreeBuilderV2
 {
     private tree: FileNode;
+    private lastDocComment = null;
 
     public processBranch(branch, tree: FileNode, parent) : FileNode
     {
@@ -39,6 +43,10 @@ export class TreeBuilderV2
             });
         } else {
             switch (branch.kind) {
+                case "doc":
+                    this.saveDocComment(branch);
+                    break;
+
                 case "namespace":
                     this.buildNamespaceDeclaration(branch, tree);
                     this.processBranch(branch.children, tree, branch);
@@ -142,6 +150,14 @@ export class TreeBuilderV2
             if (!exists) {
                 nsPart.children.push(part);
             }
+        }
+    }
+
+    private saveDocComment(branch)
+    {
+        if (branch.isDoc) {
+            // TODO -- handle inheritDoc
+            this.lastDocComment = docReader.parse(branch.lines);
         }
     }
 
@@ -314,6 +330,10 @@ export class TreeBuilderV2
     private buildClassBody(branch, classNode: ClassNode)
     {
         switch (branch.kind) {
+            case "doc":
+                this.saveDocComment(branch);
+                break;
+
             case "property":
                 this.buildProperty(branch, classNode);
                 break;

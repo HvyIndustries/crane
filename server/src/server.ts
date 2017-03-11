@@ -122,8 +122,7 @@ connection.onCompletion((textDocumentPosition: TextDocumentPositionParams): Comp
 
 // This handler resolve additional information for the item selected in
 // the completion list.
-connection.onCompletionResolve((item: CompletionItem): CompletionItem =>
-{
+connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
     // TODO -- Add phpDoc info
     // if (item.data === 1) {
     //     item.detail = 'TypeScript details',

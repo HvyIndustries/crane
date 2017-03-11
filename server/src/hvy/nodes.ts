@@ -14,13 +14,45 @@
 
 export class BaseNode
 {
-    constructor(name = "") {
+    constructor(name = "")
+    {
         this.name = name;
     }
 
     public name: string;
     public startPos: PositionInfo;
     public endPos: PositionInfo;
+
+    public docComment: DocComment;
+}
+
+export class DocComment
+{
+    constructor(summary = null, returns = null)
+    {
+        this.returns = returns;
+        this.summary = summary;
+    }
+
+    public summary: string;
+    public returns: string;
+    public params: DocCommentParam[];
+    public throws: string;
+    public deprecated: boolean;
+}
+
+export class DocCommentParam
+{
+    constructor(name = null, type = null, summary = null)
+    {
+        this.name = name;
+        this.type = type;
+        this.summary = summary;
+    }
+
+    public type: string;
+    public name: string;
+    public summary: string;
 }
 
 export class FileNode

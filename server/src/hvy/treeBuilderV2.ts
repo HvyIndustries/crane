@@ -21,9 +21,11 @@ import {
     VariableNode,
     NamespaceUsingNode,
     NamespaceNode,
-    NamespacePart
+    NamespacePart,
+    DocComment
 } from './nodes';
 import { Namespaces } from "../util/namespaces";
+import { DocCommentHelper } from "./docCommentHelper";
 
 const docParser = require("doc-parser");
 var docReader = new docParser();
@@ -156,8 +158,8 @@ export class TreeBuilderV2
     private saveDocComment(branch)
     {
         if (branch.isDoc) {
-            // TODO -- handle inheritDoc
-            this.lastDocComment = docReader.parse(branch.lines);
+            let docCommentHelper = new DocCommentHelper();
+            this.lastDocComment = docCommentHelper.buildDocCommentFromBranch(branch, this.tree);
         }
     }
 

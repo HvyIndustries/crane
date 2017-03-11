@@ -35,10 +35,14 @@ export class DocComment
     }
 
     public summary: string;
-    public returns: string;
-    public params: DocCommentParam[];
-    public throws: string;
+    public returns: DocCommentParam;
+    public params: DocCommentParam[] = [];
+    public throws: DocCommentParam[] = [];
     public deprecated: boolean;
+    public deprecatedMessage: string;
+
+    public startPos: PositionInfo;
+    public endPos: PositionInfo;
 }
 
 export class DocCommentParam

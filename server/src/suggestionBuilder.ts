@@ -13,6 +13,8 @@ import {
     AccessModifierNode, ClassNode, TraitNode,
     MethodNode, NamespaceNode, NamespacePart
 } from "./hvy/nodes";
+import { Files } from "./util/Files";
+import { Namespaces } from "./util/namespaces";
 
 const fs = require('fs');
 
@@ -70,6 +72,12 @@ export class SuggestionBuilder
         var scope = this.getScope();
         var toReturn: CompletionItem[] = [];
         var options = new ScopeOptions();
+
+        // Don't add suggestions if we're in a comment
+        let commentIndex = this.currentLine.indexOf("//");
+        if (commentIndex > -1 && commentIndex < this.charIndex) {
+            return null;
+        }
 
         if (this.lastChar == ">") {
             toReturn = toReturn.concat(this.checkAccessorAndAddMembers(scope));
@@ -281,7 +289,7 @@ export class SuggestionBuilder
             }
 
             options.includeLeadingSlash = false;
-            return this.buildSuggestionsForScope(scope, options);
+            suggestions.concat(this.buildSuggestionsForScope(scope, options));
         }
 
         let parent = namespaces;
@@ -489,6 +497,7 @@ export class SuggestionBuilder
     private getInsertTextWithNamespace(node, options: ScopeOptions): string
     {
         if (node.namespace) {
+            let namespace = node.namespace;
             let namespaceSearch = node.namespace + "\\" + node.name;
             let found = false;
 
@@ -499,8 +508,15 @@ export class SuggestionBuilder
                 }
             });
 
+            this.currentFileNode.namespaces.forEach(item => {
+                if (item.name == namespace) {
+                    found = true;
+                    return null;
+                }
+            });
+
             if (!found) {
-                return namespaceSearch;
+                return "\\" + namespaceSearch;
             }
 
             return null;
@@ -617,31 +633,23 @@ export class SuggestionBuilder
 
     private buildDocumentPath(uri: string) : string
     {
-        var path = uri;
-        path = path.replace("file:///", "");
-        path = path.replace("%3A", ":");
-
-        // Handle Windows and Unix paths
-        switch (process.platform) {
-            case 'darwin':
-            case 'linux':
-                path = "/" + path;
-                break;
-            case 'win32':
-                path = path.replace(/\//g, "\\");
-                break;
-        }
-
-        return path;
+        return Files.getPathFromUri(uri);
     }
 
     private getClassNodeFromTree(className: string) : ClassNode
     {
         var toReturn = null;
 
+        let namespaceInfo = Namespaces.getNamespaceInfoFromFQNClassname(className);
+        var namespace = namespaceInfo.namespace;
+        var rawClassname = namespaceInfo.classname
+
         this.workspaceTree.forEach((fileNode) => {
             fileNode.classes.forEach((classNode) => {
-                if (classNode.name.toLowerCase() == className.toLowerCase()) {
+                if (
+                    classNode.name.toLowerCase() == rawClassname.toLowerCase()
+                    && classNode.namespace == namespace
+                ) {
                     toReturn = classNode;
                 }
             });
@@ -654,9 +662,16 @@ export class SuggestionBuilder
     {
         var toReturn = null;
 
+        let namespaceInfo = Namespaces.getNamespaceInfoFromFQNClassname(traitName);
+        var namespace = namespaceInfo.namespace;
+        var rawTraitname = namespaceInfo.classname
+
         var fileNode = this.workspaceTree.forEach((fileNode) => {
             fileNode.traits.forEach((traitNode) => {
-                if (traitNode.name.toLowerCase() == traitName.toLowerCase()) {
+                if (
+                    traitNode.name.toLowerCase() == rawTraitname.toLowerCase()
+                    && traitNode.namespace == namespace
+                ) {
                     toReturn = traitNode;
                 }
             });
@@ -714,6 +729,11 @@ export class SuggestionBuilder
             this.currentFileNode.classes.forEach(classNode => {
                 if (this.withinBlock(classNode)) {
                     toReturn = this.addClassMembers(classNode, false, true, true);
+                }
+            });
+            this.currentFileNode.traits.forEach(traitNode => {
+                if (this.withinBlock(traitNode)) {
+                    toReturn = this.addClassMembers(traitNode, false, true, true);
                 }
             });
         } else {

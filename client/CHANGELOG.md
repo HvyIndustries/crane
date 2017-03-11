@@ -1,4 +1,13 @@
-# v0.3.1 (latest release)
+# v0.3.2 (latest release)
+- **Added go to definition on classes, traits & interfaces**
+- Fix several bugs introduced in v0.3.1
+  - Namespace insert text should be prefixed with a backslash _(Thanks @TheColorRed for pointing out this mistake!)_
+  - Crane no longer adds the fully qualified namespace to a class if the class is in the same namespace
+  - Fixed issue where there were no suggestions for properties and methods defined in traits
+- Disabled Crane suggestions when typing on a single line comment
+- Bug report link now prefills basic information including vscode version, crane version and platform (win/linux/macos)
+
+# v0.3.1
 - **Improved namespace support**
   - Crane will now suggest scope-aware namespace parts in `namespace` and `use` statements
   - Crane will now suggest classes that have been aliased in `use` statements

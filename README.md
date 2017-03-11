@@ -18,9 +18,22 @@ For the best development experience, make sure you have the PHP linter enabled i
 
 You can also set `php.suggest.basic` to `false` to disable VS Code's built-in php code completion and avoid duplicate suggestions.
 
+## Demo
+
+![](https://i.imgur.com/a9j3V9u.gif)
+
 ---
 
-## What's new in v0.3.1 (latest release)
+## What's new in v0.3.2 (latest release)
+- **Added go to definition on classes, traits & interfaces**
+- Fix several bugs introduced in v0.3.1
+  - Namespace insert text should be prefixed with a backslash _(Thanks @TheColorRed for pointing out this mistake!)_
+  - Crane no longer adds the fully qualified namespace to a class if the class is in the same namespace
+  - Fixed issue where there were no suggestions for properties and methods defined in traits
+- Disabled Crane suggestions when typing on a single line comment
+- Bug report link now prefills basic information including vscode version, crane version and platform (win/linux/macos)
+
+## What's new in v0.3.1
 
 - **Improved namespace support**
   - Crane will now suggest scope-aware namespace parts in `namespace` and `use` statements
@@ -38,28 +51,24 @@ You can also set `php.suggest.basic` to `false` to disable VS Code's built-in ph
 - Removed the Crane version indicator from the bottom right of the status bar
 - Fixed a bug where the indexing statusbar item would be hidden if you disabled the bug report link
 
-## What's new in v0.2.2
-
-- Added new setting `crane.ignoredPaths` that gives users the ability to ignore files/folders for parsing _(workaround for parser crashing issue)_
-- Added "what's new" section to readme to highlight new features/bug fixes
-
 ---
 
 ## Current Features
 
-- Code-completion _(in progress, not quite 100% complete yet)_
+- Code-completion _(work in progress)_
   - For user created code
   - Optionally for built-in PHP functions and classes (such as PDO)
+- **Go to definition** on classes, interfaces and traits
+- Peek definition on classes, interfaces and traits
 
 ## Planned Features:
 
-* **Go to definition** (pressing F12)
-* **Find references**
-* Signature provider to show method parameter suggestions
-* Hover provider to show information about symbol under the cursor
-* Peek definition
-* List symbols
-* PhpDoc support (both for reading and writing documentation)
+- Find references
+- Signature provider to show method parameter suggestions
+- Hover provider to show information about symbol under the cursor
+- Full go-to/Peek definition on variables, methods, properties, etc
+- List symbols
+- PhpDoc support (both for reading and writing documentation)
 
 ## User Feedback
 
@@ -81,16 +90,12 @@ You can also set `php.suggest.basic` to `false` to disable VS Code's built-in ph
 > 👌👌👌 super awesome.  
 > [яєαℓιѕт נανѕтαн](https://twitter.com/RHJOfficial/status/719630044310740992)
 
-## Demo
-
-![](http://i.imgur.com/7128zNV.png)
-![](http://i.imgur.com/CT2S3yX.gif)
-
 ## Known Issues
 
-* There may be duplicate suggestions for functions or variables. This is because VS Code has it's own (very limited) code-completion support for PHP, and there is currently no way to turn this off.
+* If you get duplicate suggestions for variables, etc. you can disable VS Code's built-in php code-completion by setting `php.suggest.basic` to `false` in your settings.
 * There can be strange behaviour when working with PHP and HTML in the same file.
 * If you have a syntax error in a file, you may not get a full list of suggestions for that file.
+* Go to definition only works on classes, traits and interfaces
 
 ## Links
 

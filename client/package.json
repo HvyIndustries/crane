@@ -9,7 +9,7 @@
     },
     "icon": "images/php-256.png",
     "license": "MIT",
-    "version": "0.3.1",
+    "version": "0.3.2",
     "publisher": "HvyIndustries",
     "engines": {
         "vscode": "^1.8.0"
@@ -34,7 +34,10 @@
         "hvy",
         "productivity",
         "code-completion",
-        "intellisense"
+        "intellisense",
+        "go-to-definition",
+        "definition",
+        "suggestion"
     ],
     "galleryBanner": {
         "theme": "dark",
@@ -126,9 +129,10 @@
     "dependencies": {
         "fstream": "^1.0.9",
         "mkdirp": "^0.5.1",
-        "php-parser": "^2.0.1",
+        "php-parser": "^2.0.2",
         "rimraf": "^2.5.2",
         "unzip": "^0.1.11",
+        "opn": "^4.0.2",
         "vscode-languageclient": "^3.1.0"
     }
 }

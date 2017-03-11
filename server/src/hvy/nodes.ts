@@ -12,7 +12,7 @@
 //      - handle autoloaded files
 
 
-class BaseNode
+export class BaseNode
 {
     constructor(name = "") {
         this.name = name;

@@ -19,8 +19,10 @@ import { TreeBuilder } from "./hvy/treeBuilder";
 import { FileNode, FileSymbolCache, SymbolType, AccessModifierNode, ClassNode } from "./hvy/nodes";
 import { Debug } from './util/Debug';
 import { SuggestionBuilder } from './suggestionBuilder';
+import { DefinitionProvider } from "./providers/definition";
 
 import Storage from './util/Storage';
+import { Files } from "./util/Files";
 
 const util = require('util');
 
@@ -56,13 +58,13 @@ connection.onInitialize((params): InitializeResult =>
     workspaceRoot = params.rootPath;
 
     return {
-        capabilities:
-        {
+        capabilities: {
             textDocumentSync: documents.syncKind,
             completionProvider: {
                 resolveProvider: true,
                 triggerCharacters: ['.', ':', '$', '>', "\\"]
-            }
+            },
+            definitionProvider: true
         }
     }
 });
@@ -127,6 +129,16 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem =>
     //     item.documentation = 'JavaScript documentation'
     // }
     return item;
+});
+
+connection.onDefinition((position, cancellationToken) => {
+    return new Promise((resolve, reject) => {
+        let path = Files.getPathFromUri(position.textDocument.uri);
+        let filenode = getFileNodeFromPath(path);
+        let definitionProvider = new DefinitionProvider(position, path, filenode, workspaceTree);
+        let locations = definitionProvider.findDefinition();
+        resolve(locations);
+    });
 });
 
 var buildObjectTreeForDocument: RequestType<{path:string,text:string}, any, any, any> = new RequestType("buildObjectTreeForDocument");

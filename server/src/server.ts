@@ -133,21 +133,21 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem =>
     return item;
 });
 
-connection.onDefinition((position, cancellationToken) => {
+connection.onDefinition((params, cancellationToken) => {
     return new Promise((resolve, reject) => {
-        let path = Files.getPathFromUri(position.textDocument.uri);
+        let path = Files.getPathFromUri(params.textDocument.uri);
         let filenode = getFileNodeFromPath(path);
-        let definitionProvider = new DefinitionProvider(position, path, filenode, workspaceTree);
+        let definitionProvider = new DefinitionProvider(params, path, filenode, workspaceTree);
         let locations = definitionProvider.findDefinition();
         resolve(locations);
     });
 });
 
-connection.onDocumentSymbol((position, cancellationToken) => {
+connection.onDocumentSymbol((params, cancellationToken) => {
     return new Promise((resolve, reject) => {
-        let path = Files.getPathFromUri(position.textDocument.uri);
+        let path = Files.getPathFromUri(params.textDocument.uri);
         let filenode = getFileNodeFromPath(path);
-        let documentSymbolProvider = new DocumentSymbolProvider(position, filenode);
+        let documentSymbolProvider = new DocumentSymbolProvider(filenode);
         let symbols = documentSymbolProvider.findSymbols();
         resolve(symbols);
     });

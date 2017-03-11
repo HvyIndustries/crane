@@ -23,6 +23,7 @@ import { DefinitionProvider } from "./providers/definition";
 
 import Storage from './util/Storage';
 import { Files } from "./util/Files";
+import { DocumentSymbolProvider } from "./providers/documentSymbol";
 
 const util = require('util');
 
@@ -64,7 +65,8 @@ connection.onInitialize((params): InitializeResult =>
                 resolveProvider: true,
                 triggerCharacters: ['.', ':', '$', '>', "\\"]
             },
-            definitionProvider: true
+            definitionProvider: true,
+            documentSymbolProvider: true
         }
     }
 });
@@ -138,6 +140,16 @@ connection.onDefinition((position, cancellationToken) => {
         let definitionProvider = new DefinitionProvider(position, path, filenode, workspaceTree);
         let locations = definitionProvider.findDefinition();
         resolve(locations);
+    });
+});
+
+connection.onDocumentSymbol((position, cancellationToken) => {
+    return new Promise((resolve, reject) => {
+        let path = Files.getPathFromUri(position.textDocument.uri);
+        let filenode = getFileNodeFromPath(path);
+        let documentSymbolProvider = new DocumentSymbolProvider(position, filenode);
+        let symbols = documentSymbolProvider.findSymbols();
+        resolve(symbols);
     });
 });
 

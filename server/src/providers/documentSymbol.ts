@@ -34,7 +34,17 @@ export class DocumentSymbolProvider
     {
         var toReturn: SymbolInformation[] = [];
 
-        // TODO -- add top level variables, consts, functions, etc
+        this.tree.constants.forEach(constantItem => {
+            toReturn.push(this.buildSymbol(constantItem, SymbolKind.Constant, null));
+        });
+
+        this.tree.functions.forEach(functionItem => {
+            toReturn.push(this.buildSymbol(functionItem, SymbolKind.Function, null));
+        });
+
+        this.tree.topLevelVariables.forEach(variableItem => {
+            toReturn.push(this.buildSymbol(variableItem, SymbolKind.Variable, null));
+        });
 
         this.tree.namespaces.forEach(item => {
             toReturn.push(this.buildSymbol(item, SymbolKind.Namespace, null));

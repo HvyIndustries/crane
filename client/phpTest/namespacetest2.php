@@ -11,6 +11,9 @@ class MyFirstClass
 
 class ExampleClass
 {
+    /**
+     * @var \Hvy\CraneDemo\ConnectionDB
+     */
     public $publicProperty;
     private $privateProperty;
 

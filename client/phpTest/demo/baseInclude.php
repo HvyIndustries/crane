@@ -10,19 +10,39 @@ use Hvy\CraneDemo\ConnectionDB;
 $dbh = new ConnectionDB();
 $dbh->openDbConnection();
 
+
 /**
  * My function
+ * Another line
  *
- * @param string $param1 The first param
- * @param string $param2 The second param
+ * Yet another line
+ * @param string       $param1 The first param
+ * @param ConnectionDB $param2 The second param
  *
  * @return ConnectionDB True or false
  *
- * @throws SomeException
+ * @throws SomeException When this case happens
+ * @throws SomeOtherException When this case happens
  *
- * @deprecated Don't use this anymore
+ * @deprecated Dont use this anymore
  */
-function myFunc()
+function myFunc($param1, $param2)
 {
 
+}
+
+class ThisIsMyClass
+{
+    public function __construct()
+    {
+    }
+
+    /**
+     * Call some function
+     *
+     * @return void
+     */
+    public function callFunc()
+    {
+    }
 }

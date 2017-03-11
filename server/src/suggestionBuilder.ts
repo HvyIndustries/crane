@@ -11,7 +11,8 @@ import { TreeBuilder } from "./hvy/treeBuilder";
 import {
     FileNode,FileSymbolCache, SymbolType,
     AccessModifierNode, ClassNode, TraitNode,
-    MethodNode, NamespaceNode, NamespacePart
+    MethodNode, NamespaceNode, NamespacePart,
+    DocCommentSuggestionInfo, BaseNode, DocComment
 } from "./hvy/nodes";
 import { Files } from "./util/Files";
 import { Namespaces } from "./util/namespaces";
@@ -338,6 +339,55 @@ export class SuggestionBuilder
         return suggestions;
     }
 
+    private getDocCommentInfo(item, defaultType: string = null): DocCommentSuggestionInfo
+    {
+        let type = item.type;
+        let description = "";
+
+        if (defaultType != null) {
+            type = defaultType;
+        }
+
+        if (type == null) {
+            type = "unknown";
+        }
+
+        let docComment:DocComment = item.docComment;
+        if (docComment) {
+            if (docComment.deprecated) {
+                description += "DEPRECATED";
+                if (docComment.deprecatedMessage) {
+                    description += " " + docComment.deprecatedMessage;
+                }
+                description += "\n\n";
+            }
+
+            if (docComment.returns) {
+                type = docComment.returns.type;
+            }
+
+            if (docComment.summary) {
+                description += docComment.summary;
+            }
+
+            if (docComment.throws && docComment.throws.length > 0) {
+                description += "\n";
+                docComment.throws.forEach(throwItem => {
+                    description += `\nThrows ${throwItem.type} (${throwItem.summary})`;
+                });
+            }
+        }
+
+        if (description == "") {
+            description = null;
+        }
+
+        return {
+            type: type,
+            description: description
+        }
+    }
+
     private buildSuggestionsForScope(scope: Scope, options: ScopeOptions) : CompletionItem[]
     {
         var toReturn: CompletionItem[] = [];
@@ -348,24 +398,38 @@ export class SuggestionBuilder
         // TODO -- Include these if the file is included in the current file
         if (options.topConstants) {
             this.currentFileNode.constants.forEach(item => {
-                let value = item.value;
-                if (item.type == "string") {
-                    value = "\"" + value + "\"";
-                }
-                toReturn.push({ label: item.name, kind: CompletionItemKind.Value, detail: `(constant) : ${item.type} : ${value}` });
+                let docInfo = this.getDocCommentInfo(item);
+                toReturn.push({
+                    label: item.name,
+                    kind: CompletionItemKind.Value,
+                    detail: `(constant) : ${docInfo.type}`,
+                    documentation: docInfo.description
+                });
             });
         }
 
         if (options.topVariables) {
             this.currentFileNode.topLevelVariables.forEach(item => {
-                toReturn.push({ label: item.name, kind: CompletionItemKind.Variable, detail: `(variable) : ${item.type}` });
+                let docInfo = this.getDocCommentInfo(item);
+                toReturn.push({
+                    label: item.name,
+                    kind: CompletionItemKind.Variable,
+                    detail: `(variable) : ${docInfo.type}`,
+                    documentation: docInfo.description
+                });
             });
         }
 
         if (options.classes && !options.noNamespaceOnly) {
             this.currentFileNode.namespaceUsings.forEach(item => {
                 if (item.alias != null) {
-                    toReturn.push({ label: item.alias, kind: CompletionItemKind.Class, detail: "(class) " + item.name });
+                    let docInfo = this.getDocCommentInfo(item, item.name);
+                    toReturn.push({
+                        label: item.alias,
+                        kind: CompletionItemKind.Class,
+                        detail: "(class) : " + docInfo.type,
+                        documentation: docInfo.description
+                    });
                 }
             });
         }
@@ -398,20 +462,38 @@ export class SuggestionBuilder
             if (funcs.length > 0) {
                 if (options.localVariables) {
                     funcs[0].scopeVariables.forEach(item => {
-                        toReturn.push({ label: item.name, kind: CompletionItemKind.Variable, detail: `(variable) : ${item.type}` });
+                        let docInfo = this.getDocCommentInfo(item);
+                        toReturn.push({
+                            label: item.name,
+                            kind: CompletionItemKind.Variable,
+                            detail: `(variable) : ${docInfo.type}`,
+                            documentation: docInfo.description
+                        });
                     });
                 }
 
                 if (options.parameters) {
                     funcs[0].params.forEach(item => {
-                        toReturn.push({ label: item.name, kind: CompletionItemKind.Property, detail: `(parameter) : ${item.type}` });
+                        let docInfo = this.getDocCommentInfo(item);
+                        toReturn.push({
+                            label: item.name,
+                            kind: CompletionItemKind.Property,
+                            detail: `(parameter) : ${docInfo.type}`,
+                            documentation: docInfo.description
+                        });
                     });
                 }
 
                 if (options.globalVariables) {
                     funcs[0].globalVariables.forEach(item => {
                         // TODO -- look up original variable to find the type
-                        toReturn.push({ label: item, kind: CompletionItemKind.Variable, detail: `(imported global) : mixed` });
+                        let docInfo = this.getDocCommentInfo(item, "mixed");
+                        toReturn.push({
+                            label: item,
+                            kind: CompletionItemKind.Variable,
+                            detail: `(imported global) : ${docInfo.type}`,
+                            documentation: docInfo.description
+                        });
                     });
                 }
             }
@@ -428,11 +510,13 @@ export class SuggestionBuilder
                     }
 
                     if (include) {
+                        let docInfo = this.getDocCommentInfo(item);
                         toReturn.push({
                             label: item.name,
                             kind: CompletionItemKind.Class,
                             detail: "(class)" + this.getNamespace(item),
-                            insertText: this.getInsertTextWithNamespace(item, options)
+                            insertText: this.getInsertTextWithNamespace(item, options),
+                            documentation: docInfo.description
                         });
                     }
                 });
@@ -448,11 +532,13 @@ export class SuggestionBuilder
                     }
 
                     if (include) {
+                        let docInfo = this.getDocCommentInfo(item);
                         toReturn.push({
                             label: item.name,
                             kind: CompletionItemKind.Interface,
                             detail: "(interface)" + this.getNamespace(item),
-                            insertText: this.getInsertTextWithNamespace(item, options)
+                            insertText: this.getInsertTextWithNamespace(item, options),
+                            documentation: docInfo.description
                         });
                     }
                 });
@@ -468,11 +554,13 @@ export class SuggestionBuilder
                     }
 
                     if (include) {
+                        let docInfo = this.getDocCommentInfo(item);
                         toReturn.push({
                             label: item.name,
                             kind: CompletionItemKind.Class,
                             detail: "(trait)" + this.getNamespace(item),
-                            insertText: this.getInsertTextWithNamespace(item, options)
+                            insertText: this.getInsertTextWithNamespace(item, options),
+                            documentation: docInfo.description
                         });
                     }
                 });
@@ -480,13 +568,26 @@ export class SuggestionBuilder
 
             if (options.topFunctions) {
                 fileNode.functions.forEach(item => {
-                    toReturn.push({ label: item.name, kind: CompletionItemKind.Function,  detail: `(function) : ${item.returns}`, insertText: this.getFunctionInsertText(item) });
+                    let docInfo = this.getDocCommentInfo(item);
+                    toReturn.push({
+                        label: item.name,
+                        kind: CompletionItemKind.Function,
+                        detail: `(function) : ${docInfo.type}`,
+                        insertText: this.getFunctionInsertText(item),
+                        documentation: docInfo.description
+                    });
                 });
             }
 
             if (options.namespaces) {
                 fileNode.namespaces.forEach(item => {
-                    toReturn.push({ label: item.name, kind: CompletionItemKind.Module,  detail: `(namespace)` });
+                    let docInfo = this.getDocCommentInfo(item);
+                    toReturn.push({
+                        label: item.name,
+                        kind: CompletionItemKind.Module,
+                        detail: `(namespace)`,
+                        documentation: docInfo.description
+                    });
                 });
             }
         });
@@ -836,15 +937,17 @@ export class SuggestionBuilder
 
     private addClassMembers(classNode: ClassNode, staticOnly: boolean, includePrivate: boolean, includeProtected: boolean)
     {
-        var toReturn = [];
+        var toReturn: CompletionItem[] = [];
 
         if (staticOnly == true) {
             classNode.constants.forEach((subNode) => {
-                let value = subNode.value;
-                if (subNode.type == "string") {
-                    value = "\"" + value + "\"";
-                }
-                toReturn.push({ label: subNode.name, kind: CompletionItemKind.Value, detail: `(constant) : ${subNode.type} : ${value}` });
+                let docInfo = this.getDocCommentInfo(subNode);
+                toReturn.push({
+                    label: subNode.name,
+                    kind: CompletionItemKind.Value,
+                    detail: `(constant) : ${docInfo.type}`,
+                    documentation: docInfo.description
+                });
             });
         }
 
@@ -852,25 +955,46 @@ export class SuggestionBuilder
             if (subNode.isStatic == staticOnly) {
                 var accessModifier = "(" + this.buildAccessModifierText(subNode.accessModifier);
                 var insertText = this.getFunctionInsertText(subNode);
+                let docInfo = this.getDocCommentInfo(subNode);
 
-                accessModifier = accessModifier + ` method) : ${subNode.returns}`;
+                accessModifier = accessModifier + ` method) : ${docInfo.type}`;
 
                 if (includeProtected && subNode.accessModifier == AccessModifierNode.protected) {
-                    toReturn.push({ label: subNode.name, kind: CompletionItemKind.Function, detail: accessModifier, insertText: insertText });
+                    toReturn.push({
+                        label: subNode.name,
+                        kind: CompletionItemKind.Function,
+                        detail: accessModifier,
+                        insertText: insertText,
+                        documentation: docInfo.description
+                    });
                 }
                 if (includePrivate && subNode.accessModifier == AccessModifierNode.private) {
-                    toReturn.push({ label: subNode.name, kind: CompletionItemKind.Function, detail: accessModifier, insertText: insertText });
+                    toReturn.push({
+                        label: subNode.name,
+                        kind: CompletionItemKind.Function,
+                        detail: accessModifier,
+                        insertText: insertText,
+                        documentation: docInfo.description
+                    });
                 }
                 if (subNode.accessModifier == AccessModifierNode.public) {
-                    toReturn.push({ label: subNode.name, kind: CompletionItemKind.Function, detail: accessModifier, insertText: insertText });
+                    toReturn.push({
+                        label: subNode.name,
+                        kind: CompletionItemKind.Function,
+                        detail: accessModifier,
+                        insertText: insertText,
+                        documentation: docInfo.description
+                    });
                 }
             }
         });
 
         classNode.properties.forEach((subNode) => {
             if (subNode.isStatic == staticOnly) {
-                var accessModifier = "(" + this.buildAccessModifierText(subNode.accessModifier) + ` property) : ${subNode.type}`;
                 var insertText = subNode.name;
+                let docInfo = this.getDocCommentInfo(subNode);
+
+                var accessModifier = "(" + this.buildAccessModifierText(subNode.accessModifier) + ` property) : ${docInfo.type}`;
 
                 if (subNode.isStatic) {
                     // Add a the leading $
@@ -878,13 +1002,31 @@ export class SuggestionBuilder
                 }
 
                 if (includeProtected && subNode.accessModifier == AccessModifierNode.protected) {
-                    toReturn.push({ label: subNode.name, kind: CompletionItemKind.Property, detail: accessModifier, insertText: insertText });
+                    toReturn.push({
+                        label: subNode.name,
+                        kind: CompletionItemKind.Property,
+                        detail: accessModifier,
+                        insertText: insertText,
+                        documentation: docInfo.description
+                    });
                 }
                 if (includePrivate && subNode.accessModifier == AccessModifierNode.private) {
-                    toReturn.push({ label: subNode.name, kind: CompletionItemKind.Property, detail: accessModifier, insertText: insertText });
+                    toReturn.push({
+                        label: subNode.name,
+                        kind: CompletionItemKind.Property,
+                        detail: accessModifier,
+                        insertText: insertText,
+                        documentation: docInfo.description
+                    });
                 }
                 if (subNode.accessModifier == AccessModifierNode.public) {
-                    toReturn.push({ label: subNode.name, kind: CompletionItemKind.Property, detail: accessModifier, insertText: insertText });
+                    toReturn.push({
+                        label: subNode.name,
+                        kind: CompletionItemKind.Property,
+                        detail: accessModifier,
+                        insertText: insertText,
+                        documentation: docInfo.description
+                    });
                 }
             }
         });

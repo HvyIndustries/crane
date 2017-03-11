@@ -30,8 +30,15 @@ export class DocCommentHelper
                 if (item.kind) {
                     switch (item.kind) {
                         case "block":
-                            if (item.name == "var") {
-                                docComment.returns = this.buildReturn(item, tree, item.options[0].value);
+                            if (item.name == "var" && item.options) {
+                                var typeName = "";
+                                item.options.forEach(namePart => {
+                                    typeName += "\\" + namePart.value;
+                                });
+                                if (typeName != "" && typeName.charAt(0) == "\\") {
+                                    typeName = typeName.substring(1, typeName.length);
+                                }
+                                docComment.returns = this.buildReturn(item, tree, typeName);
                             }
                             break;
 
@@ -61,17 +68,31 @@ export class DocCommentHelper
 
     private buildParam(item, tree): DocCommentParam
     {
-        return null;
+        var param = new DocCommentParam("$" + item.name, null, item.description);
+        param.type = item.type.name;
+
+        if (this.scalarTypes.indexOf(param.type) == -1) {
+            param.type = Namespaces.getFQNFromClassname(param.type, tree);
+        }
+
+        return param;
     }
 
     private buildThrows(item, tree): DocCommentParam
     {
-        return null;
+        var param = new DocCommentParam(null, null, item.description);
+        param.type = item.what.name;
+
+        if (this.scalarTypes.indexOf(param.type) == -1) {
+            param.type = Namespaces.getFQNFromClassname(param.type, tree);
+        }
+
+        return param;
     }
 
     private buildReturn(item, tree, type = null): DocCommentParam
     {
-        if (type == null) {
+        if (type == null || type == "") {
             type = item.what.name;
         }
 
@@ -79,6 +100,10 @@ export class DocCommentHelper
 
         if (item.description) {
             returns.summary = item.description;
+        }
+
+        if (returns.type == null) {
+            return null;
         }
 
         if (this.scalarTypes.indexOf(returns.type) == -1) {

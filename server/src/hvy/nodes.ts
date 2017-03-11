@@ -245,3 +245,9 @@ export class SymbolCache
     public file: string;
     public line: number;
 }
+
+export interface DocCommentSuggestionInfo
+{
+    type: string;
+    description: string;
+}

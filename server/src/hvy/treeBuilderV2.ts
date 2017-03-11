@@ -33,7 +33,7 @@ var docReader = new docParser();
 export class TreeBuilderV2
 {
     private tree: FileNode;
-    private lastDocComment = null;
+    private lastDocComment: DocComment = null;
 
     public processBranch(branch, tree: FileNode, parent) : FileNode
     {
@@ -222,7 +222,16 @@ export class TreeBuilderV2
                 }
             }
 
+            this.buildDocCommentForNode(node);
             context.push(node);
+        }
+    }
+
+    private buildDocCommentForNode(node)
+    {
+        if (this.lastDocComment && (node.startPos.line == (this.lastDocComment.endPos.line + 1))) {
+            node.docComment = this.lastDocComment;
+            this.lastDocComment = null;
         }
     }
 
@@ -263,6 +272,7 @@ export class TreeBuilderV2
         interfaceNode.startPos = this.buildPosition(branch.loc.start);
         interfaceNode.endPos = this.buildPosition(branch.loc.end);
 
+        this.buildDocCommentForNode(interfaceNode);
         context.push(interfaceNode);
     }
 
@@ -293,6 +303,7 @@ export class TreeBuilderV2
         traitNode.startPos = this.buildPosition(branch.loc.start);
         traitNode.endPos = this.buildPosition(branch.loc.end);
 
+        this.buildDocCommentForNode(traitNode);
         context.push(traitNode);
     }
 
@@ -326,6 +337,7 @@ export class TreeBuilderV2
         classNode.startPos = this.buildPosition(branch.loc.start);
         classNode.endPos = this.buildPosition(branch.loc.end);
 
+        this.buildDocCommentForNode(classNode);
         context.push(classNode);
     }
 
@@ -342,10 +354,6 @@ export class TreeBuilderV2
 
             case "classconstant":
                 this.buildConstant(branch, classNode.constants);
-                break;
-
-            case "doc":
-                this.buildDocComment(branch, classNode);
                 break;
 
             case "method":
@@ -382,6 +390,7 @@ export class TreeBuilderV2
 
         propNode.accessModifier = this.getVisibility(branch.visibility);
 
+        this.buildDocCommentForNode(propNode);
         classNode.properties.push(propNode);
     }
 
@@ -399,12 +408,8 @@ export class TreeBuilderV2
             constNode.value = branch.value.value;
         }
 
+        this.buildDocCommentForNode(constNode);
         context.push(constNode);
-    }
-
-    private buildDocComment(branch, classNode: ClassNode)
-    {
-        // TODO
     }
 
     private buildMethodOrConstructor(branch, classNode: ClassNode)
@@ -426,6 +431,7 @@ export class TreeBuilderV2
 
         this.buildMethodCore(constructorNode, branch);
 
+        this.buildDocCommentForNode(constructorNode);
         classNode.construct = constructorNode;
     }
 
@@ -441,6 +447,7 @@ export class TreeBuilderV2
 
         methodNode.accessModifier = this.getVisibility(branch.visibility);
 
+        this.buildDocCommentForNode(methodNode);
         context.push(methodNode);
     }
 

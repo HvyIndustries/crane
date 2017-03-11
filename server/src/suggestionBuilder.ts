@@ -289,7 +289,7 @@ export class SuggestionBuilder
             }
 
             options.includeLeadingSlash = false;
-            return this.buildSuggestionsForScope(scope, options);
+            suggestions.concat(this.buildSuggestionsForScope(scope, options));
         }
 
         let parent = namespaces;

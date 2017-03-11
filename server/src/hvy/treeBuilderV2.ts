@@ -261,6 +261,11 @@ export class TreeBuilderV2
             });
         }
 
+        interfaceNode.startPos = this.buildPosition(branch.loc.start);
+        interfaceNode.endPos = this.buildPosition(branch.loc.end);
+
+        this.buildDocCommentForNode(interfaceNode);
+
         if (branch.body) {
             branch.body.forEach(interfaceBodyBranch => {
                 switch (interfaceBodyBranch.kind) {
@@ -273,11 +278,6 @@ export class TreeBuilderV2
                 }
             });
         }
-
-        interfaceNode.startPos = this.buildPosition(branch.loc.start);
-        interfaceNode.endPos = this.buildPosition(branch.loc.end);
-
-        this.buildDocCommentForNode(interfaceNode);
         context.push(interfaceNode);
     }
 
@@ -299,16 +299,16 @@ export class TreeBuilderV2
             });
         }
 
+        traitNode.startPos = this.buildPosition(branch.loc.start);
+        traitNode.endPos = this.buildPosition(branch.loc.end);
+
+        this.buildDocCommentForNode(traitNode);
+
         if (branch.body) {
             branch.body.forEach(classBodyBranch => {
                 this.buildClassBody(classBodyBranch, traitNode);
             });
         }
-
-        traitNode.startPos = this.buildPosition(branch.loc.start);
-        traitNode.endPos = this.buildPosition(branch.loc.end);
-
-        this.buildDocCommentForNode(traitNode);
         context.push(traitNode);
     }
 
@@ -333,16 +333,16 @@ export class TreeBuilderV2
         classNode.isAbstract = branch.isAbstract;
         classNode.isFinal = branch.isFinal;
 
+        classNode.startPos = this.buildPosition(branch.loc.start);
+        classNode.endPos = this.buildPosition(branch.loc.end);
+
+        this.buildDocCommentForNode(classNode);
+
         if (branch.body) {
             branch.body.forEach(classBodyBranch => {
                 this.buildClassBody(classBodyBranch, classNode);
             });
         }
-
-        classNode.startPos = this.buildPosition(branch.loc.start);
-        classNode.endPos = this.buildPosition(branch.loc.end);
-
-        this.buildDocCommentForNode(classNode);
         context.push(classNode);
     }
 

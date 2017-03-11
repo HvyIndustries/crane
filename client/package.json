@@ -34,7 +34,10 @@
         "hvy",
         "productivity",
         "code-completion",
-        "intellisense"
+        "intellisense",
+        "go-to-definition",
+        "definition",
+        "suggestion"
     ],
     "galleryBanner": {
         "theme": "dark",

@@ -15,12 +15,10 @@ const fs = require('fs');
 
 export class DocumentSymbolProvider
 {
-    private positionInfo: DocumentSymbolParams;
     private tree: FileNode;
 
-    constructor(positionInfo: DocumentSymbolParams, tree: FileNode)
+    constructor(tree: FileNode)
     {
-        this.positionInfo = positionInfo;
         this.tree = tree;
     }
 

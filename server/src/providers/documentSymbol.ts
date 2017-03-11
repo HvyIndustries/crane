@@ -6,7 +6,7 @@
 
 'use strict';
 
-import { DocumentSymbolParams, Location, Range, SymbolInformation, SymbolKind } from 'vscode-languageserver';
+import { Location, SymbolInformation, SymbolKind } from 'vscode-languageserver';
 import { FileNode, BaseNode, PositionInfo } from "../hvy/nodes";
 import { Namespaces } from "../util/namespaces";
 import { Files } from "../util/Files";

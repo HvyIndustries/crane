@@ -15,9 +15,19 @@ const fs = require('fs');
 export class DocumentSymbolProvider
 {
     private tree: FileNode;
+    private query: string;
 
-    constructor(tree: FileNode)
+    constructor(tree: FileNode, query: string = null)
     {
+        if (query == "") {
+            query = null;
+        }
+
+        if (query != null) {
+            query = query.toLowerCase();
+        }
+
+        this.query = query;
         this.tree = tree;
     }
 
@@ -32,33 +42,33 @@ export class DocumentSymbolProvider
         var toReturn: SymbolInformation[] = [];
 
         this.tree.constants.forEach(constantItem => {
-            toReturn.push(this.buildSymbol(constantItem, SymbolKind.Constant, null));
+            this.addSymbol(toReturn, constantItem, SymbolKind.Constant, null);
         });
 
         this.tree.functions.forEach(functionItem => {
-            toReturn.push(this.buildSymbol(functionItem, SymbolKind.Function, null));
+            this.addSymbol(toReturn, functionItem, SymbolKind.Function, null);
         });
 
         this.tree.topLevelVariables.forEach(variableItem => {
-            toReturn.push(this.buildSymbol(variableItem, SymbolKind.Variable, null));
+            this.addSymbol(toReturn, variableItem, SymbolKind.Variable, null);
         });
 
         this.tree.namespaces.forEach(item => {
-            toReturn.push(this.buildSymbol(item, SymbolKind.Namespace, null));
+            this.addSymbol(toReturn, item, SymbolKind.Namespace, null);
         });
 
         this.tree.classes.forEach(classItem => {
-            toReturn.push(this.buildSymbol(classItem, SymbolKind.Class, classItem.namespace));
+            this.addSymbol(toReturn, classItem, SymbolKind.Class, classItem.namespace);
             this.buildClassTraitInterfaceBody(classItem, toReturn);
         });
 
         this.tree.traits.forEach(traitItem => {
-            toReturn.push(this.buildSymbol(traitItem, SymbolKind.Class, traitItem.namespace));
+            this.addSymbol(toReturn, traitItem, SymbolKind.Class, traitItem.namespace);
             this.buildClassTraitInterfaceBody(traitItem, toReturn);
         });
 
         this.tree.interfaces.forEach(interfaceItem => {
-            toReturn.push(this.buildSymbol(interfaceItem, SymbolKind.Interface, interfaceItem.namespace));
+            this.addSymbol(toReturn, interfaceItem, SymbolKind.Interface, interfaceItem.namespace);
             this.buildClassTraitInterfaceBody(interfaceItem, toReturn);
         });
 
@@ -69,39 +79,69 @@ export class DocumentSymbolProvider
     {
         if (item.constants) {
             item.constants.forEach(constant => {
-                toReturn.push(this.buildSymbol(constant, SymbolKind.Constant, item.name));
+                this.addSymbol(toReturn, constant, SymbolKind.Constant, item.name);
             });
         }
 
         if (item.properties) {
             item.properties.forEach(property => {
-                toReturn.push(this.buildSymbol(property, SymbolKind.Property, item.name, "$" + property.name));
+                this.addSymbol(toReturn, property, SymbolKind.Property, item.name, "$" + property.name);
             });
         }
 
         if (item.methods) {
             item.methods.forEach(method => {
-                toReturn.push(this.buildSymbol(method, SymbolKind.Method, item.name));
+                this.addSymbol(toReturn, method, SymbolKind.Method, item.name);
             });
         }
 
         if (item.construct) {
-            toReturn.push(this.buildSymbol(item.construct, SymbolKind.Constructor, item.name));
+            this.addSymbol(toReturn, item.construct, SymbolKind.Constructor, item.name);
         }
     }
 
-    private buildSymbol(item: BaseNode, kind: SymbolKind, parent: string, name: string = null): SymbolInformation
+    private queryMatch(name: string)
+    {
+        if (this.query == null) {
+            return true;
+        }
+
+        name = name.toLowerCase();
+
+        if (name == this.query || name.indexOf(this.query) > -1) {
+            return true;
+        }
+
+        // Support fuzzy searching
+        // If the name contains all of the chars in the query, also return true
+        let nameChars = name.split("");
+        let queryChars = this.query.split("");
+
+        // Note the "!" to reverse the result of some()
+        // some() will return true if a query char is not found in the name
+        let matchFound = !queryChars.some(char => {
+            return nameChars.indexOf(char) == -1;
+        });
+
+        return matchFound;
+    }
+
+    private addSymbol(toReturn:SymbolInformation[], item: BaseNode, kind: SymbolKind, parent: string, name: string = null)
     {
         if (!name) {
             name = item.name
         }
 
-        return {
+        if (!this.queryMatch(name)) {
+            return;
+        }
+
+        toReturn.push({
             name: name,
             containerName: parent,
             kind: kind,
             location: this.buildLocation(item.startPos, item.endPos)
-        };
+        });
     }
 
     private buildLocation(startPos: PositionInfo, endPos: PositionInfo): Location

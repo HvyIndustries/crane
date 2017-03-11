@@ -22,7 +22,7 @@ export class DocumentSymbolProvider
         this.tree = tree;
     }
 
-    public findSymbols(): SymbolInformation | SymbolInformation[]
+    public findSymbols(): SymbolInformation[]
     {
         // Loop round current filenode
         return this.buildSymbolInformation();

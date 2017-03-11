@@ -1,14 +1,14 @@
 <?php
-ini_set('display_errors',1);
-error_reporting(E_ALL);
+
+namespace Hvy\CraneDemo;
 
 class ConnectionDB
 {
-
     private $dbhost = "localhost";
     private $dbuser = "user";
     private $dbpass = "pass";
     private $dbname = "dbname";
+
     /** @var PDO */
     public $conn;
 
@@ -16,7 +16,7 @@ class ConnectionDB
     {
         try
         {
-            $this->dbhost;
+            $this->dbhost = "127.0.0.1";
             $this->conn = new PDO("mysql:host=$this->dbhost;dbname=$this->dbname;", $this->dbuser, $this->dbpass, array(PDO::MYSQL_ATTR_INIT_COMMAND =>  "SET NAMES 'UTF8'"));
             $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         }

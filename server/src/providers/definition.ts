@@ -59,7 +59,7 @@ export class DefinitionProvider
         // TODO -- find a way to read the text from vscode, instead of from the file
         // this will allow unsaved edits to work here
         var text:string = fs.readFileSync(this.path, { encoding: 'utf8' });
-        var lines = text.split("\n");
+        var lines = text.split(/\r\n|\r|\n/gm);
 
         let lineNum = this.positionInfo.position.line;
         let charNum = this.positionInfo.position.character;
@@ -100,12 +100,12 @@ export class DefinitionProvider
     {
         let string = "";
 
-        for (var i = (line.length - 1); i > 0; i--) {
+        for (var i = (line.length - 1); i > -1; i--) {
             var char = line[i];
-            if (/\w/.test(char) || char == "\\") {
+            if (/\w/.test(char) || char == "\\" || char == "$" || char == ">" || char == ":") {
                 string = char + string;
             } else {
-                i = 0;
+                i = -1;
             }
         }
 

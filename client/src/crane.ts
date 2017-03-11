@@ -186,8 +186,8 @@ export default class Crane
         message += 'VSCode Version : ' + vsCodeVersion + '\n';
         message += 'Crane Version : ' + Config.version + '\n';
         message += '---\n\n';
-        message += 'Please explain here what you intended to do, the expected behaviour, and the observed results or errors.\n\n';
-        message += 'In order to help us to fix it, try to explain how to reproduce the error, and give us code samples that can help us to reproduce the same behaviour';
+        message += '_Please explain here what you intended to do, the expected behaviour, and the observed results or errors._\n\n';
+        message += '_In order to help us to fix it, try to explain how to reproduce the error, and give us code samples that can help us to reproduce the same behaviour_';
         Crane.openLinkInBrowser(
             "https://github.com/HvyIndustries/crane/issues/new", {
                 body: message

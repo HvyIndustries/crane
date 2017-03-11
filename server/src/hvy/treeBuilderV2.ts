@@ -40,7 +40,7 @@ export class TreeBuilderV2
         } else {
             switch (branch.kind) {
                 case "namespace":
-                    tree.namespaces.push(new NamespaceNode(branch.name));
+                    this.buildNamespaceDeclaration(branch, tree);
                     this.processBranch(branch.children, tree, branch);
                     break;
 
@@ -143,6 +143,14 @@ export class TreeBuilderV2
                 nsPart.children.push(part);
             }
         }
+    }
+
+    private buildNamespaceDeclaration(branch, context: FileNode)
+    {
+        let namespace = new NamespaceNode(branch.name);
+        namespace.startPos = this.buildPosition(branch.loc.start);
+        namespace.endPos = this.buildPosition(branch.loc.end);
+        context.namespaces.push(namespace);
     }
 
     private buildfileInclude(branch, context: FileNode)

@@ -31,15 +31,17 @@ export class Files
     public static getUriFromPath(path: string) : string
     {
         path = path.replace(":", "%3A");
+        let pathStart = "file://";
 
         // Handle Windows paths with backslashes
         switch (process.platform) {
             case 'win32':
                 path = path.replace(/\\/g, "\/");
+                pathStart = "file:///";
                 break;
         }
 
-        path = "file:///" + path;
+        path = pathStart + path;
 
         return path;
     }

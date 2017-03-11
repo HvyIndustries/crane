@@ -223,6 +223,11 @@ export class TreeBuilderV2
             }
 
             this.buildDocCommentForNode(node);
+
+            if (node.docComment && node.docComment.returns && node.docComment.returns.type) {
+                node.type = node.docComment.returns.type;
+            }
+
             context.push(node);
         }
     }
@@ -431,7 +436,6 @@ export class TreeBuilderV2
 
         this.buildMethodCore(constructorNode, branch);
 
-        this.buildDocCommentForNode(constructorNode);
         classNode.construct = constructorNode;
     }
 
@@ -447,7 +451,6 @@ export class TreeBuilderV2
 
         methodNode.accessModifier = this.getVisibility(branch.visibility);
 
-        this.buildDocCommentForNode(methodNode);
         context.push(methodNode);
     }
 
@@ -457,8 +460,9 @@ export class TreeBuilderV2
 
         node.startPos = this.buildPosition(branch.loc.start);
         node.endPos = this.buildPosition(branch.loc.end);
+        this.buildDocCommentForNode(node);
 
-        node.params = this.buildFunctionArguments(branch.arguments);
+        node.params = this.buildFunctionArguments(branch.arguments, node);
 
         if (branch.body && branch.body.children) {
             branch.body.children.forEach(child => {
@@ -491,7 +495,7 @@ export class TreeBuilderV2
         }
     }
 
-    private buildFunctionArguments(methodArguments)
+    private buildFunctionArguments(methodArguments, node: MethodNode)
     {
         let args = new Array<ParameterNode>();
 
@@ -512,6 +516,17 @@ export class TreeBuilderV2
 
             if (item.type) {
                 arg.type = item.type.name;
+            }
+
+            if (node.docComment && node.docComment.params.length > 0) {
+                node.docComment.params.some(param => {
+                    if (param.name == arg.name) {
+                        arg.type = param.type;
+                        arg.docType = param.type;
+                        arg.docDescription = param.summary;
+                        return true;
+                    }
+                });
             }
 
             args.push(arg);

@@ -71,6 +71,10 @@ export class DocCommentHelper
         var param = new DocCommentParam("$" + item.name, null, item.description);
         param.type = item.type.name;
 
+        if (param.type == null) {
+            return null;
+        }
+
         if (this.scalarTypes.indexOf(param.type) == -1) {
             param.type = Namespaces.getFQNFromClassname(param.type, tree);
         }
@@ -93,6 +97,10 @@ export class DocCommentHelper
     private buildReturn(item, tree, type = null): DocCommentParam
     {
         if (type == null || type == "") {
+            if (item.what == null) {
+                return null;
+            }
+
             type = item.what.name;
         }
 

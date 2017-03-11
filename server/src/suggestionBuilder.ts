@@ -320,17 +320,35 @@ export class SuggestionBuilder
             this.workspaceTree.forEach(fileNode => {
                 fileNode.classes.forEach(classNode => {
                     if (classNode.namespace == namespaceToSearch) {
-                        suggestions.push({ label: classNode.name, kind: CompletionItemKind.Class, detail: "(class)" });
+                        let docInfo = this.getDocCommentInfo(classNode);
+                        suggestions.push({
+                            label: classNode.name,
+                            kind: CompletionItemKind.Class,
+                            detail: "(class)",
+                            documentation: docInfo.description
+                        });
                     }
                 });
                 fileNode.traits.forEach(traitNode => {
                     if (traitNode.namespace == namespaceToSearch) {
-                        suggestions.push({ label: traitNode.name, kind: CompletionItemKind.Class, detail: "(trait)" });
+                        let docInfo = this.getDocCommentInfo(traitNode);
+                        suggestions.push({
+                            label: traitNode.name,
+                            kind: CompletionItemKind.Class,
+                            detail: "(trait)",
+                            documentation: docInfo.description
+                        });
                     }
                 });
                 fileNode.interfaces.forEach(interfaceNode => {
                     if (interfaceNode.namespace == namespaceToSearch) {
-                        suggestions.push({ label: interfaceNode.name, kind: CompletionItemKind.Interface, detail: "(interface)" });
+                        let docInfo = this.getDocCommentInfo(interfaceNode);
+                        suggestions.push({
+                            label: interfaceNode.name,
+                            kind: CompletionItemKind.Interface,
+                            detail: "(interface)",
+                            documentation: docInfo.description
+                        });
                     }
                 });
             });
@@ -569,10 +587,11 @@ export class SuggestionBuilder
             if (options.topFunctions) {
                 fileNode.functions.forEach(item => {
                     let docInfo = this.getDocCommentInfo(item);
+                    let detail = this.getFunctionParamInfo(docInfo, item);
                     toReturn.push({
                         label: item.name,
                         kind: CompletionItemKind.Function,
-                        detail: `(function) : ${docInfo.type}`,
+                        detail: detail,
                         insertText: this.getFunctionInsertText(item),
                         documentation: docInfo.description
                     });
@@ -593,6 +612,34 @@ export class SuggestionBuilder
         });
 
         return toReturn;
+    }
+
+    private getFunctionParamInfo(docInfo: DocCommentSuggestionInfo, item: MethodNode) {
+        let detail = ": " + docInfo.type;
+
+        let params: string[] = [];
+
+        item.params.forEach(item => {
+            let type = item.docType;
+
+            if (type != null && type != "") {
+                type += " ";
+            }
+
+            let itemInfo = type + item.name;
+
+            if (item.optional) {
+                itemInfo = "[" + itemInfo + "]";
+            }
+
+            params.push(itemInfo);
+        });
+
+        if (params.length > 0) {
+            let joinedParams = params.join(", ");
+            detail = "(" + joinedParams + ") : " + docInfo.type;
+        }
+        return detail;
     }
 
     private getInsertTextWithNamespace(node, options: ScopeOptions): string
@@ -953,38 +1000,26 @@ export class SuggestionBuilder
 
         classNode.methods.forEach((subNode) => {
             if (subNode.isStatic == staticOnly) {
-                var accessModifier = "(" + this.buildAccessModifierText(subNode.accessModifier);
                 var insertText = this.getFunctionInsertText(subNode);
                 let docInfo = this.getDocCommentInfo(subNode);
+                let detail = this.getFunctionParamInfo(docInfo, subNode);
 
-                accessModifier = accessModifier + ` method) : ${docInfo.type}`;
+                var returnObject = {
+                    label: subNode.name,
+                    kind: CompletionItemKind.Function,
+                    detail: detail,
+                    insertText: insertText,
+                    documentation: docInfo.description
+                }
 
                 if (includeProtected && subNode.accessModifier == AccessModifierNode.protected) {
-                    toReturn.push({
-                        label: subNode.name,
-                        kind: CompletionItemKind.Function,
-                        detail: accessModifier,
-                        insertText: insertText,
-                        documentation: docInfo.description
-                    });
+                    toReturn.push(returnObject);
                 }
                 if (includePrivate && subNode.accessModifier == AccessModifierNode.private) {
-                    toReturn.push({
-                        label: subNode.name,
-                        kind: CompletionItemKind.Function,
-                        detail: accessModifier,
-                        insertText: insertText,
-                        documentation: docInfo.description
-                    });
+                    toReturn.push(returnObject);
                 }
                 if (subNode.accessModifier == AccessModifierNode.public) {
-                    toReturn.push({
-                        label: subNode.name,
-                        kind: CompletionItemKind.Function,
-                        detail: accessModifier,
-                        insertText: insertText,
-                        documentation: docInfo.description
-                    });
+                    toReturn.push(returnObject);
                 }
             }
         });

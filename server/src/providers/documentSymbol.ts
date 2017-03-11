@@ -166,9 +166,3 @@ export class DocumentSymbolProvider
         };
     }
 }
-
-interface NodeInfo
-{
-    path: string;
-    node: BaseNode;
-}

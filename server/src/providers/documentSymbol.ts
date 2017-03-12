@@ -41,19 +41,9 @@ export class DocumentSymbolProvider
     {
         var toReturn: SymbolInformation[] = [];
 
-        for (let i = 0, l = this.tree.constants.length; i < l; i++) {
-            var constantItem = this.tree.constants[i];
-            this.addSymbol(toReturn, constantItem, SymbolKind.Constant, null);
-        }
-
         for (let i = 0, l = this.tree.functions.length; i < l; i++) {
             var functionItem = this.tree.functions[i];
             this.addSymbol(toReturn, functionItem, SymbolKind.Function, null);
-        }
-
-        for (let i = 0, l = this.tree.topLevelVariables.length; i < l; i++) {
-            var variableItem = this.tree.topLevelVariables[i];
-            this.addSymbol(toReturn, variableItem, SymbolKind.Variable, null);
         }
 
         for (let i = 0, l = this.tree.namespaces.length; i < l; i++) {

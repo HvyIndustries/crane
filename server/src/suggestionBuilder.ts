@@ -614,8 +614,6 @@ export class SuggestionBuilder
 
     private getScope() : Scope
     {
-        var scope = null;
-
         // Are we inside a class?
         for (var i = 0, l:number = this.currentFileNode.classes.length; i < l; i++) {
             let classNode = this.currentFileNode.classes[i];
@@ -623,8 +621,7 @@ export class SuggestionBuilder
             if (this.withinBlock(classNode)) {
                 if (classNode.construct != null) {
                     if (this.withinBlock(classNode.construct)) {
-                        scope = new Scope(ScopeLevel.Class, "constructor", classNode.name);
-                        break;
+                        return new Scope(ScopeLevel.Class, "constructor", classNode.name);
                     }
                 }
 
@@ -632,17 +629,11 @@ export class SuggestionBuilder
                     let method = classNode.methods[j];
 
                     if (this.withinBlock(method)) {
-                        scope = new Scope(ScopeLevel.Class, method.name, classNode.name);
-                        // Break out of both nested for loops
-                        i = l;
-                        break;
+                        return new Scope(ScopeLevel.Class, method.name, classNode.name);
                     }
                 }
 
-                if (scope == null) {
-                    scope = new Scope(ScopeLevel.Class, null, classNode.name);
-                    break;
-                }
+                return new Scope(ScopeLevel.Class, null, classNode.name);
             }
         }
 
@@ -653,8 +644,7 @@ export class SuggestionBuilder
             if (this.withinBlock(trait)) {
                 if (trait.construct != null) {
                     if (this.withinBlock(trait.construct)) {
-                        scope = new Scope(ScopeLevel.Trait, "constructor", trait.name);
-                        break;
+                        return new Scope(ScopeLevel.Trait, "constructor", trait.name);
                     }
                 }
 
@@ -662,17 +652,11 @@ export class SuggestionBuilder
                     let method = trait.methods[j];
 
                     if (this.withinBlock(method)) {
-                        scope = new Scope(ScopeLevel.Trait, method.name, trait.name);
-                        // Break out of both nested for loops
-                        i = l;
-                        break;
+                        return new Scope(ScopeLevel.Trait, method.name, trait.name);
                     }
                 }
 
-                if (scope == null) {
-                    scope = new Scope(ScopeLevel.Trait, null, trait.name);
-                    break;
-                }
+                return new Scope(ScopeLevel.Trait, null, trait.name);
             }
         }
 
@@ -681,8 +665,7 @@ export class SuggestionBuilder
             let item = this.currentFileNode.interfaces[i];
 
             if (this.withinBlock(item)) {
-                scope = new Scope(ScopeLevel.Interface, null, item.name);
-                break;
+                return new Scope(ScopeLevel.Interface, null, item.name);
             }
         }
 
@@ -691,17 +674,12 @@ export class SuggestionBuilder
             let func = this.currentFileNode.functions[i];
 
             if (this.withinBlock(func)) {
-                scope = new Scope(ScopeLevel.Root, func.name, null);
-                break;
+                return new Scope(ScopeLevel.Root, func.name, null);
             }
         }
 
-        if (scope == null) {
-            // Must be at the top level of a file
-            return new Scope(ScopeLevel.Root, null, null);
-        } else {
-            return scope;
-        }
+        // Must be at the top level of a file
+        return new Scope(ScopeLevel.Root, null, null);
     }
 
     private withinBlock(block) : boolean
@@ -720,8 +698,6 @@ export class SuggestionBuilder
 
     private getClassNodeFromTree(className: string) : ClassNode
     {
-        var toReturn = null;
-
         let namespaceInfo = Namespaces.getNamespaceInfoFromFQNClassname(className);
         var namespace = namespaceInfo.namespace;
         var rawClassname = namespaceInfo.classname
@@ -736,18 +712,14 @@ export class SuggestionBuilder
                     classNode.name.toLowerCase() == rawClassname.toLowerCase()
                     && classNode.namespace == namespace
                 ) {
-                    toReturn = classNode;
+                    return classNode;
                 }
             }
         }
-
-        return toReturn;
     }
 
     private getTraitNodeFromTree(traitName: string) : TraitNode
     {
-        var toReturn = null;
-
         let namespaceInfo = Namespaces.getNamespaceInfoFromFQNClassname(traitName);
         var namespace = namespaceInfo.namespace;
         var rawTraitname = namespaceInfo.classname
@@ -762,12 +734,10 @@ export class SuggestionBuilder
                     traitNode.name.toLowerCase() == rawTraitname.toLowerCase()
                     && traitNode.namespace == namespace
                 ) {
-                    toReturn = traitNode;
+                    return traitNode;
                 }
             }
         }
-
-        return toReturn;
     }
 
     private buildAccessModifierText(modifier: number) : string
@@ -789,7 +759,6 @@ export class SuggestionBuilder
 
     private checkAccessorAndAddMembers(scope: Scope) : CompletionItem[]
     {
-        var toReturn: CompletionItem[] = [];
         var rawParts = this.currentLine.trim().match(/\$\S*(?=->)/gm);
         var parts: string[] = [];
 
@@ -825,28 +794,25 @@ export class SuggestionBuilder
                 let classNode = this.currentFileNode.classes[i];
 
                 if (this.withinBlock(classNode)) {
-                    toReturn = this.addClassMembers(classNode, false, true, true);
+                    return this.addClassMembers(classNode, false, true, true);
                 }
             }
 
             for (var i = 0, l:number = this.currentFileNode.traits.length; i < l; i++) {
                 let traitNode = this.currentFileNode.traits[i];
                 if (this.withinBlock(traitNode)) {
-                    toReturn = this.addClassMembers(traitNode, false, true, true);
+                    return this.addClassMembers(traitNode, false, true, true);
                 }
             }
-        } else {
-            // We're probably calling from a instantiated variable
-            // Check the variable is in scope to work out which suggestions to provide
-            toReturn = this.checkForInstantiatedVariableAndAddSuggestions(parts[last], scope);
         }
 
-        return toReturn;
+        // We're probably calling from a instantiated variable
+        // Check the variable is in scope to work out which suggestions to provide
+        return this.checkForInstantiatedVariableAndAddSuggestions(parts[last], scope);
     }
 
     private checkForInstantiatedVariableAndAddSuggestions(variableName: string, scope: Scope) : CompletionItem[]
     {
-        var toReturn = [];
         var variablesFound = [];
 
         // Check the scope paramater to find out where we're calling from
@@ -934,11 +900,11 @@ export class SuggestionBuilder
 
             var classNode = this.getClassNodeFromTree(className);
             if (classNode != null) {
-                toReturn = this.addClassMembers(classNode, false, false, false);
+                return this.addClassMembers(classNode, false, false, false);
             }
         }
 
-        return toReturn;
+        return [];
     }
 
     private addClassMembers(classNode: ClassNode, staticOnly: boolean, includePrivate: boolean, includeProtected: boolean)

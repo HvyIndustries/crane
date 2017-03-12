@@ -94,13 +94,19 @@ export class SuggestionBuilder
                 }
             } else {
                 // Probably accessing via [ClassName]::
-                var classNames = this.currentLine.trim().match(/\S(\B[a-z]+?)(?=::)/ig);
-                if (classNames && classNames.length > 0) {
-                    var className = classNames[classNames.length - 1];
-                    var classNode = this.getClassNodeFromTree(className);
-                    if (classNode != null) {
-                        // Add static members for this class
-                        toReturn = toReturn.concat(this.addClassMembers(classNode, true, false, false));
+                if (this.currentLine.indexOf("::") > -1) {
+                    var classNames = this.currentLine.trim().match(/\S(\B[\\a-z0-9]+)/ig);
+                    if (classNames && classNames.length > 0) {
+                        var determinedClassname = classNames[classNames.length - 1];
+                        if (determinedClassname.indexOf("\\") > -1) {
+                            determinedClassname = "\\" + determinedClassname;
+                        }
+                        var className = Namespaces.getFQNFromClassname(determinedClassname, this.currentFileNode);
+                        var classNode = this.getClassNodeFromTree(className);
+                        if (classNode != null) {
+                            // Add static members for this class
+                            toReturn = toReturn.concat(this.addClassMembers(classNode, true, false, false));
+                        }
                     }
                 }
             }

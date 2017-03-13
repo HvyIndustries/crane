@@ -119,8 +119,11 @@ export class DefinitionProvider
 
         var toReturn = [];
 
-        this.workspaceTree.forEach(filenode => {
-            filenode.classes.forEach((classNode) => {
+        for (var i = 0, l = this.workspaceTree.length; i < l; i++) {
+            var filenode = this.workspaceTree[i];
+
+            for (var j = 0, sl = filenode.classes.length; j < sl; j++) {
+                var classNode = filenode.classes[j];
                 if (
                     classNode.name.toLowerCase() == rawClassname.toLowerCase()
                     && classNode.namespace == namespace
@@ -132,8 +135,10 @@ export class DefinitionProvider
 
                     toReturn.push(nodeInfo);
                 }
-            });
-            filenode.traits.forEach((traitNode) => {
+            }
+
+            for (var j = 0, sl = filenode.traits.length; j < sl; j++) {
+                var traitNode = filenode.traits[j];
                 if (
                     traitNode.name.toLowerCase() == rawClassname.toLowerCase()
                     && traitNode.namespace == namespace
@@ -145,8 +150,10 @@ export class DefinitionProvider
 
                     toReturn.push(nodeInfo);
                 }
-            });
-            filenode.interfaces.forEach((interfaceNode) => {
+            }
+
+            for (var j = 0, sl = filenode.interfaces.length; j < sl; j++) {
+                var interfaceNode = filenode.interfaces[j];
                 if (
                     interfaceNode.name.toLowerCase() == rawClassname.toLowerCase()
                     && interfaceNode.namespace == namespace
@@ -158,8 +165,8 @@ export class DefinitionProvider
 
                     toReturn.push(nodeInfo);
                 }
-            });
-        });
+            }
+        }
 
         return toReturn;
     }
@@ -168,7 +175,9 @@ export class DefinitionProvider
     {
         var toReturn: Location[] = [];
 
-        nodes.forEach(item => {
+        for (var i = 0, l = nodes.length; i < l; i++) {
+            var item = nodes[i];
+
             let location: Location = {
                 uri: Files.getUriFromPath(item.path),
                 range: {
@@ -184,7 +193,7 @@ export class DefinitionProvider
             };
 
             toReturn.push(location);
-        });
+        }
 
         return toReturn;
     }

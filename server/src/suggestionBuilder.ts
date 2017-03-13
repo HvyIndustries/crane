@@ -85,21 +85,29 @@ export class SuggestionBuilder
         } else if (this.lastChar == ":") {
             if (this.isSelf()) {
                 // Accessing via self:: or static::
-                this.currentFileNode.classes.forEach(classNode => {
+                for (var i = 0, l = this.currentFileNode.classes.length; i < l; i++) {
+                    var classNode = this.currentFileNode.classes[i];
+
                     if (this.withinBlock(classNode)) {
                         // Add static members for this class
                         toReturn = toReturn.concat(this.addClassMembers(classNode, true, true, true));
                     }
-                });
+                }
             } else {
                 // Probably accessing via [ClassName]::
-                var classNames = this.currentLine.trim().match(/\S(\B[a-z]+?)(?=::)/ig);
-                if (classNames && classNames.length > 0) {
-                    var className = classNames[classNames.length - 1];
-                    var classNode = this.getClassNodeFromTree(className);
-                    if (classNode != null) {
-                        // Add static members for this class
-                        toReturn = toReturn.concat(this.addClassMembers(classNode, true, false, false));
+                if (this.currentLine.indexOf("::") > -1) {
+                    var classNames = this.currentLine.trim().match(/\S(\B[\\a-z0-9]+)/ig);
+                    if (classNames && classNames.length > 0) {
+                        var determinedClassname = classNames[classNames.length - 1];
+                        if (determinedClassname.indexOf("\\") > -1) {
+                            determinedClassname = "\\" + determinedClassname;
+                        }
+                        var className = Namespaces.getFQNFromClassname(determinedClassname, this.currentFileNode);
+                        var classNode = this.getClassNodeFromTree(className);
+                        if (classNode != null) {
+                            // Add static members for this class
+                            toReturn = toReturn.concat(this.addClassMembers(classNode, true, false, false));
+                        }
                     }
                 }
             }
@@ -239,18 +247,24 @@ export class SuggestionBuilder
 
         // Remove duplicated (overwritten) items
         var filtered = [];
-        toReturn.forEach(item => {
+
+        for (var i = 0, l = toReturn.length; i < l; i++) {
+            var item = toReturn[i];
+
             var found = false;
-            filtered.forEach(subItem => {
+
+            for (var j = 0, sl = filtered.length; j < sl; j++) {
+                var subItem = filtered[j];
+
                 if (subItem.label == item.label) {
                     found = true;
                 }
-            });
+            }
 
             if (!found) {
                 filtered.push(item);
             }
-        });
+        }
 
         return filtered;
     }
@@ -258,9 +272,12 @@ export class SuggestionBuilder
     private buildSuggestionsForNamespaceOrUseStatement(namespaceOnly = false): CompletionItem[]
     {
         let namespaces: NamespacePart[] = [];
-        this.workspaceTree.forEach(fileNode => {
+
+        for (var i = 0, l = this.workspaceTree.length; i < l; i++) {
+            var fileNode = this.workspaceTree[i];
+
             namespaces = namespaces.concat(fileNode.namespaceParts);
-        });
+        }
 
         let line = this.currentLine;
 
@@ -295,30 +312,43 @@ export class SuggestionBuilder
 
         let parent = namespaces;
 
-        lineParts.forEach(part => {
+        for (var i = 0, l = lineParts.length; i < l; i++) {
+            var part = lineParts[i];
+
             let needChildren = false;
-            parent.forEach(namespace => {
+
+            for (var j = 0, sl = parent.length; j < sl; j++) {
+                var namespace = parent[j];
+
                 if (namespace.name == part) {
                     parent = namespace.children;
                     needChildren = true;
-                    return;
+                    break;
                 }
-            });
+            }
 
             if (!needChildren) {
-                parent.forEach(item => {
+                for (var j = 0, sl = parent.length; j < sl; j++) {
+                    var item = parent[j];
+
                     suggestions.push({ label: item.name, kind: CompletionItemKind.Module, detail: "(namespace)" });
-                });
+                }
             }
-        });
+        }
 
         // TODO -- update the code below to include classes, traits an interfaces as required (introduce new bool params)
 
         // Get namespace-aware suggestions for classes, traits and interfaces
         if (!namespaceOnly) {
             let namespaceToSearch = line.slice(0, line.length - 1);
-            this.workspaceTree.forEach(fileNode => {
-                fileNode.classes.forEach(classNode => {
+
+            for (var i = 0, l = this.workspaceTree.length; i < l; i++) {
+                var fileNode = this.workspaceTree[i];
+
+
+                for (var j = 0, sl = fileNode.classes.length; j < sl; j++) {
+                    var classNode = fileNode.classes[j];
+
                     if (classNode.namespace == namespaceToSearch) {
                         let docInfo = this.getDocCommentInfo(classNode);
                         suggestions.push({
@@ -328,8 +358,11 @@ export class SuggestionBuilder
                             documentation: docInfo.description
                         });
                     }
-                });
-                fileNode.traits.forEach(traitNode => {
+                }
+
+                for (var j = 0, sl = fileNode.traits.length; j < sl; j++) {
+                    var traitNode = fileNode.traits[j];
+
                     if (traitNode.namespace == namespaceToSearch) {
                         let docInfo = this.getDocCommentInfo(traitNode);
                         suggestions.push({
@@ -339,8 +372,11 @@ export class SuggestionBuilder
                             documentation: docInfo.description
                         });
                     }
-                });
-                fileNode.interfaces.forEach(interfaceNode => {
+                }
+
+                for (var j = 0, sl = fileNode.interfaces.length; j < sl; j++) {
+                    var interfaceNode = fileNode.interfaces[j];
+
                     if (interfaceNode.namespace == namespaceToSearch) {
                         let docInfo = this.getDocCommentInfo(interfaceNode);
                         suggestions.push({
@@ -350,8 +386,8 @@ export class SuggestionBuilder
                             documentation: docInfo.description
                         });
                     }
-                });
-            });
+                }
+            }
         }
 
         return suggestions;
@@ -415,7 +451,9 @@ export class SuggestionBuilder
         // TODO -- Check we're on a line below where they're defined
         // TODO -- Include these if the file is included in the current file
         if (options.topConstants) {
-            this.currentFileNode.constants.forEach(item => {
+            for (var i = 0, l = this.currentFileNode.constants.length; i < l; i++) {
+                let item = this.currentFileNode.constants[i];
+
                 let docInfo = this.getDocCommentInfo(item);
                 toReturn.push({
                     label: item.name,
@@ -423,11 +461,13 @@ export class SuggestionBuilder
                     detail: `(constant) : ${docInfo.type}`,
                     documentation: docInfo.description
                 });
-            });
+            }
         }
 
         if (options.topVariables) {
-            this.currentFileNode.topLevelVariables.forEach(item => {
+            for (var i = 0, l = this.currentFileNode.topLevelVariables.length; i < l; i++) {
+                let item = this.currentFileNode.topLevelVariables[i];
+
                 let docInfo = this.getDocCommentInfo(item);
                 toReturn.push({
                     label: item.name,
@@ -435,11 +475,13 @@ export class SuggestionBuilder
                     detail: `(variable) : ${docInfo.type}`,
                     documentation: docInfo.description
                 });
-            });
+            }
         }
 
         if (options.classes && !options.noNamespaceOnly) {
-            this.currentFileNode.namespaceUsings.forEach(item => {
+            for (var i = 0, l = this.currentFileNode.namespaceUsings.length; i < l; i++) {
+                let item = this.currentFileNode.namespaceUsings[i];
+
                 if (item.alias != null) {
                     let docInfo = this.getDocCommentInfo(item, item.name);
                     toReturn.push({
@@ -449,7 +491,7 @@ export class SuggestionBuilder
                         documentation: docInfo.description
                     });
                 }
-            });
+            }
         }
 
         if (options.localVariables || options.parameters || options.globalVariables) {
@@ -460,7 +502,9 @@ export class SuggestionBuilder
             }));
 
             // Find out which method call/constructor we're in
-            this.currentFileNode.classes.forEach(classNode => {
+            for (var i = 0, l = this.currentFileNode.classes.length; i < l; i++) {
+                let classNode = this.currentFileNode.classes[i];
+
                 funcs = funcs.concat(classNode.methods.filter(item => {
                     return this.withinBlock(item);
                 }));
@@ -468,18 +512,22 @@ export class SuggestionBuilder
                 if (classNode.construct != null && this.withinBlock(classNode.construct)) {
                     funcs.push(classNode.construct);
                 }
-            });
+            }
 
             // Find out which trait we're in
-            this.currentFileNode.traits.forEach(traitNode => {
+            for (var i = 0, l = this.currentFileNode.traits.length; i < l; i++) {
+                let traitNode = this.currentFileNode.traits[i];
+
                 funcs = funcs.concat(traitNode.methods.filter(item => {
                     return this.withinBlock(item);
                 }));
-            });
+            }
 
             if (funcs.length > 0) {
                 if (options.localVariables) {
-                    funcs[0].scopeVariables.forEach(item => {
+                    for (var i = 0, l:number = funcs[0].scopeVariables.length; i < l; i++) {
+                        let item = funcs[0].scopeVariables[i];
+
                         let docInfo = this.getDocCommentInfo(item);
                         toReturn.push({
                             label: item.name,
@@ -487,11 +535,13 @@ export class SuggestionBuilder
                             detail: `(variable) : ${docInfo.type}`,
                             documentation: docInfo.description
                         });
-                    });
+                    }
                 }
 
                 if (options.parameters) {
-                    funcs[0].params.forEach(item => {
+                    for (var i = 0, l:number = funcs[0].params.length; i < l; i++) {
+                        let item = funcs[0].params[i];
+
                         let docInfo = this.getDocCommentInfo(item);
                         toReturn.push({
                             label: item.name,
@@ -499,11 +549,13 @@ export class SuggestionBuilder
                             detail: `(parameter) : ${docInfo.type}`,
                             documentation: docInfo.description
                         });
-                    });
+                    }
                 }
 
                 if (options.globalVariables) {
-                    funcs[0].globalVariables.forEach(item => {
+                    for (var i = 0, l:number = funcs[0].globalVariables.length; i < l; i++) {
+                        let item = funcs[0].globalVariables[i];
+
                         // TODO -- look up original variable to find the type
                         let docInfo = this.getDocCommentInfo(item, "mixed");
                         toReturn.push({
@@ -512,14 +564,18 @@ export class SuggestionBuilder
                             detail: `(imported global) : ${docInfo.type}`,
                             documentation: docInfo.description
                         });
-                    });
+                    }
                 }
             }
         }
 
-        this.workspaceTree.forEach(fileNode => {
+        for (var i = 0, l:number = this.workspaceTree.length; i < l; i++) {
+            let fileNode = this.workspaceTree[i];
+
             if (options.classes) {
-                fileNode.classes.forEach(item => {
+                for (var j = 0, sl:number = fileNode.classes.length; j < sl; j++) {
+                    let item = fileNode.classes[j];
+
                     let include = true;
                     if (options.noNamespaceOnly) {
                         if (item.namespace) {
@@ -537,11 +593,13 @@ export class SuggestionBuilder
                             documentation: docInfo.description
                         });
                     }
-                });
+                }
             }
 
             if (options.interfaces) {
-                fileNode.interfaces.forEach(item => {
+                for (var j = 0, sl:number = fileNode.interfaces.length; j < sl; j++) {
+                    let item = fileNode.interfaces[j];
+
                     let include = true;
                     if (options.noNamespaceOnly) {
                         if (item.namespace) {
@@ -559,11 +617,13 @@ export class SuggestionBuilder
                             documentation: docInfo.description
                         });
                     }
-                });
+                }
             }
 
             if (options.traits) {
-                fileNode.traits.forEach(item => {
+                for (var j = 0, sl:number = fileNode.traits.length; j < sl; j++) {
+                    let item = fileNode.traits[j];
+
                     let include = true;
                     if (options.noNamespaceOnly) {
                         if (item.namespace) {
@@ -581,11 +641,13 @@ export class SuggestionBuilder
                             documentation: docInfo.description
                         });
                     }
-                });
+                }
             }
 
             if (options.topFunctions) {
-                fileNode.functions.forEach(item => {
+                for (var j = 0, sl:number = fileNode.functions.length; j < sl; j++) {
+                    let item = fileNode.functions[j];
+
                     let docInfo = this.getDocCommentInfo(item);
                     let detail = this.getFunctionParamInfo(docInfo, item);
                     toReturn.push({
@@ -595,11 +657,13 @@ export class SuggestionBuilder
                         insertText: this.getFunctionInsertText(item),
                         documentation: docInfo.description
                     });
-                });
+                }
             }
 
             if (options.namespaces) {
-                fileNode.namespaces.forEach(item => {
+                for (var j = 0, sl:number = fileNode.namespaces.length; j < sl; j++) {
+                    let item = fileNode.namespaces[j];
+
                     let docInfo = this.getDocCommentInfo(item);
                     toReturn.push({
                         label: item.name,
@@ -607,9 +671,9 @@ export class SuggestionBuilder
                         detail: `(namespace)`,
                         documentation: docInfo.description
                     });
-                });
+                }
             }
-        });
+        }
 
         return toReturn;
     }
@@ -649,19 +713,23 @@ export class SuggestionBuilder
             let namespaceSearch = node.namespace + "\\" + node.name;
             let found = false;
 
-            this.currentFileNode.namespaceUsings.forEach(item => {
+            for (var i = 0, l:number = this.currentFileNode.namespaceUsings.length; i < l; i++) {
+                let item = this.currentFileNode.namespaceUsings[i];
+
                 if (item.name == namespaceSearch) {
                     found = true;
                     return null;
                 }
-            });
+            }
 
-            this.currentFileNode.namespaces.forEach(item => {
+            for (var i = 0, l:number = this.currentFileNode.namespaces.length; i < l; i++) {
+                let item = this.currentFileNode.namespaces[i];
+
                 if (item.name == namespace) {
                     found = true;
                     return null;
                 }
-            });
+            }
 
             if (!found) {
                 return "\\" + namespaceSearch;
@@ -700,74 +768,72 @@ export class SuggestionBuilder
 
     private getScope() : Scope
     {
-        var scope = null;
-
         // Are we inside a class?
-        this.currentFileNode.classes.forEach(classNode => {
+        for (var i = 0, l:number = this.currentFileNode.classes.length; i < l; i++) {
+            let classNode = this.currentFileNode.classes[i];
+
             if (this.withinBlock(classNode)) {
                 if (classNode.construct != null) {
                     if (this.withinBlock(classNode.construct)) {
-                        scope = new Scope(ScopeLevel.Class, "constructor", classNode.name);
-                        return;
+                        return new Scope(ScopeLevel.Class, "constructor", classNode.name);
                     }
                 }
-                classNode.methods.forEach(method => {
+
+                for (var j = 0, sl:number = classNode.methods.length; j < sl; j++) {
+                    let method = classNode.methods[j];
+
                     if (this.withinBlock(method)) {
-                        scope = new Scope(ScopeLevel.Class, method.name, classNode.name);
-                        return;
+                        return new Scope(ScopeLevel.Class, method.name, classNode.name);
                     }
-                });
-                if (scope == null) {
-                    scope = new Scope(ScopeLevel.Class, null, classNode.name);
-                    return;
                 }
+
+                return new Scope(ScopeLevel.Class, null, classNode.name);
             }
-        });
+        }
 
         // Are we inside a trait?
-        this.currentFileNode.traits.forEach(trait => {
+        for (var i = 0, l:number = this.currentFileNode.traits.length; i < l; i++) {
+            let trait = this.currentFileNode.traits[i];
+
             if (this.withinBlock(trait)) {
                 if (trait.construct != null) {
                     if (this.withinBlock(trait.construct)) {
-                        scope = new Scope(ScopeLevel.Trait, "constructor", trait.name);
-                        return;
+                        return new Scope(ScopeLevel.Trait, "constructor", trait.name);
                     }
                 }
-                trait.methods.forEach(method => {
+
+                for (var j = 0, sl:number = trait.methods.length; j < sl; j++) {
+                    let method = trait.methods[j];
+
                     if (this.withinBlock(method)) {
-                        scope = new Scope(ScopeLevel.Trait, method.name, trait.name);
-                        return;
+                        return new Scope(ScopeLevel.Trait, method.name, trait.name);
                     }
-                });
-                if (scope == null) {
-                    scope = new Scope(ScopeLevel.Trait, null, trait.name);
-                    return;
                 }
+
+                return new Scope(ScopeLevel.Trait, null, trait.name);
             }
-        });
+        }
 
         // Are we inside an interface?
-        this.currentFileNode.interfaces.forEach(item => {
+        for (var i = 0, l:number = this.currentFileNode.interfaces.length; i < l; i++) {
+            let item = this.currentFileNode.interfaces[i];
+
             if (this.withinBlock(item)) {
-                scope = new Scope(ScopeLevel.Interface, null, item.name);
-                return;
+                return new Scope(ScopeLevel.Interface, null, item.name);
             }
-        });
+        }
 
         // Are we inside a top level function?
-        this.currentFileNode.functions.forEach(func => {
-            if (this.withinBlock(func)) {
-                scope = new Scope(ScopeLevel.Root, func.name, null);
-                return;
-            }
-        });
+        for (var i = 0, l:number = this.currentFileNode.functions.length; i < l; i++) {
+            let func = this.currentFileNode.functions[i];
 
-        if (scope == null) {
-            // Must be at the top level of a file
-            return new Scope(ScopeLevel.Root, null, null);
-        } else {
-            return scope;
+            if (this.withinBlock(func)) {
+                return new Scope(ScopeLevel.Root, func.name, null);
+            }
         }
+
+        // Must be at the top level of a file
+        return new Scope(ScopeLevel.Root, null, null);
     }
 
     private withinBlock(block) : boolean
@@ -786,46 +852,46 @@ export class SuggestionBuilder
 
     private getClassNodeFromTree(className: string) : ClassNode
     {
-        var toReturn = null;
-
         let namespaceInfo = Namespaces.getNamespaceInfoFromFQNClassname(className);
         var namespace = namespaceInfo.namespace;
         var rawClassname = namespaceInfo.classname
 
-        this.workspaceTree.forEach((fileNode) => {
-            fileNode.classes.forEach((classNode) => {
+        for (var i = 0, l:number = this.workspaceTree.length; i < l; i++) {
+            let fileNode = this.workspaceTree[i];
+
+            for (var j = 0, sl:number = fileNode.classes.length; j < sl; j++) {
+                let classNode = fileNode.classes[j];
+
                 if (
                     classNode.name.toLowerCase() == rawClassname.toLowerCase()
                     && classNode.namespace == namespace
                 ) {
-                    toReturn = classNode;
+                    return classNode;
                 }
-            });
-        });
-
-        return toReturn;
+            }
+        }
     }
 
     private getTraitNodeFromTree(traitName: string) : TraitNode
     {
-        var toReturn = null;
-
         let namespaceInfo = Namespaces.getNamespaceInfoFromFQNClassname(traitName);
         var namespace = namespaceInfo.namespace;
         var rawTraitname = namespaceInfo.classname
 
-        var fileNode = this.workspaceTree.forEach((fileNode) => {
-            fileNode.traits.forEach((traitNode) => {
+        for (var i = 0, l:number = this.workspaceTree.length; i < l; i++) {
+            let fileNode = this.workspaceTree[i];
+
+            for (var j = 0, sl:number = fileNode.traits.length; j < sl; j++) {
+                let traitNode = fileNode.traits[j];
+
                 if (
                     traitNode.name.toLowerCase() == rawTraitname.toLowerCase()
                     && traitNode.namespace == namespace
                 ) {
-                    toReturn = traitNode;
+                    return traitNode;
                 }
-            });
-        });
-
-        return toReturn;
+            }
+        }
     }
 
     private buildAccessModifierText(modifier: number) : string
@@ -847,7 +913,6 @@ export class SuggestionBuilder
 
     private checkAccessorAndAddMembers(scope: Scope) : CompletionItem[]
     {
-        var toReturn: CompletionItem[] = [];
         var rawParts = this.currentLine.trim().match(/\$\S*(?=->)/gm);
         var parts: string[] = [];
 
@@ -857,12 +922,17 @@ export class SuggestionBuilder
 
         var rawLast = rawParts.length - 1;
         if (rawParts[rawLast].indexOf("->") > -1) {
-            rawParts.forEach(part => {
+            for (var i = 0, l:number = rawParts.length; i < l; i++) {
+                let part = rawParts[i];
+
                 var splitParts = part.split("->");
-                splitParts.forEach(splitPart => {
+
+                for (var j = 0, sl:number = splitParts.length; j < sl; j++) {
+                    let splitPart = splitParts[j];
+
                     parts.push(splitPart);
-                });
-            });
+                }
+            }
         } else {
             parts = rawParts;
         }
@@ -874,28 +944,29 @@ export class SuggestionBuilder
 
         if (parts[last].indexOf("$this", parts[last].length - 5) > -1) {
             // We're referencing the current class; show everything
-            this.currentFileNode.classes.forEach(classNode => {
+            for (var i = 0, l:number = this.currentFileNode.classes.length; i < l; i++) {
+                let classNode = this.currentFileNode.classes[i];
+
                 if (this.withinBlock(classNode)) {
-                    toReturn = this.addClassMembers(classNode, false, true, true);
+                    return this.addClassMembers(classNode, false, true, true);
                 }
-            });
-            this.currentFileNode.traits.forEach(traitNode => {
+            }
+
+            for (var i = 0, l:number = this.currentFileNode.traits.length; i < l; i++) {
+                let traitNode = this.currentFileNode.traits[i];
                 if (this.withinBlock(traitNode)) {
-                    toReturn = this.addClassMembers(traitNode, false, true, true);
+                    return this.addClassMembers(traitNode, false, true, true);
                 }
-            });
-        } else {
-            // We're probably calling from a instantiated variable
-            // Check the variable is in scope to work out which suggestions to provide
-            toReturn = this.checkForInstantiatedVariableAndAddSuggestions(parts[last], scope);
+            }
         }
 
-        return toReturn;
+        // We're probably calling from a instantiated variable
+        // Check the variable is in scope to work out which suggestions to provide
+        return this.checkForInstantiatedVariableAndAddSuggestions(parts[last], scope);
     }
 
     private checkForInstantiatedVariableAndAddSuggestions(variableName: string, scope: Scope) : CompletionItem[]
     {
-        var toReturn = [];
         var variablesFound = [];
 
         // Check the scope paramater to find out where we're calling from
@@ -908,7 +979,9 @@ export class SuggestionBuilder
                     });
                 } else {
                     // Top level function
-                    this.currentFileNode.functions.forEach(func => {
+                    for (var i = 0, l:number = this.currentFileNode.functions.length; i < l; i++) {
+                        let func = this.currentFileNode.functions[i];
+
                         if (func.name == scope.name) {
                             variablesFound = variablesFound.concat(func.params.filter(item => {
                                 return item.name == variableName;
@@ -918,7 +991,7 @@ export class SuggestionBuilder
                             }));
                             // TODO -- Add global variables
                         }
-                    });
+                    }
                 }
                 break;
 
@@ -929,7 +1002,9 @@ export class SuggestionBuilder
                 } else {
                     if (scope.name == "constructor") {
                         // Within constructor
-                        this.currentFileNode.classes.forEach(classNode => {
+                        for (var i = 0, l:number = this.currentFileNode.classes.length; i < l; i++) {
+                            let classNode = this.currentFileNode.classes[i];
+
                             if (classNode.name == scope.parent) {
                                 variablesFound = variablesFound.concat(classNode.construct.params.filter(item => {
                                     return item.name == variableName;
@@ -938,12 +1013,16 @@ export class SuggestionBuilder
                                     return item.name == variableName;
                                 }));
                             }
-                        });
+                        }
                     } else {
                         // Within method
-                        this.currentFileNode.classes.forEach(classNode => {
+                        for (var i = 0, l:number = this.currentFileNode.classes.length; i < l; i++) {
+                            let classNode = this.currentFileNode.classes[i];
+
                             if (classNode.name == scope.parent) {
-                                classNode.methods.forEach(method => {
+                                for (var j = 0, sl:number = classNode.methods.length; j < sl; j++) {
+                                    let method = classNode.methods[j];
+
                                     if (method.name == scope.name) {
                                         variablesFound = variablesFound.concat(method.params.filter(item => {
                                             return item.name == variableName;
@@ -952,9 +1031,9 @@ export class SuggestionBuilder
                                             return item.name == variableName;
                                         }));
                                     }
-                                });
+                                }
                             }
-                        });
+                        }
                     }
                 }
                 break;
@@ -975,11 +1054,11 @@ export class SuggestionBuilder
 
             var classNode = this.getClassNodeFromTree(className);
             if (classNode != null) {
-                toReturn = this.addClassMembers(classNode, false, false, false);
+                return this.addClassMembers(classNode, false, false, false);
             }
         }
 
-        return toReturn;
+        return [];
     }
 
     private addClassMembers(classNode: ClassNode, staticOnly: boolean, includePrivate: boolean, includeProtected: boolean)
@@ -987,7 +1066,9 @@ export class SuggestionBuilder
         var toReturn: CompletionItem[] = [];
 
         if (staticOnly == true) {
-            classNode.constants.forEach((subNode) => {
+            for (var i = 0, l:number = classNode.constants.length; i < l; i++) {
+                let subNode = classNode.constants[i];
+
                 let docInfo = this.getDocCommentInfo(subNode);
                 toReturn.push({
                     label: subNode.name,
@@ -995,10 +1076,12 @@ export class SuggestionBuilder
                     detail: `(constant) : ${docInfo.type}`,
                     documentation: docInfo.description
                 });
-            });
+            }
         }
 
-        classNode.methods.forEach((subNode) => {
+        for (var i = 0, l:number = classNode.methods.length; i < l; i++) {
+            let subNode = classNode.methods[i];
+
             if (subNode.isStatic == staticOnly) {
                 var insertText = this.getFunctionInsertText(subNode);
                 let docInfo = this.getDocCommentInfo(subNode);
@@ -1022,9 +1105,11 @@ export class SuggestionBuilder
                     toReturn.push(returnObject);
                 }
             }
-        });
+        }
 
-        classNode.properties.forEach((subNode) => {
+        for (var i = 0, l:number = classNode.properties.length; i < l; i++) {
+            let subNode = classNode.properties[i];
+
             if (subNode.isStatic == staticOnly) {
                 var insertText = subNode.name;
                 let docInfo = this.getDocCommentInfo(subNode);
@@ -1064,16 +1149,18 @@ export class SuggestionBuilder
                     });
                 }
             }
-        });
+        }
 
         // Add items from included traits
-        classNode.traits.forEach((traitName) => {
+        for (var i = 0, l:number = classNode.traits.length; i < l; i++) {
+            let traitName = classNode.traits[i];
+
             // Look up the trait node in the tree
             var traitNode = this.getTraitNodeFromTree(traitName);
             if (traitNode != null) {
                 toReturn = toReturn.concat(this.addClassMembers(traitNode, staticOnly, true, true));
             }
-        });
+        }
 
         // Add items from parent(s)
         if (classNode.extends != null && classNode.extends != "") {
@@ -1086,18 +1173,22 @@ export class SuggestionBuilder
 
         // Remove duplicated (overwritten) items
         var filtered = [];
-        toReturn.forEach(item => {
+        for (var i = 0, l:number = toReturn.length; i < l; i++) {
+            let item = toReturn[i];
+
             var found = false;
-            filtered.forEach(subItem => {
+            for (var j = 0, sl:number = filtered.length; j < sl; j++) {
+                let subItem = filtered[j];
+
                 if (subItem.label == item.label) {
                     found = true;
                 }
-            });
+            }
 
             if (!found) {
                 filtered.push(item);
             }
-        });
+        }
 
         return filtered;
     }

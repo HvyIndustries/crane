@@ -53,7 +53,9 @@ export class Namespaces
             nameFound = true;
         } else {
             // Check if we are "use"ing this class
-            tree.namespaceUsings.forEach(item => {
+            for (var i = 0, l = tree.namespaceUsings.length; i < l; i++) {
+                var item = tree.namespaceUsings[i];
+
                 if (
                     item.name.endsWith("\\" + classname)
                     || item.alias == classname
@@ -61,9 +63,9 @@ export class Namespaces
                     // Class found, add namespace to name (handling alias)
                     type = item.name;
                     nameFound = true;
-                    return;
+                    break;
                 }
-            });
+            }
 
             if (!nameFound && tree.namespaces.length > 0) {
                 type = "\\" + tree.namespaces[0].name + "\\" + classname;

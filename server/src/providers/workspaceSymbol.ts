@@ -28,11 +28,13 @@ export class WorkspaceSymbolProvider
         var symbols: SymbolInformation[] = [];
 
         // Execute document symbol provider against every file in the tree
-        this.workspaceTree.forEach(fileNode => {
+        for (var i = 0, l = this.workspaceTree.length; i < l; i++) {
+            var fileNode = this.workspaceTree[i];
+
             let documentSymbolProvider = new DocumentSymbolProvider(fileNode, this.query);
             let fileSymbols = documentSymbolProvider.findSymbols();
             symbols = symbols.concat(fileSymbols);
-        });
+        }
 
         return symbols;
     }

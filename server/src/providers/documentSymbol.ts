@@ -41,36 +41,33 @@ export class DocumentSymbolProvider
     {
         var toReturn: SymbolInformation[] = [];
 
-        this.tree.constants.forEach(constantItem => {
-            this.addSymbol(toReturn, constantItem, SymbolKind.Constant, null);
-        });
-
-        this.tree.functions.forEach(functionItem => {
+        for (let i = 0, l = this.tree.functions.length; i < l; i++) {
+            var functionItem = this.tree.functions[i];
             this.addSymbol(toReturn, functionItem, SymbolKind.Function, null);
-        });
+        }
 
-        this.tree.topLevelVariables.forEach(variableItem => {
-            this.addSymbol(toReturn, variableItem, SymbolKind.Variable, null);
-        });
-
-        this.tree.namespaces.forEach(item => {
+        for (let i = 0, l = this.tree.namespaces.length; i < l; i++) {
+            var item = this.tree.namespaces[i];
             this.addSymbol(toReturn, item, SymbolKind.Namespace, null);
-        });
+        }
 
-        this.tree.classes.forEach(classItem => {
+        for (let i = 0, l = this.tree.classes.length; i < l; i++) {
+            var classItem = this.tree.classes[i];
             this.addSymbol(toReturn, classItem, SymbolKind.Class, classItem.namespace);
             this.buildClassTraitInterfaceBody(classItem, toReturn);
-        });
+        }
 
-        this.tree.traits.forEach(traitItem => {
+        for (let i = 0, l = this.tree.traits.length; i < l; i++) {
+            var traitItem = this.tree.traits[i];
             this.addSymbol(toReturn, traitItem, SymbolKind.Class, traitItem.namespace);
             this.buildClassTraitInterfaceBody(traitItem, toReturn);
-        });
+        }
 
-        this.tree.interfaces.forEach(interfaceItem => {
+        for (let i = 0, l = this.tree.interfaces.length; i < l; i++) {
+            var interfaceItem = this.tree.interfaces[i];
             this.addSymbol(toReturn, interfaceItem, SymbolKind.Interface, interfaceItem.namespace);
             this.buildClassTraitInterfaceBody(interfaceItem, toReturn);
-        });
+        }
 
         return toReturn;
     }
@@ -78,21 +75,24 @@ export class DocumentSymbolProvider
     private buildClassTraitInterfaceBody(item, toReturn)
     {
         if (item.constants) {
-            item.constants.forEach(constant => {
+            for (let i = 0, l = item.constants.length; i < l; i++) {
+                var constant = item.constants[i];
                 this.addSymbol(toReturn, constant, SymbolKind.Constant, item.name);
-            });
+            }
         }
 
         if (item.properties) {
-            item.properties.forEach(property => {
+            for (let i = 0, l = item.properties.length; i < l; i++) {
+                var property = item.properties[i];
                 this.addSymbol(toReturn, property, SymbolKind.Property, item.name, "$" + property.name);
-            });
+            }
         }
 
         if (item.methods) {
-            item.methods.forEach(method => {
+            for (let i = 0, l = item.methods.length; i < l; i++) {
+                var method = item.methods[i];
                 this.addSymbol(toReturn, method, SymbolKind.Method, item.name);
-            });
+            }
         }
 
         if (item.construct) {

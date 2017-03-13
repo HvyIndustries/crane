@@ -356,13 +356,17 @@ function getClassNodeFromTree(className:string): ClassNode
 {
     var toReturn = null;
 
-    var fileNode = workspaceTree.forEach((fileNode) => {
-        fileNode.classes.forEach((classNode) => {
+    for (var i = 0, l = workspaceTree.length; i < l; i++) {
+        var fileNode = workspaceTree[i];
+
+        for (var j = 0, sl = fileNode.classes.length; j < sl; j++) {
+            var classNode = fileNode.classes[j];
+
             if (classNode.name.toLowerCase() == className.toLowerCase()) {
                 toReturn = classNode;
             }
-        })
-    });
+        }
+    }
 
     return toReturn;
 }
@@ -371,13 +375,17 @@ function getTraitNodeFromTree(traitName: string): ClassNode
 {
     var toReturn = null;
 
-    var fileNode = workspaceTree.forEach((fileNode) => {
-        fileNode.traits.forEach((traitNode) => {
+    for (var i = 0, l = workspaceTree.length; i < l; i++) {
+        var fileNode = workspaceTree[i];
+
+        for (var j = 0, sl = fileNode.traits.length; j < sl; j++) {
+            var traitNode = fileNode.traits[j];
+
             if (traitNode.name.toLowerCase() == traitName.toLowerCase()) {
                 toReturn = traitNode;
             }
-        })
-    });
+        }
+    }
 
     return toReturn;
 }
@@ -385,11 +393,13 @@ function getTraitNodeFromTree(traitName: string): ClassNode
 function getFileNodeFromPath(path: string): FileNode {
     var returnNode = null;
 
-    workspaceTree.forEach(fileNode => {
+    for (var i = 0, l = workspaceTree.length; i < l; i++) {
+        var fileNode = workspaceTree[i];
+
         if (fileNode.path == path) {
             returnNode = fileNode;
         }
-    });
+    }
 
     return returnNode;
 }

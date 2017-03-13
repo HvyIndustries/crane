@@ -23,6 +23,8 @@ import { DefinitionProvider } from "./providers/definition";
 
 import Storage from './util/Storage';
 import { Files } from "./util/Files";
+import { DocumentSymbolProvider } from "./providers/documentSymbol";
+import { WorkspaceSymbolProvider } from "./providers/workspaceSymbol";
 
 const util = require('util');
 
@@ -64,7 +66,9 @@ connection.onInitialize((params): InitializeResult =>
                 resolveProvider: true,
                 triggerCharacters: ['.', ':', '$', '>', "\\"]
             },
-            definitionProvider: true
+            definitionProvider: true,
+            documentSymbolProvider: true,
+            workspaceSymbolProvider: true
         }
     }
 });
@@ -131,13 +135,31 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem =>
     return item;
 });
 
-connection.onDefinition((position, cancellationToken) => {
+connection.onDefinition((params, cancellationToken) => {
     return new Promise((resolve, reject) => {
-        let path = Files.getPathFromUri(position.textDocument.uri);
+        let path = Files.getPathFromUri(params.textDocument.uri);
         let filenode = getFileNodeFromPath(path);
-        let definitionProvider = new DefinitionProvider(position, path, filenode, workspaceTree);
+        let definitionProvider = new DefinitionProvider(params, path, filenode, workspaceTree);
         let locations = definitionProvider.findDefinition();
         resolve(locations);
+    });
+});
+
+connection.onDocumentSymbol((params, cancellationToken) => {
+    return new Promise((resolve, reject) => {
+        let path = Files.getPathFromUri(params.textDocument.uri);
+        let filenode = getFileNodeFromPath(path);
+        let documentSymbolProvider = new DocumentSymbolProvider(filenode);
+        let symbols = documentSymbolProvider.findSymbols();
+        resolve(symbols);
+    });
+});
+
+connection.onWorkspaceSymbol((params, cancellationToken) => {
+    return new Promise((resolve, reject) => {
+        let workspaceSymbolProvider = new WorkspaceSymbolProvider(workspaceTree, params.query);
+        let symbols = workspaceSymbolProvider.findSymbols();
+        resolve(symbols);
     });
 });
 
@@ -335,13 +357,17 @@ function getClassNodeFromTree(className:string): ClassNode
 {
     var toReturn = null;
 
-    var fileNode = workspaceTree.forEach((fileNode) => {
-        fileNode.classes.forEach((classNode) => {
+    for (var i = 0, l = workspaceTree.length; i < l; i++) {
+        var fileNode = workspaceTree[i];
+
+        for (var j = 0, sl = fileNode.classes.length; j < sl; j++) {
+            var classNode = fileNode.classes[j];
+
             if (classNode.name.toLowerCase() == className.toLowerCase()) {
                 toReturn = classNode;
             }
-        })
-    });
+        }
+    }
 
     return toReturn;
 }
@@ -350,13 +376,17 @@ function getTraitNodeFromTree(traitName: string): ClassNode
 {
     var toReturn = null;
 
-    var fileNode = workspaceTree.forEach((fileNode) => {
-        fileNode.traits.forEach((traitNode) => {
+    for (var i = 0, l = workspaceTree.length; i < l; i++) {
+        var fileNode = workspaceTree[i];
+
+        for (var j = 0, sl = fileNode.traits.length; j < sl; j++) {
+            var traitNode = fileNode.traits[j];
+
             if (traitNode.name.toLowerCase() == traitName.toLowerCase()) {
                 toReturn = traitNode;
             }
-        })
-    });
+        }
+    }
 
     return toReturn;
 }
@@ -364,11 +394,13 @@ function getTraitNodeFromTree(traitName: string): ClassNode
 function getFileNodeFromPath(path: string): FileNode {
     var returnNode = null;
 
-    workspaceTree.forEach(fileNode => {
+    for (var i = 0, l = workspaceTree.length; i < l; i++) {
+        var fileNode = workspaceTree[i];
+
         if (fileNode.path == path) {
             returnNode = fileNode;
         }
-    });
+    }
 
     return returnNode;
 }

@@ -24,7 +24,12 @@ You can also set `php.suggest.basic` to `false` to disable VS Code's built-in ph
 
 ---
 
-## What's new in v0.3.2 (latest release)
+## What's new in v0.3.3 (latest release)
+- Document symbol provider - view top level symbols in the current file
+- Workspace symbol provider - view top level symbols throughout the workspace
+- Performance improvements
+
+## What's new in v0.3.2
 - **Added go to definition on classes, traits & interfaces**
 - Fix several bugs introduced in v0.3.1
   - Namespace insert text should be prefixed with a backslash _(Thanks @TheColorRed for pointing out this mistake!)_
@@ -60,6 +65,7 @@ You can also set `php.suggest.basic` to `false` to disable VS Code's built-in ph
   - Optionally for built-in PHP functions and classes (such as PDO)
 - **Go to definition** on classes, interfaces and traits
 - Peek definition on classes, interfaces and traits
+- Document & workspace symbol providers
 
 ## Planned Features:
 
@@ -67,7 +73,6 @@ You can also set `php.suggest.basic` to `false` to disable VS Code's built-in ph
 - Signature provider to show method parameter suggestions
 - Hover provider to show information about symbol under the cursor
 - Full go-to/Peek definition on variables, methods, properties, etc
-- List symbols
 - PhpDoc support (both for reading and writing documentation)
 
 ## User Feedback

@@ -1,4 +1,9 @@
-# v0.3.2 (latest release)
+# v0.3.3 (latest release)
+- Document symbol provider - view top level symbols in the current file
+- Workspace symbol provider - view top level symbols throughout the workspace
+- Performance improvements
+
+# v0.3.2
 - **Added go to definition on classes, traits & interfaces**
 - Fix several bugs introduced in v0.3.1
   - Namespace insert text should be prefixed with a backslash _(Thanks @TheColorRed for pointing out this mistake!)_

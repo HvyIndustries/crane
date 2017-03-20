@@ -14,7 +14,7 @@ var docReader = new docParser();
 
 export class DocCommentHelper
 {
-    private scalarTypes = ["bool", "boolean", "int", "integer", "float", "number", "string", "array", "null"];
+    private scalarTypes = ["bool", "boolean", "int", "integer", "float", "number", "string", "array", "null", "void"];
 
     public buildDocCommentFromBranch(branch, tree): DocComment
     {

@@ -1,4 +1,7 @@
-# v0.3.3 (latest release)
+# v0.3.4 (latest release)
+- Significant performance improvements when requesting suggestions *(up to 7,500% faster)*
+
+# v0.3.3
 - Document symbol provider - view top level symbols in the current file
 - Workspace symbol provider - view top level symbols throughout the workspace
 - Performance improvements

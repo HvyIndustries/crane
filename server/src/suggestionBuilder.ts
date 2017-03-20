@@ -246,22 +246,14 @@ export class SuggestionBuilder
 
         // Remove duplicated (overwritten) items
         var filtered = [];
+        var cache = {};
 
         for (var i = 0, l = toReturn.length; i < l; i++) {
             var item = toReturn[i];
 
-            var found = false;
-
-            for (var j = 0, sl = filtered.length; j < sl; j++) {
-                var subItem = filtered[j];
-
-                if (subItem.label == item.label) {
-                    found = true;
-                }
-            }
-
-            if (!found) {
+            if (!(item.label in cache)) {
                 filtered.push(item);
+                cache[item.label] = true;
             }
         }
 
@@ -996,20 +988,14 @@ export class SuggestionBuilder
 
         // Remove duplicated (overwritten) items
         var filtered = [];
-        for (var i = 0, l:number = toReturn.length; i < l; i++) {
-            let item = toReturn[i];
+        var cache = {};
 
-            var found = false;
-            for (var j = 0, sl:number = filtered.length; j < sl; j++) {
-                let subItem = filtered[j];
+        for (var i = 0, l = toReturn.length; i < l; i++) {
+            var item = toReturn[i];
 
-                if (subItem.label == item.label) {
-                    found = true;
-                }
-            }
-
-            if (!found) {
+            if (!(item.label in cache)) {
                 filtered.push(item);
+                cache[item.label] = true;
             }
         }
 

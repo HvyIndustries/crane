@@ -10,39 +10,36 @@ export class Files
 {
     public static getPathFromUri(uri: string) : string
     {
-        var path = uri;
-        path = path.replace("file:///", "");
-        path = path.replace("%3A", ":");
+        uri = uri.replace("file:///", "");
 
-        // Handle Windows and Unix paths
+        var decoded = decodeURIComponent(uri);
+
         switch (process.platform) {
             case 'darwin':
             case 'linux':
-                path = "/" + path;
-                break;
-            case 'win32':
-                path = path.replace(/\//g, "\\");
-                break;
-        }
+                return "/" + decoded;
 
-        return path;
+            case 'win32':
+                decoded = decoded.replace(/\//g, "\\");
+                return decoded;
+        }
     }
 
     public static getUriFromPath(path: string) : string
     {
-        path = path.replace(":", "%3A");
         let pathStart = "file://";
 
         // Handle Windows paths with backslashes
-        switch (process.platform) {
-            case 'win32':
-                path = path.replace(/\\/g, "\/");
-                pathStart = "file:///";
-                break;
+        if (process.platform == "win32") {
+            path = path.replace(/\\/g, "\/");
+            pathStart = "file:///";
         }
 
-        path = pathStart + path;
+        let encoded = encodeURI(path);
 
-        return path;
+        // Handle colons specially as encodeURI does not encode them
+        encoded = encoded.replace(":", "%3A");
+
+        return pathStart + encoded;
     }
 }

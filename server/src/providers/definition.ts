@@ -41,12 +41,19 @@ export class DefinitionProvider
             word = "\\" + word;
         }
 
+        var fnName = null;
+        if (word.indexOf('::')>-1) {
+          fnName = word.split('::', 2);
+          word = fnName[0];
+          fnName = fnName[1];
+        }
+
         // Get FQN of class under caret
         let fqn = Namespaces.getFQNFromClassname(word, this.tree);
         let classInfo = Namespaces.getNamespaceInfoFromFQNClassname(fqn);
 
         // Search all classes (+ namespace) for provided FQN
-        let nodes: NodeInfo[] = this.findTopLevelSymbols(classInfo);
+        let nodes: NodeInfo[] = this.findTopLevelSymbols(classInfo, fnName);
 
         // Convert nodes into locations
         results = this.convertNodesIntoLocations(nodes);
@@ -112,63 +119,55 @@ export class DefinitionProvider
         return string;
     }
 
-    private findTopLevelSymbols(classInfo)
+    private findTopLevelSymbols(classInfo, elementName)
     {
         var namespace = classInfo.namespace;
         var rawClassname = classInfo.classname
-
-        var toReturn = [];
+        var toReturn = [], symbol, innerSymbol, filenode;
 
         for (var i = 0, l = this.workspaceTree.length; i < l; i++) {
-            var filenode = this.workspaceTree[i];
-
-            for (var j = 0, sl = filenode.classes.length; j < sl; j++) {
-                var classNode = filenode.classes[j];
-                if (
-                    classNode.name.toLowerCase() == rawClassname.toLowerCase()
-                    && classNode.namespace == namespace
-                ) {
-                    let nodeInfo: NodeInfo = {
-                        node: classNode,
-                        path: filenode.path
-                    };
-
-                    toReturn.push(nodeInfo);
+            filenode = this.workspaceTree[i];
+            symbol = this.scanNodeElements(
+                filenode, 
+                ['classes', 'interfaces', 'traits'], 
+                rawClassname, namespace
+            );
+            if (symbol) {
+                if (elementName) {
+                    innerSymbol = this.scanNodeElements(
+                        symbol,
+                        ['properties', 'methods', 'constants'],
+                        elementName
+                    );
+                    if (innerSymbol) {
+                        symbol = innerSymbol;
+                    }
                 }
+                symbol.path = filenode.path;
+                toReturn.push(symbol);
             }
+        }
+        return toReturn;
+    }
 
-            for (var j = 0, sl = filenode.traits.length; j < sl; j++) {
-                var traitNode = filenode.traits[j];
-                if (
-                    traitNode.name.toLowerCase() == rawClassname.toLowerCase()
-                    && traitNode.namespace == namespace
-                ) {
-                    let nodeInfo: NodeInfo = {
-                        node: traitNode,
-                        path: filenode.path
-                    };
-
-                    toReturn.push(nodeInfo);
-                }
-            }
-
-            for (var j = 0, sl = filenode.interfaces.length; j < sl; j++) {
-                var interfaceNode = filenode.interfaces[j];
-                if (
-                    interfaceNode.name.toLowerCase() == rawClassname.toLowerCase()
-                    && interfaceNode.namespace == namespace
-                ) {
-                    let nodeInfo: NodeInfo = {
-                        node: interfaceNode,
-                        path: filenode.path
-                    };
-
-                    toReturn.push(nodeInfo);
+    private scanNodeElements(node:any, what:string[], element:string, ns?: any): NodeInfo {
+        if (element) {
+            for(var w = 0; w < what.length; w++) {
+                var items = node[what[w]];
+                if (Array.isArray(items)) {
+                    for(var i = 0; i < items.length; i++) {
+                        if (items[i].name === element) {
+                            if (ns && items[i].namespace !== ns) continue;
+                            return { 
+                                node: items[i],
+                                path: null 
+                            };
+                        }
+                    }
                 }
             }
         }
-
-        return toReturn;
+        return null;
     }
 
     private convertNodesIntoLocations(nodes: NodeInfo[]): Location[]

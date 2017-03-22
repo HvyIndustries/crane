@@ -8,7 +8,7 @@
 
 import { TextDocumentPositionParams, Location, Range } from 'vscode-languageserver';
 import { FileNode, BaseNode } from "../hvy/nodes";
-import { Namespaces } from "../util/namespaces";
+import { Namespaces } from "../util/Namespaces";
 import { Files } from "../util/Files";
 
 const fs = require('fs');

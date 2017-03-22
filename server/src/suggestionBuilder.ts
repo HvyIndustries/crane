@@ -14,7 +14,7 @@ import {
     MethodNode, NamespaceNode, NamespacePart
 } from "./hvy/nodes";
 import { Files } from "./util/Files";
-import { Namespaces } from "./util/namespaces";
+import { Namespaces } from "./util/Namespaces";
 
 const fs = require('fs');
 

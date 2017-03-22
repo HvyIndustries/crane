@@ -23,7 +23,7 @@ import {
     NamespaceNode,
     NamespacePart
 } from './nodes';
-import { Namespaces } from "../util/namespaces";
+import { Namespaces } from "../util/Namespaces";
 
 export class TreeBuilderV2
 {

@@ -251,7 +251,7 @@ export class SuggestionBuilder
         for (var i = 0, l = toReturn.length; i < l; i++) {
             var item = toReturn[i];
 
-            if (!(item.label in cache)) {
+            if (item && item.label && !(item.label in cache)) {
                 filtered.push(item);
                 cache[item.label] = true;
             }

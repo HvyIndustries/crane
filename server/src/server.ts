@@ -110,14 +110,16 @@ connection.onDidChangeWatchedFiles((change) =>
 // This handler provides the initial list of the completion items.
 connection.onCompletion((textDocumentPosition: TextDocumentPositionParams): CompletionItem[] =>
 {
-    var doc = documents.get(textDocumentPosition.textDocument.uri);
-    var suggestionBuilder = new SuggestionBuilder();
-
-    suggestionBuilder.prepare(textDocumentPosition, doc, workspaceTree);
-
-    var toReturn: CompletionItem[] = suggestionBuilder.build();
-
-    return toReturn;
+    try  {
+        var doc = documents.get(textDocumentPosition.textDocument.uri);
+        var suggestionBuilder = new SuggestionBuilder();
+        suggestionBuilder.prepare(textDocumentPosition, doc, workspaceTree);
+        var toReturn: CompletionItem[] = suggestionBuilder.build();
+        return toReturn;
+    } catch(e) {
+        Debug.error("Completion error : \n" + e.stack);
+        return [];
+    }
 });
 
 // This handler resolve additional information for the item selected in
@@ -175,7 +177,7 @@ connection.onRequest(buildObjectTreeForDocument, (requestObj) =>
         return true;
     })
     .catch(error => {
-        console.log(error);
+        Debug.error("Build request error :\n" + (error.stack ? error.stack : error));
         notifyClientOfWorkComplete();
         return false;
     });

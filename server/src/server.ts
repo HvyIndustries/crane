@@ -202,6 +202,7 @@ connection.onRequest(saveTreeCache, request => {
 });
 
 let docsDoneCount = 0;
+let refreshProcessing = false;
 var docsToDo: string[] = [];
 var stubsToDo: string[] = [];
 
@@ -214,6 +215,8 @@ var buildFromFiles: RequestType<{
     rebuild: boolean
 }, any, any, any> = new RequestType("buildFromFiles");
 connection.onRequest(buildFromFiles, (project) => {
+    if (refreshProcessing) return;
+    refreshProcessing = true;
     if (project.rebuild) {
         workspaceTree = [];
         treeBuilder = new TreeBuilder();
@@ -409,6 +412,7 @@ function getFileNodeFromPath(path: string): FileNode {
 
 function notifyClientOfWorkComplete()
 {
+    refreshProcessing = false;
     connection.sendRequest("workDone");
 }
 

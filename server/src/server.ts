@@ -255,12 +255,18 @@ var buildFromFiles: RequestType<{
     rebuild: boolean
 }, any, any, any> = new RequestType("buildFromFiles");
 connection.onRequest(buildFromFiles, (project) => {
-    if (refreshProcessing) return;
+    if (refreshProcessing) {
+        // Don't reparse if we're in the middle of parsing
+        return;
+    }
+
     refreshProcessing = true;
+
     if (project.rebuild) {
         workspaceTree = [];
         treeBuilder = new TreeBuilder();
     }
+
     enableCache = project.enableCache;
     docsToDo = project.files;
     docsDoneCount = 0;

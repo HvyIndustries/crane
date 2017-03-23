@@ -42,10 +42,10 @@ export class DefinitionProvider
         }
 
         var fnName = null;
-        if (word.indexOf('::')>-1) {
-          fnName = word.split('::', 2);
-          word = fnName[0];
-          fnName = fnName[1];
+        if (word.indexOf('::') > -1) {
+            fnName = word.split("::", 2);
+            word = fnName[0];
+            fnName = fnName[1];
         }
 
         // Get FQN of class under caret
@@ -123,26 +123,32 @@ export class DefinitionProvider
     {
         var namespace = classInfo.namespace;
         var rawClassname = classInfo.classname
-        var toReturn = [], symbol, innerSymbol, filenode;
+        var toReturn = [],
+            symbol,
+            innerSymbol,
+            filenode;
 
         for (var i = 0, l = this.workspaceTree.length; i < l; i++) {
             filenode = this.workspaceTree[i];
             symbol = this.scanNodeElements(
-                filenode, 
-                ['classes', 'interfaces', 'traits'], 
+                filenode,
+                ["classes", "interfaces", "traits"],
                 rawClassname, namespace
             );
+
             if (symbol) {
                 if (elementName) {
                     innerSymbol = this.scanNodeElements(
                         symbol,
-                        ['properties', 'methods', 'constants'],
+                        ["properties", "methods", "constants"],
                         elementName
                     );
+
                     if (innerSymbol) {
                         symbol = innerSymbol;
                     }
                 }
+
                 symbol.path = filenode.path;
                 toReturn.push(symbol);
             }
@@ -150,23 +156,32 @@ export class DefinitionProvider
         return toReturn;
     }
 
-    private scanNodeElements(node:any, what:string[], element:string, ns?: any): NodeInfo {
+    private scanNodeElements(node: any, what: string[], element: string, ns?: any): NodeInfo
+    {
         if (element) {
-            for(var w = 0; w < what.length; w++) {
+            for (var w = 0; w < what.length; w++) {
                 var items = node[what[w]];
-                if (Array.isArray(items)) {
-                    for(var i = 0; i < items.length; i++) {
-                        if (items[i].name === element) {
-                            if (ns && items[i].namespace !== ns) continue;
-                            return { 
-                                node: items[i],
-                                path: null 
-                            };
+
+                if (!Array.isArray(items)) {
+                    continue;
+                }
+
+                for (var i = 0; i < items.length; i++) {
+                    if (items[i].name === element) {
+                        if (ns && items[i].namespace !== ns) {
+                            continue;
                         }
+
+                        return {
+                            node: items[i],
+                            path: null
+                        };
                     }
                 }
+
             }
         }
+
         return null;
     }
 

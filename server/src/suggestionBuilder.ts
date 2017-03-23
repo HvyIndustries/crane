@@ -15,6 +15,7 @@ import {
 } from "./hvy/nodes";
 import { Files } from "./util/Files";
 import { Namespaces } from "./util/namespaces";
+import { Debug } from "./util/Debug";
 
 const fs = require('fs');
 
@@ -49,9 +50,16 @@ export class SuggestionBuilder
         // Note - this.lastChar will always be the last character of the line
         // because whitespace is stripped from the text so the index is wrong
 
-        this.currentFileNode = this.workspaceTree.filter(item => {
+        let filenode = this.workspaceTree.filter(item => {
             return item.path == this.filePath;
         })[0];
+
+        // Prevent exceptions from being thrown
+        if (filenode == null) {
+            filenode = new FileNode();
+        }
+
+        this.currentFileNode = filenode;
     }
 
     private isSelf(): boolean
@@ -761,7 +769,7 @@ export class SuggestionBuilder
         var parts: string[] = [];
 
         if (rawParts == null) {
-            return null;
+            return [];
         }
 
         var rawLast = rawParts.length - 1;

@@ -9,7 +9,7 @@
     },
     "icon": "images/php-256.png",
     "license": "MIT",
-    "version": "0.3.5",
+    "version": "0.3.6",
     "publisher": "HvyIndustries",
     "engines": {
         "vscode": "^1.8.0"

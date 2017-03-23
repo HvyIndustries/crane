@@ -14,7 +14,7 @@ import {
     MethodNode, NamespaceNode, NamespacePart
 } from "./hvy/nodes";
 import { Files } from "./util/Files";
-import { Namespaces } from "./util/namespaces";
+import { Namespaces } from "./util/Namespaces";
 import { Debug } from "./util/Debug";
 
 const fs = require('fs');
@@ -259,7 +259,7 @@ export class SuggestionBuilder
         for (var i = 0, l = toReturn.length; i < l; i++) {
             var item = toReturn[i];
 
-            if (!(item.label in cache)) {
+            if (item && item.label && !(item.label in cache)) {
                 filtered.push(item);
                 cache[item.label] = true;
             }

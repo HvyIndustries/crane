@@ -123,6 +123,7 @@ connection.onCompletion((textDocumentPosition: TextDocumentPositionParams): Comp
         if (ex.message) message = ex.message;
         if (ex.stack) message += " :: STACK TRACE :: " + ex.stack;
         if (message && message != "") Debug.sendErrorTelemetry(message);
+        Debug.error("Completion error: " + ex.message + "\n" + ex.stack);
     }
 
     return toReturn;
@@ -216,7 +217,7 @@ connection.onRequest(buildObjectTreeForDocument, (requestObj) =>
         return true;
     })
     .catch(error => {
-        console.log(error);
+        Debug.error("Build request error :\n" + (error.stack ? error.stack : error));
         notifyClientOfWorkComplete();
         return false;
     });
@@ -241,6 +242,7 @@ connection.onRequest(saveTreeCache, request => {
 });
 
 let docsDoneCount = 0;
+let refreshProcessing = false;
 var docsToDo: string[] = [];
 var stubsToDo: string[] = [];
 
@@ -253,6 +255,8 @@ var buildFromFiles: RequestType<{
     rebuild: boolean
 }, any, any, any> = new RequestType("buildFromFiles");
 connection.onRequest(buildFromFiles, (project) => {
+    if (refreshProcessing) return;
+    refreshProcessing = true;
     if (project.rebuild) {
         workspaceTree = [];
         treeBuilder = new TreeBuilder();
@@ -448,6 +452,7 @@ function getFileNodeFromPath(path: string): FileNode {
 
 function notifyClientOfWorkComplete()
 {
+    refreshProcessing = false;
     connection.sendRequest("workDone");
 }
 

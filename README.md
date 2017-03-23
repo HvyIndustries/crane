@@ -24,7 +24,11 @@ You can also set `php.suggest.basic` to `false` to disable VS Code's built-in ph
 
 ---
 
-## What's new in v0.3.4 (latest release)
+## What's new in v0.3.5 (latest release)
+- Bug fixes
+- Remote error reporting to help us find and fix bugs faster
+
+## What's new in v0.3.4
 - Significant performance improvements when requesting suggestions *(up to 7,500% faster)*
 
 ## What's new in v0.3.3

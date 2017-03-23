@@ -36,6 +36,11 @@ export class Config {
         return Config.craneSettings ? Config.craneSettings.get<Array<string>>("ignoredPaths", []) : [];
     }
 
+    public static get enableErrorTelemetry(): boolean {
+        Config.reloadConfig();
+        return Config.craneSettings ? Config.craneSettings.get<boolean>("enableErrorTelemetry", true) : true;
+    }
+
     public static get version(): string {
         return pkg.version.toString();
     }

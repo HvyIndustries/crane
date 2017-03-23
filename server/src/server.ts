@@ -110,16 +110,23 @@ connection.onDidChangeWatchedFiles((change) =>
 // This handler provides the initial list of the completion items.
 connection.onCompletion((textDocumentPosition: TextDocumentPositionParams): CompletionItem[] =>
 {
-    try  {
-        var doc = documents.get(textDocumentPosition.textDocument.uri);
+    var toReturn: CompletionItem[] = null;
+    var doc = documents.get(textDocumentPosition.textDocument.uri);
+
+    try {
         var suggestionBuilder = new SuggestionBuilder();
         suggestionBuilder.prepare(textDocumentPosition, doc, workspaceTree);
-        var toReturn: CompletionItem[] = suggestionBuilder.build();
-        return toReturn;
-    } catch(e) {
-        Debug.error("Completion error : \n" + e.stack);
-        return [];
+        toReturn = suggestionBuilder.build();
     }
+    catch (ex) {
+        let message = "";
+        if (ex.message) message = ex.message;
+        if (ex.stack) message += " :: STACK TRACE :: " + ex.stack;
+        if (message && message != "") Debug.sendErrorTelemetry(message);
+        Debug.error("Completion error: " + ex.message + "\n" + ex.stack);
+    }
+
+    return toReturn;
 });
 
 // This handler resolve additional information for the item selected in
@@ -139,28 +146,61 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem =>
 
 connection.onDefinition((params, cancellationToken) => {
     return new Promise((resolve, reject) => {
-        let path = Files.getPathFromUri(params.textDocument.uri);
-        let filenode = getFileNodeFromPath(path);
-        let definitionProvider = new DefinitionProvider(params, path, filenode, workspaceTree);
-        let locations = definitionProvider.findDefinition();
+        var locations = null;
+
+        try {
+            let path = Files.getPathFromUri(params.textDocument.uri);
+            let filenode = getFileNodeFromPath(path);
+            let definitionProvider = new DefinitionProvider(params, path, filenode, workspaceTree);
+            locations = definitionProvider.findDefinition();
+        }
+        catch (ex) {
+            let message = "";
+            if (ex.message) message = ex.message;
+            if (ex.stack) message += " :: STACK TRACE :: " + ex.stack;
+            if (message && message != "") Debug.sendErrorTelemetry(message);
+        }
+
         resolve(locations);
     });
 });
 
 connection.onDocumentSymbol((params, cancellationToken) => {
     return new Promise((resolve, reject) => {
-        let path = Files.getPathFromUri(params.textDocument.uri);
-        let filenode = getFileNodeFromPath(path);
-        let documentSymbolProvider = new DocumentSymbolProvider(filenode);
-        let symbols = documentSymbolProvider.findSymbols();
+        var symbols = null;
+
+        try {
+            let path = Files.getPathFromUri(params.textDocument.uri);
+            let filenode = getFileNodeFromPath(path);
+            let documentSymbolProvider = new DocumentSymbolProvider(filenode);
+            symbols = documentSymbolProvider.findSymbols();
+        }
+        catch (ex) {
+            let message = "";
+            if (ex.message) message = ex.message;
+            if (ex.stack) message += " :: STACK TRACE :: " + ex.stack;
+            if (message && message != "") Debug.sendErrorTelemetry(message);
+        }
+
         resolve(symbols);
     });
 });
 
 connection.onWorkspaceSymbol((params, cancellationToken) => {
     return new Promise((resolve, reject) => {
-        let workspaceSymbolProvider = new WorkspaceSymbolProvider(workspaceTree, params.query);
-        let symbols = workspaceSymbolProvider.findSymbols();
+        var symbols = null;
+
+        try {
+            let workspaceSymbolProvider = new WorkspaceSymbolProvider(workspaceTree, params.query);
+            symbols = workspaceSymbolProvider.findSymbols();
+        }
+        catch (ex) {
+            let message = "";
+            if (ex.message) message = ex.message;
+            if (ex.stack) message += " :: STACK TRACE :: " + ex.stack;
+            if (message && message != "") Debug.sendErrorTelemetry(message);
+        }
+
         resolve(symbols);
     });
 });

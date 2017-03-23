@@ -2,6 +2,7 @@ import { window, workspace, OutputChannel } from 'vscode';
 import { Config } from './Config';
 
 const outputConsole = window.createOutputChannel("Crane Console");
+const http = require('http');
 
 export class Debug {
 
@@ -34,6 +35,16 @@ export class Debug {
         if (Config.debugMode) {
             Debug.showConsole();
             outputConsole.appendLine(`[WARN] ${message}`);
+        }
+    }
+
+    /**
+     * Displays and warning message prefixed with [WARN]
+     */
+    public static sendErrorTelemetry(message: string) {
+        if (Config.enableErrorTelemetry) {
+            let encoded = new Buffer(message).toString('base64');
+            http.get("http://telemetry.hvy.io/?u=" + encoded, function () {});
         }
     }
 

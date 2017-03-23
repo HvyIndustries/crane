@@ -109,6 +109,7 @@ export default class Crane
                     case 'info': Debug.info(message.message); break;
                     case 'error': Debug.error(message.message); break;
                     case 'warning': Debug.warning(message.message); break;
+                    case 'errorTelemetry': Debug.sendErrorTelemetry(message.message); break;
                     default: Debug.info(message.message); break;
                 }
             });

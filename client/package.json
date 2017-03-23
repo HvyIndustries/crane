@@ -9,7 +9,7 @@
     },
     "icon": "images/php-256.png",
     "license": "MIT",
-    "version": "0.3.4",
+    "version": "0.3.5",
     "publisher": "HvyIndustries",
     "engines": {
         "vscode": "^1.8.0"
@@ -78,6 +78,11 @@
                     "type": "array",
                     "default": [],
                     "description": "An array of files/folders that should be ignored by the parser. Glob patterns are accepted (eg. **/*bad.php)"
+                },
+                "crane.enableErrorTelemetry": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Whether to send error telemetry information to Hvy Industries to help fix bugs in Crane."
                 }
             }
         },
@@ -129,7 +134,7 @@
     "dependencies": {
         "fstream": "^1.0.9",
         "mkdirp": "^0.5.1",
-        "php-parser": "^2.0.2",
+        "php-parser": "^2.0.3",
         "rimraf": "^2.5.2",
         "unzip": "^0.1.11",
         "opn": "^4.0.2",

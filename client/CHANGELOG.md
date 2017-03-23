@@ -1,4 +1,8 @@
-# v0.3.4 (latest release)
+# v0.3.5 (latest release)
+- Bug fixes
+- Remote error reporting to help us find and fix bugs faster
+
+# v0.3.4
 - Significant performance improvements when requesting suggestions *(up to 7,500% faster)*
 
 # v0.3.3

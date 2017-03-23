@@ -54,9 +54,8 @@ export class SuggestionBuilder
             return item.path == this.filePath;
         })[0];
 
-        // Prevent exceptions from being thrown
+        // Send some telemetry information
         if (filenode == null) {
-            filenode = new FileNode();
             Debug.sendErrorTelemetry("Unable to find filenode for path " + this.filePath);
         }
 

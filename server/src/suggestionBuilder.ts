@@ -57,6 +57,7 @@ export class SuggestionBuilder
         // Prevent exceptions from being thrown
         if (filenode == null) {
             filenode = new FileNode();
+            Debug.sendErrorTelemetry("Unable to find filenode for path " + this.filePath);
         }
 
         this.currentFileNode = filenode;

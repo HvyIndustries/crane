@@ -1,5 +1,6 @@
 import { IConnection } from 'vscode-languageserver';
 
+var http = require('http');
 
 export class Debug{
     public static connection: IConnection;
@@ -18,5 +19,9 @@ export class Debug{
 
     public static warning(message: string) {
         Debug.connection.sendNotification('serverDebugMessage', { type: 'warning', message: message });
+    }
+
+    public static sendErrorTelemetry(message: string) {
+        Debug.connection.sendNotification('serverDebugMessage', { type: 'errorTelemetry', message: message });
     }
 }

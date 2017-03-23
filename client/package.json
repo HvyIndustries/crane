@@ -78,6 +78,11 @@
                     "type": "array",
                     "default": [],
                     "description": "An array of files/folders that should be ignored by the parser. Glob patterns are accepted (eg. **/*bad.php)"
+                },
+                "crane.enableErrorTelemetry": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Whether to send error telemetry information to Hvy Industries to help fix bugs in Crane."
                 }
             }
         },

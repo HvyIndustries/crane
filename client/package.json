@@ -28,16 +28,10 @@
     ],
     "keywords": [
         "php",
-        "php5",
-        "php7",
         "crane",
-        "hvy",
         "productivity",
         "code-completion",
-        "intellisense",
-        "go-to-definition",
-        "definition",
-        "suggestion"
+        "intellisense"
     ],
     "galleryBanner": {
         "theme": "dark",

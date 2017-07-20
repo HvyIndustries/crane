@@ -132,7 +132,9 @@ export default class Crane
                     }, 5000);
                 } else {
                     setTimeout(() => {
-                        Crane.statusBarItem.hide();
+                        Crane.statusBarItem.tooltip = "Crane (code-completion for PHP) is active!";
+                        Crane.statusBarItem.text = "$(flame) Crane v" + Config.version;
+                        Crane.statusBarItem.show();
                     }, 7500);
                 }
             });

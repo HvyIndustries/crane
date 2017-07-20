@@ -9,7 +9,7 @@
     },
     "icon": "images/php-256.png",
     "license": "MIT",
-    "version": "0.3.6",
+    "version": "0.3.7",
     "publisher": "HvyIndustries",
     "engines": {
         "vscode": "^1.8.0"
@@ -56,7 +56,7 @@
             "properties": {
                 "crane.showStatusBarBugReportLink": {
                     "type": "boolean",
-                    "default": true,
+                    "default": false,
                     "description": "Show or hide the status bar item asking you to report any PHP Intellisense bugs"
                 },
                 "crane.enableCache": {
@@ -81,7 +81,7 @@
                 },
                 "crane.enableErrorTelemetry": {
                     "type": "boolean",
-                    "default": true,
+                    "default": false,
                     "description": "Whether to send error telemetry information to Hvy Industries to help fix bugs in Crane."
                 }
             }
@@ -134,7 +134,7 @@
     "dependencies": {
         "fstream": "^1.0.9",
         "mkdirp": "^0.5.1",
-        "php-parser": "^2.0.3",
+        "php-parser": "^2.0.6",
         "rimraf": "^2.5.2",
         "unzip": "^0.1.11",
         "opn": "^4.0.2",

@@ -1,4 +1,12 @@
-# v0.3.5 (latest release)
+# v0.3.7 (latest release)
+- Disabled bug report link to avoid misleading users into thinking there is a bug
+- Upgraded php-parser to 2.0.6 to fix some crashes and freezing
+- Added a special case for suggesting php opening tags (`<?php`)
+
+# v0.3.6
+- Hotfix issue in v0.3.5
+
+# v0.3.5/v0.3.6
 - Bug fixes
 - Remote error reporting to help us find and fix bugs faster
 

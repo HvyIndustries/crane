@@ -341,7 +341,11 @@ export class SuggestionBuilder
                 for (var j = 0, sl = parent.length; j < sl; j++) {
                     var item = parent[j];
 
-                    suggestions.push({ label: item.name, kind: CompletionItemKind.Module, detail: "(namespace)" });
+                    suggestions.push({
+                        label: item.name,
+                        kind: CompletionItemKind.Module,
+                        detail: "(namespace)"
+                    });
                 }
             }
         }
@@ -420,9 +424,11 @@ export class SuggestionBuilder
         if (docComment) {
             if (docComment.deprecated) {
                 description += "DEPRECATED";
+
                 if (docComment.deprecatedMessage) {
                     description += " " + docComment.deprecatedMessage;
                 }
+
                 description += "\n\n";
             }
 
@@ -431,13 +437,22 @@ export class SuggestionBuilder
             }
 
             if (docComment.summary) {
+                // Replace html chars (for phpstubs)
+                docComment.summary = docComment.summary.replace("<br/>", "\n");
+                docComment.summary = docComment.summary.replace("&gt;", ">");
+                docComment.summary = docComment.summary.replace("&lt;", "<");
+
                 description += docComment.summary;
             }
 
             if (docComment.throws && docComment.throws.length > 0) {
                 description += "\n";
                 docComment.throws.forEach(throwItem => {
-                    description += `\nThrows ${throwItem.type} (${throwItem.summary})`;
+                    description += `\nThrows ${throwItem.type}`;
+
+                    if (throwItem.summary) {
+                        description += ` (${throwItem.summary})`;
+                    }
                 });
             }
         }
@@ -689,7 +704,7 @@ export class SuggestionBuilder
     }
 
     private getFunctionParamInfo(docInfo: DocCommentSuggestionInfo, item: MethodNode) {
-        let detail = ": " + docInfo.type;
+        let detail = item.name + "() : " + docInfo.type;
 
         let params: string[] = [];
 
@@ -711,7 +726,7 @@ export class SuggestionBuilder
 
         if (params.length > 0) {
             let joinedParams = params.join(", ");
-            detail = "(" + joinedParams + ") : " + docInfo.type;
+            detail = item.name + "(" + joinedParams + ") : " + docInfo.type;
         }
         return detail;
     }
@@ -759,10 +774,10 @@ export class SuggestionBuilder
     private getNamespace(node): string
     {
         if (node.namespace) {
-            return " " + node.namespace;
+            return " " + node.namespace + "\\" + node.name;
         }
 
-        return "";
+        return " " + node.name;
     }
 
     private getFunctionInsertText(node: MethodNode)

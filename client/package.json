@@ -81,7 +81,7 @@
                 },
                 "crane.enableErrorTelemetry": {
                     "type": "boolean",
-                    "default": true,
+                    "default": false,
                     "description": "Whether to send error telemetry information to Hvy Industries to help fix bugs in Crane."
                 }
             }

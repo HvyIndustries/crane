@@ -780,16 +780,16 @@ export class SuggestionBuilder
         return " " + node.name;
     }
 
-    private getFunctionInsertText(node: MethodNode)
-    {
-        let text = node.name;
+private getFunctionInsertText(node: MethodNode)
+{
+    let text = node.name + "()";
 
-        if (node.params.length == 0) {
-            text += "()";
-        }
+    // if (node.params.length == 0) {
+    //     text += "()";
+    // }
 
-        return text;
-    }
+    return text;
+}
 
     private getScope() : Scope
     {

@@ -56,7 +56,7 @@
             "properties": {
                 "crane.showStatusBarBugReportLink": {
                     "type": "boolean",
-                    "default": true,
+                    "default": false,
                     "description": "Show or hide the status bar item asking you to report any PHP Intellisense bugs"
                 },
                 "crane.enableCache": {

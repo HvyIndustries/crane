@@ -23,7 +23,7 @@ export class Config {
 
     public static get showBugReport(): boolean {
         Config.reloadConfig();
-        return Config.craneSettings ? Config.craneSettings.get<boolean>("showStatusBarBugReportLink", true) : true;
+        return Config.craneSettings ? Config.craneSettings.get<boolean>("showStatusBarBugReportLink", false) : false;
     }
 
     public static get phpstubsZipFile(): string {

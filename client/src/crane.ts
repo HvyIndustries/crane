@@ -109,6 +109,7 @@ export default class Crane
                     case 'info': Debug.info(message.message); break;
                     case 'error': Debug.error(message.message); break;
                     case 'warning': Debug.warning(message.message); break;
+                    case 'errorTelemetry': Debug.sendErrorTelemetry(message.message); break;
                     default: Debug.info(message.message); break;
                 }
             });
@@ -131,7 +132,9 @@ export default class Crane
                     }, 5000);
                 } else {
                     setTimeout(() => {
-                        Crane.statusBarItem.hide();
+                        Crane.statusBarItem.tooltip = "Crane (code-completion for PHP) is active!";
+                        Crane.statusBarItem.text = "$(flame) Crane v" + Config.version;
+                        Crane.statusBarItem.show();
                     }, 7500);
                 }
             });

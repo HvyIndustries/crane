@@ -110,12 +110,21 @@ connection.onDidChangeWatchedFiles((change) =>
 // This handler provides the initial list of the completion items.
 connection.onCompletion((textDocumentPosition: TextDocumentPositionParams): CompletionItem[] =>
 {
+    var toReturn: CompletionItem[] = null;
     var doc = documents.get(textDocumentPosition.textDocument.uri);
-    var suggestionBuilder = new SuggestionBuilder();
 
-    suggestionBuilder.prepare(textDocumentPosition, doc, workspaceTree);
-
-    var toReturn: CompletionItem[] = suggestionBuilder.build();
+    try {
+        var suggestionBuilder = new SuggestionBuilder();
+        suggestionBuilder.prepare(textDocumentPosition, doc, workspaceTree);
+        toReturn = suggestionBuilder.build();
+    }
+    catch (ex) {
+        let message = "";
+        if (ex.message) message = ex.message;
+        if (ex.stack) message += " :: STACK TRACE :: " + ex.stack;
+        if (message && message != "") Debug.sendErrorTelemetry(message);
+        Debug.error("Completion error: " + ex.message + "\n" + ex.stack);
+    }
 
     return toReturn;
 });
@@ -136,28 +145,61 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
 
 connection.onDefinition((params, cancellationToken) => {
     return new Promise((resolve, reject) => {
-        let path = Files.getPathFromUri(params.textDocument.uri);
-        let filenode = getFileNodeFromPath(path);
-        let definitionProvider = new DefinitionProvider(params, path, filenode, workspaceTree);
-        let locations = definitionProvider.findDefinition();
+        var locations = null;
+
+        try {
+            let path = Files.getPathFromUri(params.textDocument.uri);
+            let filenode = getFileNodeFromPath(path);
+            let definitionProvider = new DefinitionProvider(params, path, filenode, workspaceTree);
+            locations = definitionProvider.findDefinition();
+        }
+        catch (ex) {
+            let message = "";
+            if (ex.message) message = ex.message;
+            if (ex.stack) message += " :: STACK TRACE :: " + ex.stack;
+            if (message && message != "") Debug.sendErrorTelemetry(message);
+        }
+
         resolve(locations);
     });
 });
 
 connection.onDocumentSymbol((params, cancellationToken) => {
     return new Promise((resolve, reject) => {
-        let path = Files.getPathFromUri(params.textDocument.uri);
-        let filenode = getFileNodeFromPath(path);
-        let documentSymbolProvider = new DocumentSymbolProvider(filenode);
-        let symbols = documentSymbolProvider.findSymbols();
+        var symbols = null;
+
+        try {
+            let path = Files.getPathFromUri(params.textDocument.uri);
+            let filenode = getFileNodeFromPath(path);
+            let documentSymbolProvider = new DocumentSymbolProvider(filenode);
+            symbols = documentSymbolProvider.findSymbols();
+        }
+        catch (ex) {
+            let message = "";
+            if (ex.message) message = ex.message;
+            if (ex.stack) message += " :: STACK TRACE :: " + ex.stack;
+            if (message && message != "") Debug.sendErrorTelemetry(message);
+        }
+
         resolve(symbols);
     });
 });
 
 connection.onWorkspaceSymbol((params, cancellationToken) => {
     return new Promise((resolve, reject) => {
-        let workspaceSymbolProvider = new WorkspaceSymbolProvider(workspaceTree, params.query);
-        let symbols = workspaceSymbolProvider.findSymbols();
+        var symbols = null;
+
+        try {
+            let workspaceSymbolProvider = new WorkspaceSymbolProvider(workspaceTree, params.query);
+            symbols = workspaceSymbolProvider.findSymbols();
+        }
+        catch (ex) {
+            let message = "";
+            if (ex.message) message = ex.message;
+            if (ex.stack) message += " :: STACK TRACE :: " + ex.stack;
+            if (message && message != "") Debug.sendErrorTelemetry(message);
+        }
+
         resolve(symbols);
     });
 });
@@ -174,7 +216,7 @@ connection.onRequest(buildObjectTreeForDocument, (requestObj) =>
         return true;
     })
     .catch(error => {
-        console.log(error);
+        Debug.error("Build request error :\n" + (error.stack ? error.stack : error));
         notifyClientOfWorkComplete();
         return false;
     });
@@ -199,6 +241,7 @@ connection.onRequest(saveTreeCache, request => {
 });
 
 let docsDoneCount = 0;
+let refreshProcessing = false;
 var docsToDo: string[] = [];
 var stubsToDo: string[] = [];
 
@@ -211,10 +254,18 @@ var buildFromFiles: RequestType<{
     rebuild: boolean
 }, any, any, any> = new RequestType("buildFromFiles");
 connection.onRequest(buildFromFiles, (project) => {
+    if (refreshProcessing) {
+        // Don't reparse if we're in the middle of parsing
+        return;
+    }
+
+    refreshProcessing = true;
+
     if (project.rebuild) {
         workspaceTree = [];
         treeBuilder = new TreeBuilder();
     }
+
     enableCache = project.enableCache;
     docsToDo = project.files;
     docsDoneCount = 0;
@@ -406,6 +457,7 @@ function getFileNodeFromPath(path: string): FileNode {
 
 function notifyClientOfWorkComplete()
 {
+    refreshProcessing = false;
     connection.sendRequest("workDone");
 }
 

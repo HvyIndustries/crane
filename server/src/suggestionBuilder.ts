@@ -15,7 +15,8 @@ import {
     DocCommentSuggestionInfo, BaseNode, DocComment
 } from "./hvy/nodes";
 import { Files } from "./util/Files";
-import { Namespaces } from "./util/namespaces";
+import { Namespaces } from "./util/Namespaces";
+import { Debug } from "./util/Debug";
 
 const fs = require('fs');
 
@@ -50,9 +51,16 @@ export class SuggestionBuilder
         // Note - this.lastChar will always be the last character of the line
         // because whitespace is stripped from the text so the index is wrong
 
-        this.currentFileNode = this.workspaceTree.filter(item => {
+        let filenode = this.workspaceTree.filter(item => {
             return item.path == this.filePath;
         })[0];
+
+        // Send some telemetry information
+        if (filenode == null) {
+            Debug.sendErrorTelemetry("Unable to find filenode for path " + this.filePath);
+        }
+
+        this.currentFileNode = filenode;
     }
 
     private isSelf(): boolean
@@ -78,6 +86,16 @@ export class SuggestionBuilder
         let commentIndex = this.currentLine.indexOf("//");
         if (commentIndex > -1 && commentIndex < this.charIndex) {
             return null;
+        }
+
+        if (this.lastChar == "p" && this.currentLine.indexOf("<?p") > -1) {
+            toReturn.push({
+                label: "php",
+                kind: CompletionItemKind.Class,
+                detail: "<?php"
+            });
+
+            return toReturn;
         }
 
         if (this.lastChar == ">") {
@@ -252,7 +270,7 @@ export class SuggestionBuilder
         for (var i = 0, l = toReturn.length; i < l; i++) {
             var item = toReturn[i];
 
-            if (!(item.label in cache)) {
+            if (item && item.label && !(item.label in cache)) {
                 filtered.push(item);
                 cache[item.label] = true;
             }
@@ -909,7 +927,7 @@ export class SuggestionBuilder
         var parts: string[] = [];
 
         if (rawParts == null) {
-            return null;
+            return [];
         }
 
         var rawLast = rawParts.length - 1;

@@ -23,7 +23,7 @@ export class Config {
 
     public static get showBugReport(): boolean {
         Config.reloadConfig();
-        return Config.craneSettings ? Config.craneSettings.get<boolean>("showStatusBarBugReportLink", true) : true;
+        return Config.craneSettings ? Config.craneSettings.get<boolean>("showStatusBarBugReportLink", false) : false;
     }
 
     public static get phpstubsZipFile(): string {
@@ -34,6 +34,11 @@ export class Config {
     public static get ignoredPaths(): Array<string> {
         Config.reloadConfig();
         return Config.craneSettings ? Config.craneSettings.get<Array<string>>("ignoredPaths", []) : [];
+    }
+
+    public static get enableErrorTelemetry(): boolean {
+        Config.reloadConfig();
+        return Config.craneSettings ? Config.craneSettings.get<boolean>("enableErrorTelemetry", false) : false;
     }
 
     public static get version(): string {

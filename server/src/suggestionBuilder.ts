@@ -87,6 +87,16 @@ export class SuggestionBuilder
             return null;
         }
 
+        if (this.lastChar == "p" && this.currentLine.indexOf("<?p") > -1) {
+            toReturn.push({
+                label: "php",
+                kind: CompletionItemKind.Class,
+                detail: "<?php"
+            });
+
+            return toReturn;
+        }
+
         if (this.lastChar == ">") {
             toReturn = toReturn.concat(this.checkAccessorAndAddMembers(scope));
         } else if (this.lastChar == ":") {

@@ -25,6 +25,9 @@ You can also set `php.suggest.basic` to `false` to disable VS Code's built-in ph
 ---
 
 # What's new in v0.3.7 (latest release)
+- Fix issue with including file on Linux
+
+# What's new in v0.3.7
 - Disabled bug report link to avoid misleading users into thinking there is a bug
 - Upgraded php-parser to 2.0.6 to fix some crashes and freezing
 - Added a special case for suggesting php opening tags (`<?php`)

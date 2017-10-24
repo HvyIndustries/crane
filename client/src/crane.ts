@@ -106,7 +106,10 @@ export default class Crane
         var statusBarItem: StatusBarItem = window.createStatusBarItem(StatusBarAlignment.Right);
         statusBarItem.text = Config.version;
         statusBarItem.tooltip = 'Crane (PHP Code-completion) version ' + Config.version;
-        statusBarItem.show();
+
+        if (Config.showStatusBarIcon){
+            statusBarItem.show();
+        }
 
         var serverDebugMessage: NotificationType<{ type: string, message: string }> = { method: "serverDebugMessage" };
         Crane.langClient.onNotification(serverDebugMessage, message => {

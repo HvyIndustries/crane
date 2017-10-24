@@ -57,6 +57,11 @@
                     "default": true,
                     "description": "Show or hide the status bar item asking you to report any PHP Intellisense bugs"
                 },
+                "crane.showStatusBarIcon": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show or hide the status bar item with the version"
+                },
                 "crane.enableCache": {
                     "type": "boolean",
                     "default": true,
